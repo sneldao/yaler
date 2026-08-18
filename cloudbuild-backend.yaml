@@ -1,0 +1,48 @@
+# Backend only. Frontend deploys from Netlify on push to main.
+# Usage: make deploy-backend
+#        gcloud builds submit --config cloudbuild-backend.yaml --project=cognivern .
+substitutions:
+  _REGION: europe-west2
+  _SERVICE: yaler-backend
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - Dockerfile.server
+      - -t
+      - europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/yaler-backend:$BUILD_ID
+      - -t
+      - europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/yaler-backend:latest
+      - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/yaler-backend:$BUILD_ID
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/yaler-backend:latest
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - $_SERVICE
+      - --image=europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/yaler-backend:$BUILD_ID
+      - --region=$_REGION
+      - --project=$PROJECT_ID
+      - --allow-unauthenticated
+      - --memory=512Mi
+      - --cpu=1
+      - --concurrency=80
+      - --set-env-vars=GCP_PROJECT_ID=$PROJECT_ID
+      - --update-secrets=GEMINI_API_KEY=gemini-api-key:latest,ELEVENLABS_API_KEY=elevenlabs-api-key:latest,EXA_API_KEY=exa-api-key:latest,APIFY_API_KEY=apify-api-key:latest
+
+images:
+  - europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/yaler-backend:$BUILD_ID
+  - europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/yaler-backend:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY

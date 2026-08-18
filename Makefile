@@ -1,4 +1,7 @@
-.PHONY: all build dev test lint seed web clean hooks assets
+.PHONY: all build dev test lint seed web clean hooks assets deploy-backend
+
+GCP_PROJECT ?= cognivern
+BACKEND_URL ?= https://yaler-backend-48617502162.europe-west2.run.app
 
 all: build
 
@@ -40,6 +43,11 @@ seed:
 
 web:
 	cd web && npm run dev
+
+deploy-backend:
+	gcloud builds submit --config cloudbuild-backend.yaml --project=$(GCP_PROJECT) .
+	@echo "Backend: $(BACKEND_URL)"
+	@curl -sS -o /dev/null -w "health %{http_code}\n" $(BACKEND_URL)/health
 
 clean:
 	rm -rf bin/

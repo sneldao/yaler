@@ -158,6 +158,12 @@
 
 **Reason:** Operators, landlords, and future employees need different proofs from the same loop. Search results are not vetted engineers. A missing register check must never look like a pass.
 
+### D027 — Two deploy paths, one API hostname
+
+**Decision:** Frontend ships on push to `main` (Netlify). Backend ships only via `make deploy-backend` / `cloudbuild-backend.yaml`. The public API hostname is `https://yaler-backend-48617502162.europe-west2.run.app`. Do not rotate `PUBLIC_API_URL` for a new revision.
+
+**Reason:** Mixing the hashed Cloud Run URL, the pretty URL, and a remembered `gcloud` incantation made deploys feel like a URL change. They are not. Revisions change; the service does not.
+
 ---
 
 ## Open questions

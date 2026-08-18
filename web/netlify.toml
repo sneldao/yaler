@@ -3,4 +3,4 @@
   publish = "dist"
 
 [build.environment]
-  PUBLIC_API_URL = "https://yaler-backend-2hfdtkdrnq-nw.a.run.app"
+  PUBLIC_API_URL = "https://yaler-backend-48617502162.europe-west2.run.app"

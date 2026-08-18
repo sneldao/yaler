@@ -282,7 +282,7 @@ secret-manager credentials
 cloud-logging  runtime evidence
 ```
 
-For the first deployment, combining the web and API into one Cloud Run service is acceptable. Separate services are preferred once the mission loop is stable.
+Production is already split: Astro on Netlify, Go on Cloud Run. See [DEPLOY.md](DEPLOY.md). `make deploy-backend` is the only backend ship path. Frontend is push-to-`main`.
 
 ## Local development
 

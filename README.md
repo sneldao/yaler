@@ -5,15 +5,12 @@
 
 ---
 
-## 🌐 Live Hosted Deployment (GCP Cloud Run)
+## 🌐 Live
 
-Judges can test the live hosted production environment directly:
+- **App**: [https://yaler.persidian.com](https://yaler.persidian.com) (Netlify, ships on push to `main`)
+- **API**: [https://yaler-backend-48617502162.europe-west2.run.app](https://yaler-backend-48617502162.europe-west2.run.app) (`make deploy-backend`)
 
-- **Frontend Application**: [https://yaler-frontend-48617502162.europe-west2.run.app](https://yaler-frontend-48617502162.europe-west2.run.app)
-- **Backend Gateway & A2A Endpoint**: [https://yaler-backend-48617502162.europe-west2.run.app](https://yaler-backend-48617502162.europe-west2.run.app)
-  - **A2A JSON-RPC 2.0**: `POST /api/a2a` ([Protocol Spec](docs/A2A-PROTOCOL.md))
-  - **Direct GCP File Uploads**: `POST /api/upload`
-  - **Suppliers Endpoint**: `GET /api/suppliers`
+See [docs/DEPLOY.md](docs/DEPLOY.md). Do not change `PUBLIC_API_URL` when a Cloud Run *revision* ships — only if the service hostname moves.
 
 ---
 
@@ -82,6 +79,7 @@ For complete technical specifications, architecture diagrams, and product guides
 
 - 📖 [Product Brief & Problem Statement](docs/PRODUCT.md) — Problem, user personas, and product loop.
 - 🏗️ [Architecture & System Design](docs/ARCHITECTURE.md) — Go, Astro, Gemini, Firestore, and Cloud Run architecture.
+- 🚢 [Deploy](docs/DEPLOY.md) — Netlify on `main` for the app; `make deploy-backend` for Cloud Run.
 - 🤝 [Agent-to-Agent (A2A) Protocol Specification](docs/A2A-PROTOCOL.md) — JSON-RPC 2.0 schema and RSA signatures.
 - 🛡️ [Agent Operating Model & Safety Guardrails](docs/AGENT-OPERATING-MODEL.md) — Policy boundaries and human escalations.
 - 🗺️ [Market Strategy & Adjacent Whitespace](docs/STRATEGY.md) — London market analysis and pilot roadmap.

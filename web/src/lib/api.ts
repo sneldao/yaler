@@ -1,7 +1,9 @@
+const PRODUCTION_API = 'https://yaler-backend-48617502162.europe-west2.run.app';
+
 const getApiBase = () => {
   if (import.meta.env.PUBLIC_API_URL) return import.meta.env.PUBLIC_API_URL;
-  if (typeof window !== 'undefined' && window.location.hostname.endsWith('run.app')) {
-    return 'https://yaler-backend-48617502162.europe-west2.run.app';
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return PRODUCTION_API;
   }
   return 'http://localhost:8081';
 };
