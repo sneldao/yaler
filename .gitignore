@@ -43,3 +43,6 @@ uploads/
 
 # Local Netlify folder
 .netlify
+
+# Private Operational Documentation
+OPS.md
