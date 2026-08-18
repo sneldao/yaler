@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import { ViewTransitions } from 'astro:transitions';
+import SpotlightBackdrop from '../components/primitives/SpotlightBackdrop';
 
 interface Props {
   title?: string;
@@ -33,12 +34,12 @@ const {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <ViewTransitions />
   </head>
-  <body class="font-['Plus_Jakarta_Sans',sans-serif] bg-[#04070d] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
-    <!-- Top Ambient Glow -->
-    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-gradient-to-b from-cyan-600/10 via-blue-600/5 to-transparent blur-3xl pointer-events-none -z-10"></div>
+  <body class="font-['Plus_Jakarta_Sans',sans-serif] bg-[#03060c] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500/30 selection:text-cyan-200 relative">
+    <!-- Living Aurora & Cursor Spotlight Backdrop -->
+    <SpotlightBackdrop client:load />
 
     <!-- Navigation Header -->
-    <header class="border-b border-white/[0.08] bg-[#04070d]/80 backdrop-blur-xl sticky top-0 z-50 transition-all">
+    <header class="border-b border-white/[0.08] bg-[#03060c]/80 backdrop-blur-xl sticky top-0 z-50 transition-all">
       <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <a href="/" class="flex items-center gap-3 group">
           <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-300 font-extrabold text-sm group-hover:scale-105 group-hover:border-cyan-400 transition-all shadow-lg shadow-cyan-500/10">
@@ -78,12 +79,12 @@ const {
     </header>
 
     <!-- Main Content Container -->
-    <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
+    <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8 relative z-10">
       <slot />
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-white/[0.08] bg-[#04070d] py-8 text-xs text-slate-500">
+    <footer class="border-t border-white/[0.08] bg-[#03060c] py-8 text-xs text-slate-500 relative z-10">
       <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
         <div class="flex items-center gap-3">
           <div class="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold text-xs">
