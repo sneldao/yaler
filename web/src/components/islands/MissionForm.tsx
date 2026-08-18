@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Vapi from '@vapi-ai/web';
 import { createMission } from '../../lib/api';
+import { LoaderGrid } from '../primitives/LoaderGrid';
 
 const VAPI_PUBLIC_KEY = '374778cc-e3a0-4557-a9f2-3908ca8dbdbd';
 
@@ -155,17 +156,17 @@ export default function MissionForm() {
   };
 
   return (
-    <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl max-w-3xl mx-auto relative overflow-hidden">
-      {/* Ambient Card Accent */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
+    <div className="glass-panel glass-panel-hover rounded-3xl p-6 sm:p-8 shadow-2xl max-w-3xl mx-auto relative overflow-hidden">
+      {/* Ambient Accent Glow */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-lg shadow-inner">
+          <div className="w-11 h-11 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-300 font-bold text-lg shadow-inner">
             ⚡
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white tracking-tight">Create Operational Mission</h2>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Create Operational Mission</h2>
             <p className="text-xs sm:text-sm text-slate-400">Speak or type your operational callout. Gemini extracts the mandate automatically.</p>
           </div>
         </div>
@@ -174,15 +175,15 @@ export default function MissionForm() {
         <button
           type="button"
           onClick={toggleVapiVoice}
-          className={`px-3.5 py-2 rounded-xl border text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-3.5 py-2 rounded-2xl border text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer ${
             vapiActive || listening
               ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse shadow-lg shadow-emerald-500/20'
-              : 'bg-slate-800/90 hover:bg-slate-800 text-cyan-400 border-slate-700 hover:border-cyan-500/40'
+              : 'bg-white/[0.04] hover:bg-white/[0.08] text-cyan-300 border-white/[0.08] hover:border-cyan-500/40'
           }`}
         >
           <span className={vapiActive || listening ? 'animate-bounce' : ''}>🎙️</span>
           <span>{vapiActive ? 'Vapi Live Call Active' : listening ? 'Listening...' : 'Vapi AI Voice'}</span>
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold">
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold">
             VAPI
           </span>
         </button>
@@ -195,7 +196,7 @@ export default function MissionForm() {
             onChange={(e) => setGoal(e.target.value)}
             placeholder="e.g. My commercial fridge is down, need repair before lunch, budget £500, we're in N1."
             rows={4}
-            className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-500/80 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all text-sm sm:text-base leading-relaxed font-sans"
+            className="w-full bg-slate-950/70 border border-white/[0.1] focus:border-cyan-400 rounded-2xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none transition-all text-sm sm:text-base leading-relaxed font-sans"
             disabled={loading}
           />
           {goal.length > 0 && (
@@ -206,18 +207,21 @@ export default function MissionForm() {
         </div>
 
         {loading && (
-          <div className="p-3 bg-slate-950 border border-cyan-500/30 rounded-xl font-mono text-xs space-y-1 text-cyan-300">
+          <div className="p-3.5 bg-slate-950/90 border border-cyan-500/30 rounded-2xl font-mono text-xs space-y-1.5 text-cyan-300 animate-pop-in">
             <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold uppercase">
               <span>Agentic Mission Pipeline</span>
               <span className="text-emerald-400 animate-pulse">Running</span>
             </div>
-            <p>⚡ GEMINI 2.5: Parsing intent & extracting budget ceiling...</p>
-            <p className="text-slate-400">🛡️ GO POLICY ENGINE: Validating mandate boundaries (≤ £1,000)...</p>
+            <div className="flex items-center gap-2">
+              <LoaderGrid />
+              <p className="animate-shimmer-text">⚡ GEMINI 2.5: Parsing intent & extracting budget ceiling...</p>
+            </div>
+            <p className="text-slate-400 pl-6">🛡️ GO POLICY ENGINE: Validating mandate boundaries (≤ £1,000)...</p>
           </div>
         )}
 
         {error && (
-          <div className="p-3.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-xs sm:text-sm flex items-center gap-2">
+          <div className="p-3.5 bg-rose-500/15 border border-rose-500/30 text-rose-300 rounded-2xl text-xs sm:text-sm flex items-center gap-2 font-mono">
             <span>⚠️</span>
             <span>{error}</span>
           </div>
@@ -227,7 +231,7 @@ export default function MissionForm() {
         <div className="space-y-2.5">
           <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
             <span>Sample Operational Scenarios</span>
-            <span className="text-[10px] font-normal text-slate-400">Click to auto-fill</span>
+            <span className="text-[10px] font-normal text-slate-500">Click to auto-fill</span>
           </p>
 
           <div className="grid grid-cols-1 gap-2">
@@ -236,13 +240,13 @@ export default function MissionForm() {
                 key={idx}
                 type="button"
                 onClick={() => typePreset(p.text)}
-                className="group text-left bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/40 rounded-xl p-3 transition-all flex items-center justify-between gap-3 cursor-pointer"
+                className="group text-left bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-cyan-500/40 rounded-2xl p-3 transition-all flex items-center justify-between gap-3 cursor-pointer"
               >
                 <div className="space-y-0.5">
                   <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition">{p.title}</div>
                   <p className="text-xs text-slate-400 line-clamp-1">"{p.text}"</p>
                 </div>
-                <span className="text-[10px] font-mono font-bold bg-slate-900 group-hover:bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded border border-slate-800 shrink-0">
+                <span className="text-[10px] font-mono font-bold bg-slate-900 group-hover:bg-cyan-500/20 text-cyan-300 px-2.5 py-1 rounded-full border border-slate-800 shrink-0">
                   {p.badge}
                 </span>
               </button>
@@ -253,16 +257,13 @@ export default function MissionForm() {
         <button
           type="submit"
           disabled={loading || !goal.trim()}
-          className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-40 text-slate-950 font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-cyan-500/20 active:scale-[0.99] flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
+          className="w-full bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 disabled:opacity-40 text-slate-950 font-extrabold py-3.5 px-6 rounded-2xl transition-all shadow-xl shadow-cyan-500/20 active:scale-[0.99] flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
         >
           {loading ? (
-            <>
-              <svg className="animate-spin h-5 w-5 text-slate-950" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
+            <div className="flex items-center gap-2">
+              <LoaderGrid />
               <span>Extracting Mandate via Gemini...</span>
-            </>
+            </div>
           ) : (
             <>
               <span>Extract Mandate & Proceed to Review</span>
