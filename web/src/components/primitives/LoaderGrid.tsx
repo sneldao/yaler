@@ -11,7 +11,7 @@ export function LoaderGrid({ round = false }: { round?: boolean }) {
       {CHEVRON.map((delay, index) => (
         <span
           key={index}
-          className={`size-[4px] bg-cyan-400 ${round ? 'rounded-full' : 'rounded-[1px]'}`}
+          className={`size-[4px] bg-mandate ${round ? 'rounded-full' : 'rounded-[1px]'}`}
           style={{
             opacity: 0.2,
             animation: `pixel-on 650ms ease-in-out ${delay}ms infinite`,
@@ -38,11 +38,11 @@ export function LoadingStatus({ label, timer = true }: { label: string; timer?: 
   return (
     <div role="status" className="flex items-center gap-2.5">
       <LoaderGrid />
-      <span className="animate-shimmer-text text-xs font-medium font-mono">
+      <span className="animate-shimmer-text text-xs font-medium">
         {label}
       </span>
       {timer && (
-        <span className="font-mono text-[11px] text-slate-500 tabular-nums">
+        <span className="text-[11px] text-ink-muted tabular-nums">
           {elapsed}
         </span>
       )}

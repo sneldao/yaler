@@ -1,7 +1,7 @@
 {
   "name": "Yaler",
   "short_name": "Yaler",
-  "description": "An agent-native mission network for independent businesses.",
+  "description": "Tell us what’s broken. We find a local engineer and send a receipt when it’s done.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F4EFE6",

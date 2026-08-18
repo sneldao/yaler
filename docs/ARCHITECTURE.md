@@ -49,14 +49,16 @@ Astro is used for:
 
 Interactive islands are used only where needed:
 
-- `MissionForm` — create a mission from natural language
-- `MandateEditor` — review and confirm the generated mandate
-- `OfferComparison` — compare ranked supplier offers
-- `MissionTimeline` — live view of mission progress and events
-- `ExceptionPanel` — handle escalations and approve actions
-- `EvidenceUpload` — supplier evidence submission (mobile-friendly)
+- `MissionForm` — speak or type what’s broken; creates the mission
+- `DemoTourController` — one-click sample job for judges
+- `MandateEditor` — check budget and area, then start looking (no page reload)
+- `OfferComparison` — ranked quotes; confirm books the engineer
+- `MissionTimeline` — goal, plain-English status, next action; traces are opt-in
+- `EvidenceForm` — engineer photo and note (`/evidence/[id]`)
 
-Astro should not become a React application hidden inside a framework. Keep public pages server-rendered and isolate stateful interactions.
+Shared operator copy lives in `web/src/lib/copy.ts`. The visual system is paper/ink/mandate (`docs/BRAND.md`), not a dark agent console.
+
+Astro should not become a React application hidden inside a framework. Keep public pages server-rendered and isolate stateful interactions. Route changes use Astro `navigate()` so view transitions run; do not `window.location.reload()` after mandate confirm.
 
 ## Backend
 

@@ -12,7 +12,7 @@ export function getStaticPaths() {
 const { id } = Astro.params;
 ---
 
-<Layout title={`Evidence Submission ${id} — Yaler`}>
+<Layout title={`Send photos — Yaler`}>
   <div class="py-6">
     {id && <EvidenceForm client:load missionId={id} />}
   </div>

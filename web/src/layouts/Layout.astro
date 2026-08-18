@@ -9,13 +9,13 @@ interface Props {
 }
 
 const {
-  title = 'Yaler — Agent-Native Mission Network',
-  description = 'Autonomous operational mission execution for London independent businesses. Gemini proposes, Go decides.'
+  title = 'Yaler — Get the job done',
+  description = 'Tell us what’s broken. We find a local engineer, stay inside your budget, and give you a receipt when it’s done.'
 } = Astro.props;
 ---
 
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -25,78 +25,44 @@ const {
     <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#12212B" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content="/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet" />
     <ViewTransitions />
   </head>
-  <body class="font-['Plus_Jakarta_Sans',sans-serif] bg-[#03060c] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500/30 selection:text-cyan-200 relative">
-    <!-- Living Aurora & Cursor Spotlight Backdrop -->
-    <SpotlightBackdrop client:load />
+  <body class="font-sans bg-paper text-ink min-h-screen flex flex-col antialiased selection:bg-mandate/20 selection:text-ink relative">
+    <SpotlightBackdrop />
 
-    <!-- Navigation Header -->
-    <header class="border-b border-white/[0.08] bg-[#03060c]/80 backdrop-blur-xl sticky top-0 z-50 transition-all">
-      <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <a href="/" class="flex items-center gap-3 group">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-300 font-extrabold text-sm group-hover:scale-105 group-hover:border-cyan-400 transition-all shadow-lg shadow-cyan-500/10">
-            Y
-          </div>
-          <div class="flex flex-col">
-            <span class="font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
-              YALER
-              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-bold">v1.0</span>
-            </span>
-            <span class="text-[10px] font-mono text-slate-400 -mt-1 tracking-wider uppercase">Mission Network</span>
+    <header class="border-b border-ink/10 bg-paper/90 sticky top-0 z-50" transition:persist>
+      <div class="max-w-3xl mx-auto px-5 h-16 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2.5 group">
+          <img src="/favicon.svg" alt="" width="32" height="32" class="w-8 h-8 rounded-lg" />
+          <div class="flex flex-col leading-none">
+            <span class="font-display text-[1.35rem] tracking-[0.14em] text-ink">YALER</span>
+            <span class="text-[10px] uppercase tracking-[0.16em] text-ink-muted mt-0.5">Get the job done</span>
           </div>
         </a>
 
-        <nav class="flex items-center gap-6 text-sm font-medium">
-          <a href="/missions/new" class="text-slate-300 hover:text-white transition flex items-center gap-1.5">
-            <span class="text-cyan-400">✦</span> New Mission
-          </a>
-          <a href="/suppliers" class="text-slate-300 hover:text-white transition">
-            Suppliers
-          </a>
-          <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-white/[0.08] text-xs font-mono text-slate-400">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Gateway Ready</span>
-          </div>
-          <a
-            href="https://github.com/sneldao/yaler"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="bg-white/[0.05] hover:bg-white/[0.1] text-slate-100 border border-white/10 font-medium px-3.5 py-1.5 rounded-xl transition text-xs flex items-center gap-1.5"
-          >
-            <svg class="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            GitHub
-          </a>
+        <nav class="flex items-center gap-4 text-sm">
+          <a href="/missions/new" class="text-ink hover:text-mandate transition-colors">New job</a>
+          <a href="/suppliers" class="text-ink-muted hover:text-ink transition-colors">Engineers</a>
         </nav>
       </div>
     </header>
 
-    <!-- Main Content Container -->
-    <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8 relative z-10">
+    <main class="flex-1 max-w-3xl w-full mx-auto px-5 py-8 relative z-10" transition:animate="fade">
       <slot />
     </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-white/[0.08] bg-[#03060c] py-8 text-xs text-slate-500 relative z-10">
-      <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold text-xs">
-            Y
-          </div>
-          <p>© 2026 Yaler Mission Network. Built for Ready, Spec, Ship Kiro Hackathon.</p>
-        </div>
-        <div class="flex items-center gap-4 font-mono text-[11px] text-slate-400">
-          <span class="text-emerald-400">Gemini Proposes</span>
-          <span class="text-slate-600">•</span>
-          <span class="text-cyan-400">Go Decides</span>
-        </div>
+    <footer class="border-t border-ink/10 py-6 text-xs text-ink-muted relative z-10">
+      <div class="max-w-3xl mx-auto px-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <p>© 2026 Yaler. Built for independent kitchens.</p>
+        <p class="text-ink-muted/80">Delegate the outcome. Keep the mandate.</p>
       </div>
     </footer>
   </body>

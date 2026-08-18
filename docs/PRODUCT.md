@@ -142,3 +142,4 @@ Yaler is an **outcome-execution network** for fragmented, real-world capacity. I
 5. **Supply dignity.** The system should help providers win better-scoped work, not merely squeeze prices.
 6. **Human exceptions.** Humans handle safety, disputes, ambiguity, and policy changes.
 7. **Open protocol, focused product.** Use interoperable agent messages, but own one concrete workflow.
+8. **Kitchen English in the operator UI.** The product may be a mission network internally. The person with the broken fridge sees a job, a budget, an engineer, and a receipt. Protocol and model names belong in docs, not on buttons.

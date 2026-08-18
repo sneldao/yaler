@@ -1,4 +1,4 @@
-# Yaler — Agent-Native Mission Network for Independent Businesses
+# Yaler — Get the fridge fixed
 
 > **Build Club Hack Night Submission** | Hosted by Build Club with Gemini / Google DeepMind & Exa  
 > **Submission Challenge Page:** [campus.buildclub.ai/challenges/01a00e7b-19e4-7dff-b891-bdef9784ee8a](https://campus.buildclub.ai/challenges/01a00e7b-19e4-7dff-b891-bdef9784ee8a)
@@ -25,11 +25,13 @@ Independent London cafés, restaurants, and food operators lose **£1,000s per d
 
 ## 💡 The Solution
 
-**Yaler** deploys autonomous buyer and supplier agents to resolve kitchen uptime emergencies end-to-end:
+**Yaler** lets a kitchen manager say what’s broken once. A buyer agent finds, books, and checks a local engineer inside the stated budget, then issues a shareable receipt.
+
+The operator UI is a paper receipt, not a chatbot: kitchen English, one form, traces hidden until asked.
 
 ```text
-Voice / Text Callout → Mandate Extraction → A2A Supplier Discovery → Policy Check & Commit
-                     → Photo Evidence Verification → Zero-Knowledge Proof Receipt
+Speak or type → Check the details → Ask nearby engineers → Book inside the rules
+              → Photos checked → Receipt
 ```
 
 *Gemini interprets intent and evaluates evidence; deterministic Go code enforces budgets, safety, and auditability. Gemini proposes; Go decides.*
@@ -68,7 +70,7 @@ cd yaler
 docker-compose up --build
 ```
 
-Open `http://localhost:4321` to interact with the mission network.
+Open `http://localhost:4321` and say what’s broken — or tap **Try a 60-second sample**.
 
 ---
 

@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { type Offer, getOffers } from '../../lib/api';
-import DiffTable, { type DiffRowData } from '../primitives/DiffTable';
-import ApprovalCard, { type QuestionStep } from '../primitives/ApprovalCard';
-import OfferStack from '../primitives/OfferStack';
+import { type Offer, approveException, getOffers } from '../../lib/api';
+import { formatMoney, supplierLabel } from '../../lib/copy';
 
 interface Props {
   missionId: string;
@@ -10,120 +8,130 @@ interface Props {
 
 export default function OfferComparison({ missionId }: Props) {
   const [offers, setOffers] = useState<Offer[]>([]);
-  const [viewMode, setViewMode] = useState<'stack' | 'matrix'>('stack');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showCompare, setShowCompare] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    getOffers(missionId).then(setOffers).catch(console.error);
+    getOffers(missionId)
+      .then((next) => {
+        setOffers(next);
+        if (next[0]) setSelectedId(next[0].id);
+      })
+      .catch(console.error);
   }, [missionId]);
 
   if (offers.length === 0) {
     return (
-      <div className="glass-panel rounded-3xl p-8 text-center space-y-3">
-        <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 flex items-center justify-center mx-auto text-lg font-bold">
-          📡
-        </div>
-        <h3 className="text-base font-bold text-white tracking-tight">Sourcing & Slicing Supplier Offers</h3>
-        <p className="text-xs text-slate-400 max-w-md mx-auto font-mono">
-          Yaler buyer agent is requesting structured offers from matching London service providers in real time...
+      <div className="paper-card rounded-2xl p-6 text-center space-y-2">
+        <h3 className="font-display text-xl text-ink">Asking nearby engineers</h3>
+        <p className="text-sm text-ink-muted max-w-md mx-auto">
+          We’ll bring back quotes as they come in. You don’t need to stay on this page.
         </p>
       </div>
     );
   }
 
-  // Convert offers to DiffTable rows
-  const diffRows: DiffRowData[] = offers.map((off, idx) => ({
-    id: off.id,
-    name: off.supplierAgentId,
-    category: off.availability,
-    price: `£${off.price.toFixed(2)}`,
-    status: idx === 0 ? 'recommended' : off.status === 'COUNTERED' ? 'countered' : 'negotiating',
-    delta: idx === 0 ? '-£50 vs budget' : undefined,
-    isAddition: idx === 0,
-  }));
+  const selected = offers.find((offer) => offer.id === selectedId) || offers[0];
 
-  // Approval card questions
-  const approvalQuestions: QuestionStep[] = [
-    {
-      id: 'commit_target',
-      question: 'Which supplier offer should Yaler commit to?',
-      subtitle: 'Top match complies with policy constraints (Budget <= £500)',
-      options: offers.map((o) => `${o.supplierAgentId} — £${o.price.toFixed(2)} (${o.availability})`),
-    },
-    {
-      id: 'payment_terms',
-      question: 'Confirm Escrow Release Terms',
-      subtitle: 'Funds released automatically upon proof receipt verification',
-      options: ['Instant auto-release upon photo proof', 'Require manual buyer review within 2 hours'],
-    },
-  ];
+  const handleConfirm = async () => {
+    if (!selected) return;
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      await approveException(missionId, 'APPROVE', selected.id);
+      setMessage(`Booked ${supplierLabel(selected.supplierAgentId)} for ${formatMoney(selected.price, selected.currency)}.`);
+    } catch (err: any) {
+      setMessage(err.message || 'Could not confirm that engineer.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* View Switcher Toggle */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 font-mono text-xs text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span>Supplier Offers & Gemini AI Ranking</span>
-        </div>
-
-        <div className="flex items-center p-1 rounded-2xl bg-slate-950 border border-white/[0.08] font-mono text-xs">
-          <button
-            type="button"
-            onClick={() => setViewMode('stack')}
-            className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-              viewMode === 'stack'
-                ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            🎴 3D Offer Stack
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('matrix')}
-            className={`px-3 py-1.5 rounded-xl transition cursor-pointer ${
-              viewMode === 'matrix'
-                ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            📊 Diff Matrix
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Offer View (3D Card Stack or Diff Matrix) */}
-        <div className="lg:col-span-2">
-          {viewMode === 'stack' ? (
-            <OfferStack
-              offers={offers}
-              onSelectOffer={(off) => {
-                console.log('Committed offer via 3D stack:', off);
-              }}
-            />
-          ) : (
-            <DiffTable
-              rows={diffRows}
-              title={`Supplier Offers Matrix (${offers.length} Received)`}
-              onApply={(selectedIds) => {
-                console.log('Selected offer IDs applied:', selectedIds);
-              }}
-            />
-          )}
-        </div>
-
-        {/* Human Authorization Approval Card */}
+    <div className="space-y-4">
+      <div className="flex items-end justify-between gap-3">
         <div>
-          <ApprovalCard
-            title="Human Authorization"
-            questions={approvalQuestions}
-            onSubmitted={(answers) => {
-              console.log('Approval card submitted:', answers);
-            }}
-          />
+          <h3 className="font-display text-2xl text-ink">Quotes</h3>
+          <p className="text-sm text-ink-muted">{offers.length} in. Best match is first.</p>
         </div>
+        <button
+          type="button"
+          onClick={() => setShowCompare((open) => !open)}
+          className="text-sm text-ink-muted hover:text-ink transition-colors"
+        >
+          {showCompare ? 'Hide comparison' : 'Compare all'}
+        </button>
       </div>
+
+      <div className="space-y-2">
+        {offers.map((offer, idx) => {
+          const isSelected = offer.id === selected.id;
+          return (
+            <button
+              key={offer.id}
+              type="button"
+              onClick={() => setSelectedId(offer.id)}
+              className={`w-full text-left paper-card rounded-2xl p-4 transition-colors ${
+                isSelected ? 'border-mandate' : 'hover:border-ink/20'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  {idx === 0 && (
+                    <p className="text-[11px] uppercase tracking-wider text-mandate mb-1">Best match</p>
+                  )}
+                  <p className="font-medium text-ink">{supplierLabel(offer.supplierAgentId)}</p>
+                  <p className="text-xs text-ink-muted mt-0.5">{offer.availability}</p>
+                </div>
+                <p className="font-display text-2xl text-ink">{formatMoney(offer.price, offer.currency)}</p>
+              </div>
+              {isSelected && offer.terms && (
+                <p className="text-sm text-ink-muted mt-3 border-t border-ink/10 pt-3">{offer.terms}</p>
+              )}
+              {isSelected && offer.explanation && (
+                <p className="text-xs text-ink-muted mt-2">{offer.explanation}</p>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {showCompare && (
+        <div className="overflow-x-auto paper-card rounded-2xl animate-pop-in">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="text-xs uppercase tracking-wider text-ink-muted border-b border-ink/10">
+                <th className="p-3 font-medium">Engineer</th>
+                <th className="p-3 font-medium">When</th>
+                <th className="p-3 font-medium">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {offers.map((offer) => (
+                <tr key={offer.id} className="border-b border-ink/5 last:border-0">
+                  <td className="p-3 text-ink">{supplierLabel(offer.supplierAgentId)}</td>
+                  <td className="p-3 text-ink-muted">{offer.availability}</td>
+                  <td className="p-3 font-medium">{formatMoney(offer.price, offer.currency)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="paper-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-ink">Book {supplierLabel(selected.supplierAgentId)}?</p>
+          <p className="text-xs text-ink-muted">{formatMoney(selected.price, selected.currency)} · {selected.availability}</p>
+        </div>
+        <button type="button" onClick={handleConfirm} disabled={submitting} className="btn-primary text-sm py-2.5">
+          {submitting ? 'Booking…' : 'Yes, book them'}
+        </button>
+      </div>
+
+      {message && <p className="text-sm text-ink-muted animate-pop-in">{message}</p>}
     </div>
   );
 }

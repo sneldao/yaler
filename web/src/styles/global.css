@@ -4,129 +4,162 @@
 
 @layer base {
   :root {
-    --ink: #f8fafc;
-    --ink-2: #94a3b8;
-    --ink-3: #64748b;
-    --surface: #070b14;
-    --surface-hover: #0f1626;
-    --line: rgba(255, 255, 255, 0.08);
-    --line-strong: rgba(255, 255, 255, 0.16);
-    --accent: #06b6d4;
-    --accent-glow: rgba(6, 182, 212, 0.25);
+    --ink: #12212b;
+    --ink-muted: #5c5348;
+    --paper: #f4efe6;
+    --paper-raised: #fffaf3;
+    --paper-inset: #e8e1d4;
+    --mandate: #2a6f6a;
+    --escalate: #c45c26;
+    --line: rgba(18, 33, 43, 0.12);
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  html {
+    background: var(--paper);
   }
 
   body {
-    @apply bg-[#03060c] text-slate-100 antialiased min-h-screen selection:bg-cyan-500 selection:text-slate-950 relative overflow-x-hidden;
+    @apply bg-paper text-ink antialiased min-h-screen selection:bg-mandate/20 selection:text-ink relative overflow-x-hidden;
+  }
+
+  h1,
+  h2,
+  .font-display {
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
   }
 }
 
-/* 🌌 Ambient Living Aurora Keyframes */
-@keyframes aurora-drift-1 {
-  0%, 100% { transform: translate(0%, 0%) scale(1) rotate(0deg); opacity: 0.8; }
-  50% { transform: translate(12%, 8%) scale(1.15) rotate(180deg); opacity: 1; }
+@keyframes pop-in {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes aurora-drift-2 {
-  0%, 100% { transform: translate(0%, 0%) scale(1) rotate(0deg); opacity: 0.6; }
-  50% { transform: translate(-10%, -12%) scale(1.2) rotate(-180deg); opacity: 0.9; }
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; filter: blur(90px); }
-  50% { opacity: 0.75; filter: blur(110px); }
-}
-
-/* Shimmer & Motion Utilities */
 @keyframes shimmer-text {
   0% { background-position: 100% 0; }
   100% { background-position: -100% 0; }
 }
 
 @keyframes pixel-on {
-  0%, 100% { opacity: 0.15; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.15); }
-}
-
-@keyframes pop-in {
-  0% { opacity: 0; transform: scale(0.96) translateY(4px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-@keyframes fade-up {
-  0% { opacity: 0; transform: translateY(8px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-.animate-shimmer-text {
-  background: linear-gradient(90deg, #64748b 30%, #f8fafc 50%, #64748b 70%);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: shimmer-text 1.6s linear infinite;
+  0%, 100% { opacity: 0.2; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1); }
 }
 
 .animate-pop-in {
-  animation: pop-in 260ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: pop-in 220ms var(--ease) both;
 }
 
 .animate-fade-up {
-  animation: fade-up 320ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: fade-up 220ms var(--ease) both;
 }
 
-/* 🎨 Living Backdrop Utilities */
-.aurora-blob-1 {
-  animation: aurora-drift-1 22s ease-in-out infinite, pulse-glow 8s ease-in-out infinite;
-  will-change: transform, opacity;
+.animate-shimmer-text {
+  background: linear-gradient(90deg, #5c5348 30%, #12212b 50%, #5c5348 70%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-text 1.8s linear infinite;
 }
 
-.aurora-blob-2 {
-  animation: aurora-drift-2 28s ease-in-out infinite, pulse-glow 10s ease-in-out infinite;
-  will-change: transform, opacity;
+.paper-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
 }
 
-.noise-texture {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+.paper-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 10px 28px -18px rgba(18, 33, 43, 0.28);
 }
 
-.grid-mesh {
-  background-size: 36px 36px;
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 85%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 85%);
+.paper-card-hover {
+  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease), transform 200ms var(--ease);
 }
 
-/* Custom Scrollbars */
+.paper-card-hover:hover {
+  border-color: rgba(42, 111, 106, 0.35);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 14px 32px -18px rgba(18, 33, 43, 0.28);
+}
+
+/* Keep old class names as aliases so leftover markup still reads as paper. */
+.glass-panel {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 10px 28px -18px rgba(18, 33, 43, 0.28);
+}
+
+.glass-panel-hover {
+  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+
+.glass-panel-hover:hover {
+  border-color: rgba(42, 111, 106, 0.35);
+}
+
+.receipt-sheet {
+  background: var(--paper);
+  border: 1px solid rgba(18, 33, 43, 0.14);
+  box-shadow: 0 18px 40px -24px rgba(18, 33, 43, 0.35);
+}
+
+.receipt-punch {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px rgba(18, 33, 43, 0.16);
+}
+
+.receipt-perf {
+  height: 10px;
+  background-image: radial-gradient(circle, var(--paper) 3px, transparent 3.5px);
+  background-size: 14px 10px;
+  background-repeat: repeat-x;
+  background-color: var(--paper-inset);
+}
+
+.field-input {
+  @apply w-full bg-paper border border-ink/15 focus:border-mandate rounded-xl p-3.5 text-ink placeholder:text-ink-muted/70 focus:outline-none transition-colors duration-200;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 bg-mandate hover:bg-mandate/90 text-paper font-semibold rounded-xl px-4 py-3 transition-colors duration-200 disabled:opacity-40;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 bg-paper-raised hover:bg-paper-inset text-ink border border-ink/10 font-medium rounded-xl px-4 py-2.5 transition-colors duration-200;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
-  background: rgba(7, 11, 20, 0.5);
+  background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(18, 33, 43, 0.18);
   border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
 
-/* Glass & Surface Utility Classes */
-.glass-panel {
-  background: rgba(8, 13, 22, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
-}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 
-.glass-panel-hover {
-  transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-.glass-panel-hover:hover {
-  border-color: rgba(255, 255, 255, 0.16);
-  background: rgba(15, 22, 38, 0.85);
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.7), 0 0 24px rgba(6, 182, 212, 0.1);
+  .animate-shimmer-text {
+    -webkit-text-fill-color: currentColor;
+    background: none;
+  }
 }

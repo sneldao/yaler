@@ -3,6 +3,8 @@ import { type Event, type Mission, getEvents, getMission } from '../../lib/api';
 import ThinkingTrace, { type TraceRow } from '../primitives/ThinkingTrace';
 import { LoadingStatus } from '../primitives/LoaderGrid';
 import ToolChips, { type ToolChipCall } from '../primitives/ToolChips';
+import StatusBadge from '../primitives/StatusBadge';
+import { eventLabel, formatMoney, nextActionLabel } from '../../lib/copy';
 
 interface Props {
   missionId: string;
@@ -11,6 +13,7 @@ interface Props {
 export default function MissionTimeline({ missionId }: Props) {
   const [mission, setMission] = useState<Mission | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
+  const [showWork, setShowWork] = useState(false);
 
   const fetchLatest = async () => {
     try {
@@ -29,13 +32,13 @@ export default function MissionTimeline({ missionId }: Props) {
   }, [missionId]);
 
   const stages = [
-    { label: 'Mandate', status: ['DRAFT', 'MANDATE_CONFIRMED'] },
-    { label: 'Sourcing', status: ['SOURCING'] },
-    { label: 'Offers', status: ['OFFERS_RECEIVED', 'NEGOTIATING'] },
-    { label: 'Committed', status: ['COMMITTED', 'AWAITING_APPROVAL'] },
-    { label: 'In Progress', status: ['IN_PROGRESS', 'EVIDENCE_PENDING'] },
-    { label: 'Verifying', status: ['VERIFYING'] },
-    { label: 'Completed', status: ['COMPLETED'] },
+    { label: 'Details', status: ['DRAFT', 'MANDATE_CONFIRMED'] },
+    { label: 'Looking', status: ['SOURCING'] },
+    { label: 'Quotes', status: ['OFFERS_RECEIVED', 'NEGOTIATING'] },
+    { label: 'Booked', status: ['COMMITTED', 'AWAITING_APPROVAL'] },
+    { label: 'On site', status: ['IN_PROGRESS', 'EVIDENCE_PENDING'] },
+    { label: 'Checking', status: ['VERIFYING'] },
+    { label: 'Done', status: ['COMPLETED'] },
   ];
 
   const getStageIndex = (status?: string) => {
@@ -49,25 +52,23 @@ export default function MissionTimeline({ missionId }: Props) {
   const activeStageIdx = getStageIndex(mission?.status);
   const isWorking = mission?.status !== 'COMPLETED' && mission?.status !== 'DRAFT';
 
-  // Map events to ThinkingTrace rows
   const traceRows: TraceRow[] = events.map((evt) => ({
-    primary: evt.type,
-    secondary: new Date(evt.createdAt).toLocaleTimeString(),
+    primary: eventLabel(evt.type),
+    secondary: new Date(evt.createdAt).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' }),
     policyResult: evt.policyResult as 'ALLOW' | 'ESCALATE' | 'DENY',
     actor: evt.actor,
-    mono: true,
+    mono: false,
   }));
 
-  // Map events to ToolChips calls
   const toolCalls: ToolChipCall[] = events.map((evt) => {
     const isAllow = evt.policyResult === 'ALLOW';
     return {
       icon: evt.type.includes('COMMITTED') ? 'a2a' : evt.type.includes('POLICY') ? 'policy' : 'run',
-      label: evt.type.replace(/_/g, ' '),
+      label: eventLabel(evt.type),
       chip: evt.actor,
       detailLines: [
-        `Policy Check: ${evt.policyResult}`,
-        `Payload: ${typeof evt.payload === 'object' ? JSON.stringify(evt.payload) : String(evt.payload)}`,
+        `Rule check: ${evt.policyResult}`,
+        `Note: ${typeof evt.payload === 'object' ? JSON.stringify(evt.payload) : String(evt.payload)}`,
       ],
       diffAdd: isAllow ? 1 : 0,
       diffDel: isAllow ? 0 : 1,
@@ -75,66 +76,54 @@ export default function MissionTimeline({ missionId }: Props) {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {mission && (
-        <div className="glass-panel glass-panel-hover rounded-3xl p-6 sm:p-8 space-y-6">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
-            <div>
-              <div className="flex items-center gap-2.5">
-                <span className={`text-xs font-bold font-mono px-3 py-1 rounded-full border ${
-                  mission.status === 'COMPLETED' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' :
-                  mission.status === 'COMMITTED' || mission.status === 'IN_PROGRESS' ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' :
-                  mission.status === 'AWAITING_APPROVAL' || mission.status === 'ESCALATED' ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' :
-                  'bg-slate-800 text-slate-300 border-slate-700'
-                }`}>
-                  {mission.status}
-                </span>
-                <span className="text-xs font-mono text-slate-500">ID: {mission.id}</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-2 tracking-tight">{mission.goal}</h1>
+        <div className="paper-card rounded-2xl p-5 sm:p-7 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="space-y-2">
+              <StatusBadge status={mission.status} />
+              <h1 className="font-display text-3xl text-ink tracking-tight leading-tight">{mission.goal}</h1>
+              <p className="text-sm text-ink-muted">{nextActionLabel(mission.status)}</p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               {mission.status === 'COMPLETED' && (
-                <a
-                  href={`/missions/${mission.id}/receipt`}
-                  className="bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/20 text-xs sm:text-sm flex items-center gap-2 cursor-pointer"
-                >
-                  <span>View Proof Receipt 📄</span>
+                <a href={`/missions/${mission.id}/receipt`} className="btn-primary text-sm py-2.5">
+                  Get the receipt
                 </a>
               )}
-              <a
-                href={`/evidence/${mission.id}`}
-                className="bg-white/[0.05] hover:bg-white/[0.1] text-slate-200 font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition text-xs sm:text-sm flex items-center gap-2 cursor-pointer"
-              >
-                <span>Supplier Evidence Portal 📷</span>
-              </a>
+              {(mission.status === 'IN_PROGRESS' || mission.status === 'EVIDENCE_PENDING') && (
+                <a href={`/evidence/${mission.id}`} className="btn-secondary text-sm py-2.5">
+                  Send photos
+                </a>
+              )}
             </div>
           </div>
 
-          {/* Stepper Progress Bar */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-[11px] font-mono font-bold uppercase text-slate-400 overflow-x-auto pb-1">
+          <p className="text-sm text-ink-muted">
+            Up to {formatMoney(mission.mandate.budget.maxAmount)} · {mission.mandate.serviceArea.postalDistrict}
+          </p>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-ink-muted overflow-x-auto pb-1">
               {stages.map((st, idx) => {
                 const isPassed = idx <= activeStageIdx;
                 const isCurrent = idx === activeStageIdx;
                 return (
-                  <div key={idx} className="flex items-center gap-1.5 shrink-0 px-1">
-                    <span className={`w-2 h-2 rounded-full ${
-                      isCurrent ? 'bg-cyan-400 animate-ping ring-4 ring-cyan-500/20' :
-                      isPassed ? 'bg-emerald-400' : 'bg-slate-800'
+                  <div key={st.label} className="flex items-center gap-1.5 shrink-0 px-1">
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      isCurrent ? 'bg-mandate' : isPassed ? 'bg-mandate/50' : 'bg-ink/15'
                     }`} />
-                    <span className={isCurrent ? 'text-cyan-300 font-bold' : isPassed ? 'text-slate-300' : 'text-slate-600'}>
+                    <span className={isCurrent ? 'text-ink font-medium' : isPassed ? 'text-ink-muted' : 'text-ink/30'}>
                       {st.label}
                     </span>
                   </div>
                 );
               })}
             </div>
-            <div className="w-full bg-slate-950/80 h-1.5 rounded-full overflow-hidden border border-white/[0.06]">
+            <div className="w-full bg-paper-inset h-1 rounded-full overflow-hidden">
               <div
-                className="bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 h-full transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]"
+                className="bg-mandate h-full transition-[width] duration-500 ease-yaler"
                 style={{ width: `${Math.min(100, ((activeStageIdx + 1) / stages.length) * 100)}%` }}
               />
             </div>
@@ -142,38 +131,36 @@ export default function MissionTimeline({ missionId }: Props) {
         </div>
       )}
 
-      {/* Agentic Trace & Tool Calls Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Thinking Trace */}
-        <div className="glass-panel rounded-3xl p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
-            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2 font-mono">
-              <span>Agentic Thinking Trace</span>
-            </h3>
-            {isWorking && <LoadingStatus label="Auditing Policy" />}
+      <button
+        type="button"
+        onClick={() => setShowWork((open) => !open)}
+        className="text-sm text-ink-muted hover:text-ink transition-colors"
+      >
+        {showWork ? 'Hide what we’re doing' : 'Show what we’re doing'}
+      </button>
+
+      {showWork && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-pop-in">
+          <div className="paper-card rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-ink">What’s happening</h3>
+              {isWorking && <LoadingStatus label="Working" />}
+            </div>
+            <ThinkingTrace
+              activeTitle="Working through the job"
+              doneTitle={`${traceRows.length} updates`}
+              working={isWorking}
+              rows={traceRows}
+              defaultExpanded={false}
+            />
           </div>
 
-          <ThinkingTrace
-            activeTitle="Executing Autonomous Agent Loop"
-            doneTitle={`Audit Trace (${traceRows.length} Policy Checks Completed)`}
-            working={isWorking}
-            rows={traceRows}
-            defaultExpanded={true}
-          />
-        </div>
-
-        {/* Tool Chips Trace */}
-        <div className="glass-panel rounded-3xl p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
-            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2 font-mono">
-              <span>Tool Call Inspections</span>
-            </h3>
-            <span className="text-[11px] font-mono text-slate-500">A2A Protocol</span>
+          <div className="paper-card rounded-2xl p-5 space-y-3">
+            <h3 className="text-sm font-medium text-ink">Checks we ran</h3>
+            <ToolChips calls={toolCalls} />
           </div>
-
-          <ToolChips calls={toolCalls} />
         </div>
-      </div>
+      )}
     </div>
   );
 }

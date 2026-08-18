@@ -56,12 +56,26 @@ HTML head (Astro layout, later):
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <meta name="theme-color" content="#12212B">
-<meta name="description" content="Yaler is an agent-native mission network for independent businesses.">
+<meta name="description" content="Tell us what’s broken. We find a local engineer, stay inside your budget, and give you a receipt when it’s done.">
 <meta property="og:title" content="Yaler">
 <meta property="og:description" content="Delegate the outcome. Keep the mandate.">
 <meta property="og:image" content="/og.png">
 <meta name="twitter:card" content="summary_large_image">
 ```
+
+## Shipped UI
+
+The Astro app must look like this document, not like an agent dashboard.
+
+- **Page:** paper (`#F4EFE6`). Cards are raised paper, not glass.
+- **Type:** Source Serif 4 for titles and the wordmark; system sans for forms and captions.
+- **Mark:** `web/public/favicon.svg` (the two-stroke receipt punch). Do not replace it with a letter tile.
+- **Accent:** mandate teal for success and primary actions; escalation rust only for things that need a human.
+- **Operator copy:** kitchen English. Statuses are “Asking nearby engineers”, “Needs you”, “Done” — never raw enums. Model, protocol, and runtime names stay off buttons and headers.
+- **Disclosure:** home is one sentence and one form. Radar, sample receipt, traces, autonomy modes, and checklists are opt-in.
+- **Motion:** Astro view transitions and in-app `navigate()`. No aurora, no pointer-tracking backdrop, no page reload after mandate confirm. Honor `prefers-reduced-motion`.
+
+Copy helpers live in `web/src/lib/copy.ts`. Tokens live in `web/src/styles/global.css` and `web/tailwind.config.mjs`.
 
 ## Regeneration
 

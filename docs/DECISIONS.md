@@ -134,6 +134,12 @@
 
 **Reason:** Secret leaks and sloppy formatting are cheaper to stop now than after the first public clone. Brand files belong in the repo before the Astro scaffold so the web app copies them rather than inventing a second mark.
 
+### D023 — Operator UI follows the brand, not the stack
+
+**Decision:** The shipped web UI is paper, ink, and mandate teal. Copy is kitchen English. Progressive disclosure is the default: traces, autonomy modes, radar, and sample receipts stay closed until asked. Navigation uses Astro view transitions and in-app state, not hard reloads.
+
+**Reason:** The first user is a café manager with a dead fridge, not a hackathon judge. `docs/BRAND.md` already forbids neon agent-marketplace chrome. Selling the outcome in the UI is the same wedge as D003.
+
 ---
 
 ## Open questions

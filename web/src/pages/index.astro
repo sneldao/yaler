@@ -14,111 +14,95 @@ try {
   missions = [];
 }
 if (!Array.isArray(missions)) missions = [];
+
+const STATUS_LABELS = {
+  DRAFT: 'Check the details',
+  MANDATE_CONFIRMED: 'Ready',
+  SOURCING: 'Asking nearby engineers',
+  OFFERS_RECEIVED: 'Quotes in',
+  NEGOTIATING: 'Comparing quotes',
+  COMMITTED: 'Booked',
+  AWAITING_APPROVAL: 'Needs you',
+  IN_PROGRESS: 'In progress',
+  EVIDENCE_PENDING: 'Waiting on photos',
+  VERIFYING: 'Checking the photos',
+  COMPLETED: 'Done',
+  ESCALATED: 'Needs you',
+};
+
+function labelStatus(status) {
+  return STATUS_LABELS[status] || status;
+}
 ---
 
-<Layout title="Yaler — Agent-Native Mission Network">
-  <div class="space-y-12">
-    <!-- Hero Section -->
-    <div class="text-center space-y-5 max-w-3xl mx-auto pt-4 pb-2">
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold shadow-inner">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span>Agent-Native Mission Network for Independent Businesses</span>
-      </div>
-
-      <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.1]">
-        Autonomous kitchen uptime & operational missions.
+<Layout title="Yaler — Get the fridge fixed">
+  <div class="space-y-10">
+    <div class="space-y-4 pt-2">
+      <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">For London kitchens</p>
+      <h1 class="font-display text-4xl sm:text-5xl text-ink tracking-tight leading-[1.12]">
+        Fridge down. Say it once. We’ll handle the rest.
       </h1>
-
-      <p class="text-slate-300 text-base sm:text-lg leading-relaxed font-normal">
-        A buyer's agent finds, negotiates with, and supervises local service providers until real-world jobs are completed or safely escalated.
+      <p class="text-ink-muted text-base sm:text-lg leading-relaxed max-w-xl">
+        Tell us what’s broken, your budget, and your postcode. We find a local engineer, stay inside your rules, and send a receipt when the job is done.
       </p>
-
-      <!-- 60s Guided Demo Tour Controller -->
-      <div class="pt-2">
-        <DemoTourController client:load />
-      </div>
-
-      <!-- Key Agentic Value Pillars -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 text-left">
-        <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3.5 space-y-1">
-          <div class="text-xs font-bold text-cyan-400 font-mono">01. MANDATE EXTRACTION</div>
-          <p class="text-xs text-slate-300">Gemini converts plain speech into structured policy mandates.</p>
-        </div>
-        <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3.5 space-y-1">
-          <div class="text-xs font-bold text-emerald-400 font-mono">02. POLICY-ENFORCED COMMIT</div>
-          <p class="text-xs text-slate-300">Go engine enforces budget ceilings, geography, and safety.</p>
-        </div>
-        <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3.5 space-y-1">
-          <div class="text-xs font-bold text-indigo-400 font-mono">03. AUDITABLE PROOF</div>
-          <p class="text-xs text-slate-300">Gemini verifies milestone evidence and generates proof receipts.</p>
-        </div>
-      </div>
+      <DemoTourController client:load />
     </div>
 
-    <!-- Mission Creation Form Island -->
     <MissionForm client:load />
 
-    <!-- A2A Tactical Discovery Radar Section -->
-    <div class="max-w-3xl mx-auto pt-4">
-      <TacticalRadar client:load activeDistrict="N1" />
-    </div>
-
-    <!-- Zero-Knowledge Verification Proof Vault Section -->
-    <div class="max-w-3xl mx-auto pt-4">
-      <ProofVaultShowcase client:load />
-    </div>
-
-    <!-- Active Missions Feed -->
     {Array.isArray(missions) && missions.length > 0 && (
-      <div class="space-y-4 max-w-3xl mx-auto pt-6">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h3 class="text-lg font-bold text-white flex items-center gap-2">
-            <span>Recent Operational Missions</span>
-            <span class="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 text-xs font-mono font-bold border border-cyan-500/20">
-              {missions.length}
-            </span>
-          </h3>
-          <span class="text-xs text-slate-400 font-mono">Live Firestore Feed</span>
+      <section class="space-y-3">
+        <div class="flex items-end justify-between gap-3">
+          <h2 class="font-display text-2xl text-ink">Recent jobs</h2>
+          <span class="text-xs text-ink-muted">{missions.length} on the books</span>
         </div>
-
-        <div class="space-y-3">
+        <div class="space-y-2">
           {missions.map((m) => (
             <a
               href={`/missions/${m.id}`}
-              class="group block bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-cyan-500/40 rounded-2xl p-5 transition-all shadow-lg hover:shadow-cyan-500/5"
+              class="paper-card paper-card-hover rounded-2xl p-4 block"
             >
-              <div class="flex items-center justify-between gap-4">
-                <div class="flex items-center gap-2">
-                  <span class={`text-xs font-bold font-mono px-2.5 py-0.5 rounded-full border ${
-                    m.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
-                    m.status === 'COMMITTED' || m.status === 'IN_PROGRESS' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' :
-                    m.status === 'AWAITING_APPROVAL' || m.status === 'ESCALATED' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
-                    'bg-slate-800 text-slate-300 border-slate-700'
-                  }`}>
-                    {m.status}
-                  </span>
-                  <span class="text-xs font-mono text-slate-500 hidden sm:inline">ID: {m.id}</span>
-                </div>
-                <span class="text-xs font-mono text-slate-400">
-                  {new Date(m.createdAt).toLocaleTimeString()}
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full border border-ink/10 bg-paper-inset text-ink">
+                  {labelStatus(m.status)}
+                </span>
+                <span class="text-xs text-ink-muted">
+                  {new Date(m.createdAt).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' })}
                 </span>
               </div>
-
-              <p class="text-white font-semibold text-base mt-2.5 group-hover:text-cyan-300 transition">
-                {m.goal}
+              <p class="text-ink font-medium mt-2.5 leading-snug">{m.goal}</p>
+              <p class="text-xs text-ink-muted mt-2">
+                Up to £{m.mandate?.budget?.maxAmount} · {m.mandate?.serviceArea?.postalDistrict}
               </p>
-
-              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 mt-2 pt-2 border-t border-slate-800/60 font-mono">
-                <span>Budget Ceiling: <strong class="text-slate-200">£{m.mandate.budget.maxAmount}</strong></span>
-                <span>•</span>
-                <span>District: <strong class="text-slate-200">{m.mandate.serviceArea.postalDistrict}</strong></span>
-                <span>•</span>
-                <span>Autonomy: <strong class="text-cyan-400">{m.mandate.autonomyMode}</strong></span>
-              </div>
             </a>
           ))}
         </div>
-      </div>
+      </section>
     )}
+
+    <details class="paper-card rounded-2xl">
+      <summary class="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-3 text-sm font-medium text-ink">
+        <span>How it works</span>
+        <span class="text-ink-muted text-xs font-normal">For a closer look</span>
+      </summary>
+      <div class="px-5 pb-5 space-y-8 border-t border-ink/10 pt-5">
+        <ol class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <li class="bg-paper rounded-xl p-3.5 border border-ink/10">
+            <p class="text-mandate font-medium text-xs uppercase tracking-wider mb-1">1. You say what’s wrong</p>
+            <p class="text-ink-muted">Speak or type. We turn it into budget, area, and a deadline.</p>
+          </li>
+          <li class="bg-paper rounded-xl p-3.5 border border-ink/10">
+            <p class="text-mandate font-medium text-xs uppercase tracking-wider mb-1">2. We stay in your rules</p>
+            <p class="text-ink-muted">Nobody is booked over budget, out of area, or without a yes if you asked for one.</p>
+          </li>
+          <li class="bg-paper rounded-xl p-3.5 border border-ink/10">
+            <p class="text-mandate font-medium text-xs uppercase tracking-wider mb-1">3. You get a receipt</p>
+            <p class="text-ink-muted">Photos are checked. You get a shareable record of what was done.</p>
+          </li>
+        </ol>
+        <TacticalRadar client:load activeDistrict="N1" />
+        <ProofVaultShowcase client:load />
+      </div>
+    </details>
   </div>
 </Layout>
