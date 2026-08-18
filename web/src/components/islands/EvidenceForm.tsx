@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { submitEvidence } from '../../lib/api';
+import { submitEvidence, uploadImage } from '../../lib/api';
 
 interface Props {
   missionId: string;
@@ -8,9 +8,33 @@ interface Props {
 export default function EvidenceForm({ missionId }: Props) {
   const [report, setReport] = useState("Technician replaced faulty compressor relay, verified temperature dropping to 3°C.");
   const [photoUrl, setPhotoUrl] = useState("https://storage.googleapis.com/yaler-evidence/proof_temp_check.jpg");
+  const [previewFilename, setPreviewFilename] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const res = await uploadImage(file);
+      setPhotoUrl(res.url);
+      setPreviewFilename(`${res.filename} (${(res.size / 1024).toFixed(1)} KB)`);
+    } catch (err: any) {
+      setError(err.message || 'Image upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +62,7 @@ export default function EvidenceForm({ missionId }: Props) {
         <p className="text-xs text-slate-400 mt-0.5">Upload service report and photo evidence for instant Gemini verification.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-xs font-mono font-bold uppercase text-slate-400 mb-1.5">
             Technician Service Report
@@ -51,16 +75,45 @@ export default function EvidenceForm({ missionId }: Props) {
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-mono font-bold uppercase text-slate-400 mb-1.5">
-            Photo Evidence Reference URL
+        {/* Drag-and-Drop Image Upload Zone */}
+        <div className="space-y-2">
+          <label className="block text-xs font-mono font-bold uppercase text-slate-400">
+            Photo Evidence Upload (Drag & Drop or Pick)
           </label>
-          <input
-            type="text"
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-            className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-500 rounded-xl p-3 text-white focus:outline-none text-xs font-mono"
-          />
+
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+            className="bg-[#060a12] border-2 border-dashed border-slate-800 hover:border-cyan-500/60 rounded-xl p-5 text-center transition-all cursor-pointer relative"
+          >
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+            />
+            <div className="space-y-1.5 pointer-events-none">
+              <div className="text-2xl">📷</div>
+              <p className="text-xs font-semibold text-slate-300">
+                {uploading ? 'Uploading to Server...' : 'Drag & drop completion photo here, or click to browse'}
+              </p>
+              {previewFilename && (
+                <p className="text-[11px] font-mono text-emerald-400">✓ Uploaded: {previewFilename}</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-mono text-slate-500 mt-2 mb-1">
+              Direct Photo Reference URL
+            </label>
+            <input
+              type="text"
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-800 focus:border-cyan-500 rounded-xl p-2.5 text-white focus:outline-none text-xs font-mono"
+            />
+          </div>
         </div>
 
         {error && (
@@ -93,7 +146,7 @@ export default function EvidenceForm({ missionId }: Props) {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || uploading}
           className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] cursor-pointer text-sm sm:text-base"
         >
           {loading ? 'Verifying Evidence via Gemini...' : 'Submit Evidence & Complete Mission 🚀'}

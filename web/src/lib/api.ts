@@ -163,3 +163,14 @@ export async function listSuppliers(): Promise<Supplier[]> {
   if (!res.ok) throw new Error('Failed to list suppliers');
   return res.json();
 }
+
+export async function uploadImage(file: File): Promise<{ url: string; filename: string; size: number }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_BASE}/api/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) throw new Error('Failed to upload image');
+  return res.json();
+}

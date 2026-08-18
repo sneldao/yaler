@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createMission } from '../../lib/api';
 
 export default function MissionForm() {
   const [goal, setGoal] = useState('');
   const [loading, setLoading] = useState(false);
+  const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const presets = [
@@ -23,6 +24,50 @@ export default function MissionForm() {
       badge: 'SW1 • £600',
     },
   ];
+
+  const handleVoiceInput = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError('Voice recognition is not supported in this browser. Please use Chrome/Safari/Edge.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-GB';
+
+      recognition.onstart = () => {
+        setListening(true);
+        setError(null);
+      };
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript) {
+          setGoal(transcript);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        setError(`Voice input error: ${event.error}`);
+        setListening(false);
+      };
+
+      recognition.onend = () => {
+        setListening(false);
+      };
+
+      recognition.start();
+    } catch (e: any) {
+      setError('Failed to activate microphone input');
+      setListening(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,14 +89,30 @@ export default function MissionForm() {
       {/* Ambient Card Accent */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
 
-      <div className="flex items-center gap-3.5 mb-6">
-        <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-lg shadow-inner">
-          ⚡
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-lg shadow-inner">
+            ⚡
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white tracking-tight">Create Operational Mission</h2>
+            <p className="text-xs sm:text-sm text-slate-400">Speak or type your operational callout. Gemini extracts the mandate automatically.</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Create Operational Mission</h2>
-          <p className="text-xs sm:text-sm text-slate-400">Describe the urgent job in natural language. Gemini extracts the mandate automatically.</p>
-        </div>
+
+        {/* Hands-Free Voice Button */}
+        <button
+          type="button"
+          onClick={handleVoiceInput}
+          className={`px-3.5 py-2 rounded-xl border text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            listening
+              ? 'bg-red-500/20 text-red-400 border-red-500/40 animate-pulse'
+              : 'bg-slate-800/90 hover:bg-slate-800 text-cyan-400 border-slate-700 hover:border-cyan-500/40'
+          }`}
+        >
+          <span className={listening ? 'animate-bounce' : ''}>🎙️</span>
+          <span>{listening ? 'Listening...' : 'Voice Input'}</span>
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -91,7 +152,7 @@ export default function MissionForm() {
                 key={idx}
                 type="button"
                 onClick={() => setGoal(p.text)}
-                className="group text-left bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/40 rounded-xl p-3 transition-all flex items-center justify-between gap-3"
+                className="group text-left bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/40 rounded-xl p-3 transition-all flex items-center justify-between gap-3 cursor-pointer"
               >
                 <div className="space-y-0.5">
                   <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition">{p.title}</div>

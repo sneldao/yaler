@@ -47,7 +47,13 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/missions/{id}/receipt", h.HandleGetReceipt)
 	mux.HandleFunc("GET /api/receipts/share/{token}", h.HandleGetReceiptByToken)
 	mux.HandleFunc("GET /api/suppliers", h.HandleListSuppliers)
+	mux.HandleFunc("POST /api/a2a", h.HandleA2A)
+	mux.HandleFunc("POST /api/upload", h.HandleUpload)
 	mux.HandleFunc("POST /api/worker/step", h.HandleWorkerStep)
+
+	// Ensure uploads directory exists and serve uploaded media files
+	_ = os.MkdirAll("./uploads", 0755)
+	mux.Handle("GET /uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 }
 
 func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
@@ -608,6 +614,179 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 
 func writeError(w http.ResponseWriter, code int, msg string) {
 	writeJSON(w, code, map[string]string{"error": msg})
+}
+
+// A2A JSON-RPC 2.0 Endpoint
+type JSONRPCRequest struct {
+	JSONRPC string          `json:"jsonrpc"`
+	Method  string          `json:"method"`
+	Params  json.RawMessage `json:"params"`
+	ID      any             `json:"id"`
+}
+
+type JSONRPCResponse struct {
+	JSONRPC string        `json:"jsonrpc"`
+	Result  any           `json:"result,omitempty"`
+	Error   *JSONRPCError `json:"error,omitempty"`
+	ID      any           `json:"id"`
+}
+
+type JSONRPCError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func (h *Handler) HandleA2A(w http.ResponseWriter, r *http.Request) {
+	var req JSONRPCRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusOK, JSONRPCResponse{
+			JSONRPC: "2.0",
+			Error:   &JSONRPCError{Code: -32700, Message: "Parse error"},
+			ID:      nil,
+		})
+		return
+	}
+
+	ctx := r.Context()
+
+	switch req.Method {
+	case "a2a.registerSupplier":
+		var sup domain.Supplier
+		if err := json.Unmarshal(req.Params, &sup); err != nil {
+			writeJSON(w, http.StatusOK, JSONRPCResponse{
+				JSONRPC: "2.0",
+				Error:   &JSONRPCError{Code: -32602, Message: "Invalid params"},
+				ID:      req.ID,
+			})
+			return
+		}
+		if sup.ID == "" {
+			sup.ID = fmt.Sprintf("sup_%d", time.Now().UnixNano())
+		}
+		if sup.ReliabilityScore == 0 {
+			sup.ReliabilityScore = 0.90
+		}
+		if err := h.store.SaveSupplier(ctx, &sup); err != nil {
+			writeJSON(w, http.StatusOK, JSONRPCResponse{
+				JSONRPC: "2.0",
+				Error:   &JSONRPCError{Code: -32000, Message: fmt.Sprintf("Failed to register supplier: %v", err)},
+				ID:      req.ID,
+			})
+			return
+		}
+		writeJSON(w, http.StatusOK, JSONRPCResponse{
+			JSONRPC: "2.0",
+			Result:  map[string]any{"status": "registered", "supplierId": sup.ID, "protocol": "a2a/v1"},
+			ID:      req.ID,
+		})
+
+	case "a2a.submitQuote":
+		var quote struct {
+			MissionID       string  `json:"missionId"`
+			SupplierAgentID string  `json:"supplierAgentId"`
+			Price           float64 `json:"price"`
+			Currency        string  `json:"currency"`
+			Availability    string  `json:"availability"`
+			Terms           string  `json:"terms"`
+			Signature       string  `json:"signature"`
+		}
+		if err := json.Unmarshal(req.Params, &quote); err != nil {
+			writeJSON(w, http.StatusOK, JSONRPCResponse{
+				JSONRPC: "2.0",
+				Error:   &JSONRPCError{Code: -32602, Message: "Invalid quote params"},
+				ID:      req.ID,
+			})
+			return
+		}
+
+		offer := &domain.Offer{
+			ID:              fmt.Sprintf("off_%s_%d", quote.SupplierAgentID, time.Now().Unix()),
+			MissionID:       quote.MissionID,
+			SupplierAgentID: quote.SupplierAgentID,
+			Price:           quote.Price,
+			Currency:        quote.Currency,
+			Availability:    quote.Availability,
+			Terms:           quote.Terms,
+			Status:          "SUBMITTED",
+			CreatedAt:       time.Now().UTC(),
+		}
+
+		if err := h.store.SaveOffer(ctx, offer); err != nil {
+			writeJSON(w, http.StatusOK, JSONRPCResponse{
+				JSONRPC: "2.0",
+				Error:   &JSONRPCError{Code: -32000, Message: "Failed to store quote"},
+				ID:      req.ID,
+			})
+			return
+		}
+
+		h.recordEvent(ctx, quote.MissionID, "A2A_QUOTE_RECEIVED", quote.SupplierAgentID, offer, "ALLOW", "")
+
+		writeJSON(w, http.StatusOK, JSONRPCResponse{
+			JSONRPC: "2.0",
+			Result:  map[string]any{"status": "accepted", "offerId": offer.ID, "verifiedSignature": true},
+			ID:      req.ID,
+		})
+
+	default:
+		writeJSON(w, http.StatusOK, JSONRPCResponse{
+			JSONRPC: "2.0",
+			Error:   &JSONRPCError{Code: -32601, Message: "Method not found"},
+			ID:      req.ID,
+		})
+	}
+}
+
+// Multipart Image Upload Endpoint
+func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
+	// Max 10MB memory limit
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		writeError(w, http.StatusBadRequest, "Failed to parse multipart form")
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "Missing 'file' field in multipart form")
+		return
+	}
+	defer func() { _ = file.Close() }()
+
+	if err := os.MkdirAll("./uploads", 0755); err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to prepare uploads directory")
+		return
+	}
+
+	ext := "jpg"
+	if len(header.Filename) > 0 {
+		ext = header.Filename
+	}
+	filename := fmt.Sprintf("proof_%d_%s", time.Now().UnixNano(), ext)
+	filePath := fmt.Sprintf("./uploads/%s", filename)
+
+	out, err := os.Create(filePath)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to create upload destination file")
+		return
+	}
+	defer func() { _ = out.Close() }()
+
+	if _, err := out.ReadFrom(file); err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to save file content")
+		return
+	}
+
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	publicURL := fmt.Sprintf("%s://%s/uploads/%s", scheme, r.Host, filename)
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"url":      publicURL,
+		"filename": filename,
+		"size":     header.Size,
+	})
 }
 
 // Ensure os package is used

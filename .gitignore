@@ -39,3 +39,4 @@ Thumbs.db
 # Tooling caches
 .cache/
 *.orig
+uploads/
