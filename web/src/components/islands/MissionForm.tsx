@@ -1,11 +1,69 @@
 import React, { useState, useEffect } from 'react';
+import Vapi from '@vapi-ai/web';
 import { createMission } from '../../lib/api';
+
+const VAPI_PUBLIC_KEY = '374778cc-e3a0-4557-a9f2-3908ca8dbdbd';
 
 export default function MissionForm() {
   const [goal, setGoal] = useState('');
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
+  const [vapi, setVapi] = useState<Vapi | null>(null);
+  const [vapiActive, setVapiActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const instance = new Vapi(VAPI_PUBLIC_KEY);
+        instance.on('call-start', () => setVapiActive(true));
+        instance.on('call-end', () => setVapiActive(false));
+        instance.on('message', (message: any) => {
+          if (message.type === 'transcript' && message.transcriptType === 'final') {
+            setGoal((prev) => (prev ? `${prev} ${message.transcript}` : message.transcript));
+          }
+        });
+        setVapi(instance);
+      } catch (e) {
+        console.warn('Vapi init error:', e);
+      }
+    }
+  }, []);
+
+  const toggleVapiVoice = async () => {
+    if (!vapi) {
+      handleVoiceInput();
+      return;
+    }
+    if (vapiActive) {
+      vapi.stop();
+      setVapiActive(false);
+    } else {
+      setError(null);
+      try {
+        await vapi.start({
+          model: {
+            provider: 'openai',
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'You are Yaler Voice Assistant for London kitchen managers. Ask what equipment emergency they need help with (commercial fridge, extraction hood, freezer), their district (e.g. N1, E1), and budget.',
+              },
+            ],
+          },
+          voice: {
+            provider: 'playht',
+            voiceId: 'jennifer',
+          },
+        });
+      } catch (err: any) {
+        console.warn('Vapi start error, using Web Speech fallback:', err);
+        handleVoiceInput();
+      }
+    }
+  };
 
   const presets = [
     {
@@ -112,18 +170,21 @@ export default function MissionForm() {
           </div>
         </div>
 
-        {/* Hands-Free Voice Button */}
+        {/* Hands-Free Vapi Voice Button */}
         <button
           type="button"
-          onClick={handleVoiceInput}
+          onClick={toggleVapiVoice}
           className={`px-3.5 py-2 rounded-xl border text-xs font-mono font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            listening
-              ? 'bg-red-500/20 text-red-400 border-red-500/40 animate-pulse'
+            vapiActive || listening
+              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse shadow-lg shadow-emerald-500/20'
               : 'bg-slate-800/90 hover:bg-slate-800 text-cyan-400 border-slate-700 hover:border-cyan-500/40'
           }`}
         >
-          <span className={listening ? 'animate-bounce' : ''}>🎙️</span>
-          <span>{listening ? 'Listening...' : 'Voice Input'}</span>
+          <span className={vapiActive || listening ? 'animate-bounce' : ''}>🎙️</span>
+          <span>{vapiActive ? 'Vapi Live Call Active' : listening ? 'Listening...' : 'Vapi AI Voice'}</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold">
+            VAPI
+          </span>
         </button>
       </div>
 
