@@ -64,7 +64,23 @@ export function statusTone(status?: string): StatusTone {
   return 'progress';
 }
 
-export function nextActionLabel(status?: string): string {
+export function nextActionLabel(status?: string, rehearsal = false): string {
+  if (rehearsal) {
+    switch (status) {
+      case 'DRAFT':
+        return 'Check the number. Then we look. Nobody is called.';
+      case 'SOURCING':
+        return 'Asking the three N1 engineers on the practice roster…';
+      case 'AWAITING_APPROVAL':
+      case 'ESCALATED':
+        return 'One quote is £80 over. We stopped. Tap it, then pick someone in budget.';
+      case 'COMPLETED':
+        return 'This is the paper you’d pin up. Save the rules if they look right.';
+      default:
+        return 'Practice only. Nothing is booked.';
+    }
+  }
+
   switch (status) {
     case 'DRAFT':
       return 'Check the budget and area, then start the search.';

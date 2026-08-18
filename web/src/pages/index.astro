@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import MissionForm from '../components/islands/MissionForm';
-import DemoTourController from '../components/islands/DemoTourController';
+import SavedMandateCard from '../components/islands/SavedMandateCard';
 import TacticalRadar from '../components/islands/TacticalRadar';
 import ProofVaultShowcase from '../components/islands/ProofVaultShowcase';
 import { listMissions } from '../lib/api';
@@ -45,10 +45,26 @@ function labelStatus(status) {
       <p class="text-ink-muted text-base sm:text-lg leading-relaxed max-w-xl">
         Tell us what’s broken, your budget, and your postcode. We find a local engineer, stay inside your rules, and send a receipt when the job is done.
       </p>
-      <DemoTourController client:load />
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+        <a href="/rehearsal" class="btn-primary text-sm py-3 px-5">Start here — try a rehearsal</a>
+        <p class="text-xs text-ink-muted max-w-sm">Nothing will be booked. This is last Tuesday’s fridge in N1.</p>
+      </div>
     </div>
 
-    <MissionForm client:load />
+    <SavedMandateCard client:load />
+
+    <details class="paper-card rounded-2xl">
+      <summary class="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-3">
+        <div>
+          <p class="text-sm font-medium text-ink">This is a real job</p>
+          <p class="text-xs text-ink-muted mt-0.5">Only if the fridge is actually down. Someone may be booked.</p>
+        </div>
+        <span class="text-xs text-ink-muted">Open</span>
+      </summary>
+      <div class="px-5 pb-5 border-t border-ink/10 pt-5">
+        <MissionForm client:load />
+      </div>
+    </details>
 
     {Array.isArray(missions) && missions.length > 0 && (
       <section class="space-y-3">

@@ -7,9 +7,10 @@ import StatusBadge from '../primitives/StatusBadge';
 interface Props {
   initialMission: Mission;
   onStarted?: (mission: Mission) => void;
+  rehearsal?: boolean;
 }
 
-export default function MandateEditor({ initialMission, onStarted }: Props) {
+export default function MandateEditor({ initialMission, onStarted, rehearsal = false }: Props) {
   const [mission] = useState<Mission>(initialMission);
   const [maxBudget, setMaxBudget] = useState(initialMission.mandate.budget.maxAmount);
   const [autonomyMode, setAutonomyMode] = useState(initialMission.mandate.autonomyMode);
@@ -28,6 +29,11 @@ export default function MandateEditor({ initialMission, onStarted }: Props) {
         autonomyMode,
       };
 
+      if (rehearsal) {
+        onStarted?.({ ...mission, mandate: updatedMandate, status: 'SOURCING' });
+        return;
+      }
+
       const updated = await updateMandate(mission.id, updatedMandate, true);
       await startMission(mission.id);
       onStarted?.({ ...updated, mandate: updatedMandate, status: 'SOURCING' });
@@ -45,7 +51,9 @@ export default function MandateEditor({ initialMission, onStarted }: Props) {
         <StatusBadge status={mission.status} />
         <h2 className="font-display text-3xl text-ink tracking-tight">Check the details</h2>
         <p className="text-sm text-ink-muted max-w-xl">
-          We took this from your note. Change anything that looks wrong before we start looking.
+          {rehearsal
+            ? 'This is last Tuesday’s note. Check the number, then we look. Nobody is called.'
+            : 'We took this from your note. Change anything that looks wrong before we start looking.'}
         </p>
       </div>
 
@@ -153,7 +161,7 @@ export default function MandateEditor({ initialMission, onStarted }: Props) {
               <span>Starting the search…</span>
             </>
           ) : (
-            <span>Looks right — start looking</span>
+            <span>{rehearsal ? 'Looks right — show me what happens' : 'Looks right — start looking'}</span>
           )}
         </button>
       )}

@@ -3,24 +3,44 @@ import { type Offer, approveException, getOffers } from '../../lib/api';
 import { formatMoney, supplierLabel } from '../../lib/copy';
 
 interface Props {
-  missionId: string;
+  missionId?: string;
+  offers?: Offer[];
+  rehearsal?: boolean;
+  onBooked?: (offer: Offer) => void;
 }
 
-export default function OfferComparison({ missionId }: Props) {
-  const [offers, setOffers] = useState<Offer[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export default function OfferComparison({
+  missionId,
+  offers: offersProp,
+  rehearsal = false,
+  onBooked,
+}: Props) {
+  const initialSelected = rehearsal
+    ? offersProp?.find((offer) => offer.status === 'BLOCKED')?.id ?? offersProp?.[0]?.id ?? null
+    : offersProp?.[0]?.id ?? null;
+  const [offers, setOffers] = useState<Offer[]>(offersProp ?? []);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelected);
   const [showCompare, setShowCompare] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (offersProp) {
+      setOffers(offersProp);
+      if (!selectedId) {
+        const blockedId = rehearsal ? offersProp.find((offer) => offer.status === 'BLOCKED')?.id : undefined;
+        setSelectedId(blockedId ?? offersProp[0]?.id ?? null);
+      }
+      return;
+    }
+    if (!missionId) return;
     getOffers(missionId)
       .then((next) => {
         setOffers(next);
         if (next[0]) setSelectedId(next[0].id);
       })
       .catch(console.error);
-  }, [missionId]);
+  }, [missionId, offersProp]);
 
   if (offers.length === 0) {
     return (
@@ -35,11 +55,19 @@ export default function OfferComparison({ missionId }: Props) {
 
   const selected = offers.find((offer) => offer.id === selectedId) || offers[0];
 
+  const blocked = selected?.status === 'BLOCKED';
+
   const handleConfirm = async () => {
-    if (!selected) return;
+    if (!selected || blocked) return;
     setSubmitting(true);
     setMessage(null);
     try {
+      if (rehearsal) {
+        onBooked?.(selected);
+        setMessage(`In a real job we would book ${supplierLabel(selected.supplierAgentId)} for ${formatMoney(selected.price, selected.currency)}. Nothing was booked.`);
+        return;
+      }
+      if (!missionId) return;
       await approveException(missionId, 'APPROVE', selected.id);
       setMessage(`Booked ${supplierLabel(selected.supplierAgentId)} for ${formatMoney(selected.price, selected.currency)}.`);
     } catch (err: any) {
@@ -54,7 +82,9 @@ export default function OfferComparison({ missionId }: Props) {
       <div className="flex items-end justify-between gap-3">
         <div>
           <h3 className="font-display text-2xl text-ink">Quotes</h3>
-          <p className="text-sm text-ink-muted">{offers.length} in. Best match is first.</p>
+          <p className="text-sm text-ink-muted">
+            {rehearsal ? 'One is over the ceiling. We stopped there first.' : `${offers.length} in. Best match is first.`}
+          </p>
         </div>
         <button
           type="button"
@@ -74,12 +104,18 @@ export default function OfferComparison({ missionId }: Props) {
               type="button"
               onClick={() => setSelectedId(offer.id)}
               className={`w-full text-left paper-card rounded-2xl p-4 transition-colors ${
-                isSelected ? 'border-mandate' : 'hover:border-ink/20'
+                isSelected && offer.status === 'BLOCKED'
+                  ? 'border-escalate'
+                  : isSelected
+                    ? 'border-mandate'
+                    : 'hover:border-ink/20'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  {idx === 0 && (
+                  {offer.status === 'BLOCKED' ? (
+                    <p className="text-[11px] uppercase tracking-wider text-escalate mb-1">Over your ceiling</p>
+                  ) : idx === 0 && (
                     <p className="text-[11px] uppercase tracking-wider text-mandate mb-1">Best match</p>
                   )}
                   <p className="font-medium text-ink">{supplierLabel(offer.supplierAgentId)}</p>
@@ -123,11 +159,19 @@ export default function OfferComparison({ missionId }: Props) {
 
       <div className="paper-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-ink">Book {supplierLabel(selected.supplierAgentId)}?</p>
-          <p className="text-xs text-ink-muted">{formatMoney(selected.price, selected.currency)} · {selected.availability}</p>
+          <p className="text-sm font-medium text-ink">
+            {blocked
+              ? `We will not book ${supplierLabel(selected.supplierAgentId)}`
+              : `Book ${supplierLabel(selected.supplierAgentId)}?`}
+          </p>
+          <p className="text-xs text-ink-muted">
+            {blocked
+              ? `${formatMoney(selected.price, selected.currency)} sits over the ceiling you set.`
+              : `${formatMoney(selected.price, selected.currency)} · ${selected.availability}`}
+          </p>
         </div>
-        <button type="button" onClick={handleConfirm} disabled={submitting} className="btn-primary text-sm py-2.5">
-          {submitting ? 'Booking…' : 'Yes, book them'}
+        <button type="button" onClick={handleConfirm} disabled={submitting || blocked} className="btn-primary text-sm py-2.5">
+          {blocked ? 'Blocked by your rules' : submitting ? 'Booking…' : rehearsal ? 'Yes — in the rehearsal' : 'Yes, book them'}
         </button>
       </div>
 

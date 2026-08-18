@@ -140,6 +140,18 @@
 
 **Reason:** The first user is a café manager with a dead fridge, not a hackathon judge. `docs/BRAND.md` already forbids neon agent-marketplace chrome. Selling the outcome in the UI is the same wedge as D003.
 
+### D024 — Rehearsal is London-only, labelled, and not a second city
+
+**Decision:** Trust is built with a single N1 fridge rehearsal on the live chrome (`/rehearsal`). It uses the labelled synthetic London roster, forces one over-budget quote, and ends on a saved mandate. There is no San Francisco sim, no city picker, and no live booking from the playthrough.
+
+**Reason:** Users will not hand a service window to a system they have not felt. A second city widens the cold start. The rehearsal answers the trust half; liquidity still comes from concierge demand in one area (D001, D016).
+
+### D025 — Rehearsal is the first-visit walk, not a chat overlay
+
+**Decision:** Home’s primary action is “Start here — try a rehearsal.” The live create form is behind “This is a real job.” The playthrough has a four-step rail and one mandate-voice line per phase. Quotes open on the over-budget offer. The only completion action is saving the mandate. There is no copilot, coach-mark tour, or LLM narrator.
+
+**Reason:** First-time operators could not tell where to start or what had just happened. A talking agent would undo D023. Bounded, quiet guidance is the product: the stop is the lesson.
+
 ---
 
 ## Open questions

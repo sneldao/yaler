@@ -49,14 +49,15 @@ Astro is used for:
 
 Interactive islands are used only where needed:
 
-- `MissionForm` — speak or type what’s broken; creates the mission
-- `DemoTourController` — one-click sample job for judges
+- `MissionForm` — speak or type what’s broken; creates a live mission
+- `SavedMandateCard` — shows rules saved after a rehearsal
 - `MandateEditor` — check budget and area, then start looking (no page reload)
-- `OfferComparison` — ranked quotes; confirm books the engineer
+- `OfferComparison` — ranked quotes; confirm books the engineer (rehearsal lands on the blocked row)
 - `MissionTimeline` — goal, plain-English status, next action; traces are opt-in
 - `EvidenceForm` — engineer photo and note (`/evidence/[id]`)
+- `RehearsalPlaythrough` — labelled N1 fridge rehearsal on the same chrome; phase rail + one guide line; no backend writes
 
-Shared operator copy lives in `web/src/lib/copy.ts`. The visual system is paper/ink/mandate (`docs/BRAND.md`), not a dark agent console.
+Shared operator copy lives in `web/src/lib/copy.ts`. Rehearsal fixtures live in `web/src/lib/rehearsal.ts`. The visual system is paper/ink/mandate (`docs/BRAND.md`), not a dark agent console.
 
 Astro should not become a React application hidden inside a framework. Keep public pages server-rendered and isolate stateful interactions. Route changes use Astro `navigate()` so view transitions run; do not `window.location.reload()` after mandate confirm.
 

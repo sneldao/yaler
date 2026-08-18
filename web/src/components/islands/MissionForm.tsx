@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { navigate } from 'astro:transitions/client';
 import Vapi from '@vapi-ai/web';
 import { createMission } from '../../lib/api';
+import { loadSavedMandate } from '../../lib/rehearsal';
 import { LoaderGrid } from '../primitives/LoaderGrid';
 
 const VAPI_PUBLIC_KEY = '374778cc-e3a0-4557-a9f2-3908ca8dbdbd';
@@ -14,6 +15,15 @@ export default function MissionForm() {
   const [vapiActive, setVapiActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSamples, setShowSamples] = useState(false);
+  const [savedHint, setSavedHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = loadSavedMandate();
+    if (saved) {
+      setGoal(`${saved.goalHint}, budget £${saved.budget}, we're in ${saved.postalDistrict}.`);
+      setSavedHint(`Using the rules you saved: under £${saved.budget} in ${saved.postalDistrict}.`);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -165,6 +175,7 @@ export default function MissionForm() {
           <p className="text-sm text-ink-muted mt-1">
             Speak or type it. We’ll pull out the budget, area, and deadline for you to check.
           </p>
+          {savedHint && <p className="text-xs text-mandate mt-2">{savedHint}</p>}
         </div>
         <button
           type="button"

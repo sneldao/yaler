@@ -7,15 +7,29 @@ import StatusBadge from '../primitives/StatusBadge';
 import { eventLabel, formatMoney, nextActionLabel } from '../../lib/copy';
 
 interface Props {
-  missionId: string;
+  missionId?: string;
+  mission?: Mission;
+  events?: Event[];
+  rehearsal?: boolean;
 }
 
-export default function MissionTimeline({ missionId }: Props) {
-  const [mission, setMission] = useState<Mission | null>(null);
-  const [events, setEvents] = useState<Event[]>([]);
+export default function MissionTimeline({
+  missionId,
+  mission: missionProp,
+  events: eventsProp,
+  rehearsal = false,
+}: Props) {
+  const [mission, setMission] = useState<Mission | null>(missionProp ?? null);
+  const [events, setEvents] = useState<Event[]>(eventsProp ?? []);
   const [showWork, setShowWork] = useState(false);
 
+  useEffect(() => {
+    if (missionProp) setMission(missionProp);
+    if (eventsProp) setEvents(eventsProp);
+  }, [missionProp, eventsProp]);
+
   const fetchLatest = async () => {
+    if (!missionId || rehearsal) return;
     try {
       const [m, evs] = await Promise.all([getMission(missionId), getEvents(missionId)]);
       setMission(m);
@@ -26,10 +40,11 @@ export default function MissionTimeline({ missionId }: Props) {
   };
 
   useEffect(() => {
+    if (!missionId || rehearsal) return;
     fetchLatest();
     const interval = setInterval(fetchLatest, 2000);
     return () => clearInterval(interval);
-  }, [missionId]);
+  }, [missionId, rehearsal]);
 
   const stages = [
     { label: 'Details', status: ['DRAFT', 'MANDATE_CONFIRMED'] },
@@ -83,16 +98,16 @@ export default function MissionTimeline({ missionId }: Props) {
             <div className="space-y-2">
               <StatusBadge status={mission.status} />
               <h1 className="font-display text-3xl text-ink tracking-tight leading-tight">{mission.goal}</h1>
-              <p className="text-sm text-ink-muted">{nextActionLabel(mission.status)}</p>
+              <p className="text-sm text-ink-muted">{nextActionLabel(mission.status, rehearsal)}</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 shrink-0">
-              {mission.status === 'COMPLETED' && (
+              {mission.status === 'COMPLETED' && !rehearsal && (
                 <a href={`/missions/${mission.id}/receipt`} className="btn-primary text-sm py-2.5">
                   Get the receipt
                 </a>
               )}
-              {(mission.status === 'IN_PROGRESS' || mission.status === 'EVIDENCE_PENDING') && (
+              {(mission.status === 'IN_PROGRESS' || mission.status === 'EVIDENCE_PENDING') && !rehearsal && (
                 <a href={`/evidence/${mission.id}`} className="btn-secondary text-sm py-2.5">
                   Send photos
                 </a>

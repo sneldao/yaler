@@ -27,7 +27,7 @@ Independent London cafés, restaurants, and food operators lose **£1,000s per d
 
 **Yaler** lets a kitchen manager say what’s broken once. A buyer agent finds, books, and checks a local engineer inside the stated budget, then issues a shareable receipt.
 
-The operator UI is a paper receipt, not a chatbot: kitchen English, one form, traces hidden until asked.
+The operator UI is a paper receipt, not a chatbot: kitchen English, a labelled N1 rehearsal first, traces hidden until asked.
 
 ```text
 Speak or type → Check the details → Ask nearby engineers → Book inside the rules
@@ -40,7 +40,7 @@ Speak or type → Check the details → Ask nearby engineers → Book inside the
 
 ## 🚀 Key Frontiers Built
 
-1. **🎬 1-Click Guided Demo Tour & Hands-Free Voice Input**: Web Audio / Speech voice input for busy kitchen managers plus a 1-click guided demo tour.
+1. **🎬 N1 fridge rehearsal & hands-free voice**: A labelled playthrough of last Tuesday’s job (nothing booked) plus Web Audio / Speech voice input for a live callout.
 2. **⚡ Gemini 2.5 Mandate Engine**: Converts messy speech/text into structured policy mandates with budget ceilings and SLAs.
 3. **🤝 Agent-to-Agent (A2A) Protocol**: Standardized JSON-RPC 2.0 endpoint (`/api/a2a`) with cryptographic payload signing (`RSA-2048`).
 4. **🛡️ Go Policy Guardrails**: Enforces hard budget ceilings, geographic postal boundaries, and mandatory safety escalations.
@@ -70,7 +70,7 @@ cd yaler
 docker-compose up --build
 ```
 
-Open `http://localhost:4321` and say what’s broken — or tap **Try a 60-second sample**.
+Open `http://localhost:4321` and tap **Start here — try a rehearsal** (nothing is booked). The live form is under **This is a real job**.
 
 ---
 

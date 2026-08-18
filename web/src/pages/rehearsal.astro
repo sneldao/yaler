@@ -1,0 +1,17 @@
+---
+import Layout from '../layouts/Layout.astro';
+import RehearsalPlaythrough from '../components/islands/RehearsalPlaythrough';
+---
+
+<Layout title="Rehearsal — last Tuesday’s fridge in N1">
+  <div class="space-y-5">
+    <div class="space-y-2">
+      <p class="text-xs uppercase tracking-[0.16em] text-mandate">London · N1 · labelled practice</p>
+      <h1 class="font-display text-3xl sm:text-4xl text-ink tracking-tight">Last Tuesday’s fridge</h1>
+      <p class="text-ink-muted text-sm sm:text-base max-w-xl">
+        Same screens as a live job. Nobody is called. One quote will sit over the ceiling so you can feel the stop.
+      </p>
+    </div>
+    <RehearsalPlaythrough client:load />
+  </div>
+</Layout>
