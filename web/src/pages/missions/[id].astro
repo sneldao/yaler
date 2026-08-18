@@ -1,16 +1,22 @@
 ---
-export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import MandateEditor from '../../components/islands/MandateEditor';
 import OfferComparison from '../../components/islands/OfferComparison';
 import MissionTimeline from '../../components/islands/MissionTimeline';
 import { getMission } from '../../lib/api';
 
+export function getStaticPaths() {
+  return [
+    { params: { id: 'demo' } },
+    { params: { id: '1' } },
+  ];
+}
+
 const { id } = Astro.params;
 
 let mission = null;
 try {
-  if (id) {
+  if (id && id !== 'demo') {
     mission = await getMission(id);
   }
 } catch (e) {
@@ -32,8 +38,8 @@ try {
     </div>
   ) : (
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-4">
-      <h2 className="text-xl font-bold text-white">Mission Not Found</h2>
-      <p className="text-slate-400 text-sm">The mission with ID {id} could not be loaded.</p>
+      <h2 class="text-xl font-bold text-white">Mission Overview</h2>
+      <p class="text-slate-400 text-sm">Loading mission data for ID: {id}...</p>
       <a href="/" class="inline-block bg-cyan-500 text-slate-950 font-semibold px-4 py-2 rounded-xl text-sm">
         Return Home
       </a>

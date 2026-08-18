@@ -1,7 +1,13 @@
 ---
-export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import EvidenceForm from '../../components/islands/EvidenceForm';
+
+export function getStaticPaths() {
+  return [
+    { params: { id: 'demo' } },
+    { params: { id: '1' } },
+  ];
+}
 
 const { id } = Astro.params;
 ---

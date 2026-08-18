@@ -2,11 +2,18 @@
 import Layout from '../../../layouts/Layout.astro';
 import { getProofReceipt } from '../../../lib/api';
 
+export function getStaticPaths() {
+  return [
+    { params: { id: 'demo' } },
+    { params: { id: '1' } },
+  ];
+}
+
 const { id } = Astro.params;
 
 let receipt = null;
 try {
-  if (id) {
+  if (id && id !== 'demo') {
     receipt = await getProofReceipt(id);
   }
 } catch (e) {

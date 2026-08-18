@@ -2,8 +2,5 @@
   command = "npm --prefix web run build"
   publish = "web/dist"
 
-[functions]
-  directory = "web/.netlify/functions-internal"
-
 [build.environment]
   PUBLIC_API_URL = "https://yaler-backend-2hfdtkdrnq-nw.a.run.app"
