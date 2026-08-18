@@ -2,10 +2,18 @@ package handler
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
 	"os"
+	"sync"
+)
+
+var (
+	ttsCache   = make(map[string][]byte)
+	ttsCacheMu sync.RWMutex
 )
 
 type ElevenLabsTTSRequest struct {
@@ -36,9 +44,30 @@ func (h *Handler) HandleTTS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(req.Text) > 1000 {
+		req.Text = req.Text[:1000]
+	}
+
 	voiceID := req.VoiceID
 	if voiceID == "" {
 		voiceID = "21m00Tcm4TlvDq8ikWAM" // Default Rachel voice
+	}
+
+	hashKey := sha256.Sum256([]byte(voiceID + ":" + req.Text))
+	cacheKey := hex.EncodeToString(hashKey[:])
+
+	// Check audio cache
+	ttsCacheMu.RLock()
+	cachedAudio, found := ttsCache[cacheKey]
+	ttsCacheMu.RUnlock()
+
+	if found {
+		w.Header().Set("Content-Type", "audio/mpeg")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Header().Set("X-Cache-Status", "HIT")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(cachedAudio)
+		return
 	}
 
 	ttsReq := ElevenLabsTTSRequest{
@@ -75,12 +104,24 @@ func (h *Handler) HandleTTS(w http.ResponseWriter, r *http.Request) {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		writeError(w, resp.StatusCode, "ElevenLabs TTS failed: "+string(respBody))
+		writeError(w, resp.StatusCode, "ElevenLabs TTS request failed")
 		return
 	}
 
+	audioBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to read audio stream")
+		return
+	}
+
+	// Cache synthesized MP3 bytes
+	ttsCacheMu.Lock()
+	ttsCache[cacheKey] = audioBytes
+	ttsCacheMu.Unlock()
+
 	w.Header().Set("Content-Type", "audio/mpeg")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Header().Set("X-Cache-Status", "MISS")
 	w.WriteHeader(http.StatusOK)
-	_, _ = io.Copy(w, resp.Body)
+	_, _ = w.Write(audioBytes)
 }

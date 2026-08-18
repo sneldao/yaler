@@ -57,7 +57,11 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 
 	// Ensure uploads directory exists and serve uploaded media files
 	_ = os.MkdirAll("./uploads", 0755)
-	mux.Handle("GET /uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
+	fileServer := http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads")))
+	mux.Handle("GET /uploads/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		fileServer.ServeHTTP(w, r)
+	}))
 }
 
 func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {

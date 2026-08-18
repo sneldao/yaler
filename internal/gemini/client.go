@@ -67,6 +67,9 @@ func NewClient(ctx context.Context) (*Client, error) {
 }
 
 func (c *Client) ExtractMandate(ctx context.Context, goal string) (*domain.Mandate, error) {
+	if len(goal) > 2000 {
+		goal = goal[:2000]
+	}
 	if c.genaiClient == nil {
 		return c.fallbackExtractMandate(goal), nil
 	}
@@ -203,10 +206,14 @@ func (c *Client) generateContent(ctx context.Context, systemPrompt, userPrompt s
 	reqCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
+	temp := float32(0.1)
+
 	resp, err := c.genaiClient.Models.GenerateContent(reqCtx, c.modelName, genai.Text(userPrompt), &genai.GenerateContentConfig{
 		SystemInstruction: &genai.Content{
 			Parts: []*genai.Part{genai.NewPartFromText(systemPrompt)},
 		},
+		Temperature:      &temp,
+		MaxOutputTokens:  1024,
 		ResponseMIMEType: "application/json",
 	})
 	if err != nil {

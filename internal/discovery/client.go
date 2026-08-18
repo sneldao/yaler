@@ -8,15 +8,23 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sneldao/yaler/internal/domain"
 )
 
+type exaCacheItem struct {
+	suppliers []*domain.Supplier
+	expiresAt time.Time
+}
+
 type DiscoveryService struct {
 	exaKey   string
 	apifyKey string
 	client   *http.Client
+	mu       sync.RWMutex
+	cache    map[string]exaCacheItem
 }
 
 func NewDiscoveryService() *DiscoveryService {
@@ -24,6 +32,7 @@ func NewDiscoveryService() *DiscoveryService {
 		exaKey:   os.Getenv("EXA_API_KEY"),
 		apifyKey: os.Getenv("APIFY_API_KEY"),
 		client:   &http.Client{Timeout: 10 * time.Second},
+		cache:    make(map[string]exaCacheItem),
 	}
 }
 
@@ -48,10 +57,21 @@ type ExaSearchResponse struct {
 	Results []ExaResult `json:"results"`
 }
 
-// SearchExa queries Exa API for live London kitchen service providers.
+// SearchExa queries Exa API for live London kitchen service providers with 10-minute in-memory caching.
 func (d *DiscoveryService) SearchExa(ctx context.Context, category, district string) ([]*domain.Supplier, error) {
 	if d.exaKey == "" {
 		return nil, fmt.Errorf("EXA_API_KEY not configured")
+	}
+
+	cacheKey := strings.ToLower(category + ":" + district)
+
+	// Check in-memory cache
+	d.mu.RLock()
+	item, found := d.cache[cacheKey]
+	d.mu.RUnlock()
+
+	if found && time.Now().Before(item.expiresAt) {
+		return item.suppliers, nil
 	}
 
 	query := fmt.Sprintf("commercial kitchen %s repair service provider in %s London", category, district)
@@ -111,5 +131,14 @@ func (d *DiscoveryService) SearchExa(ctx context.Context, category, district str
 			Status:           "ACTIVE",
 		})
 	}
+
+	// Cache results for 10 minutes
+	d.mu.Lock()
+	d.cache[cacheKey] = exaCacheItem{
+		suppliers: suppliers,
+		expiresAt: time.Now().Add(10 * time.Minute),
+	}
+	d.mu.Unlock()
+
 	return suppliers, nil
 }
