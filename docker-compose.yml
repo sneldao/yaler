@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GCP_PROJECT_ID=yaler-dev
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        PUBLIC_API_URL: http://localhost:8081
+    ports:
+      - "4321:4321"
+    environment:
+      - PORT=4321
+      - HOST=0.0.0.0
+      - PUBLIC_API_URL=http://localhost:8081
+    depends_on:
+      - server
+    restart: unless-stopped

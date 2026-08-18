@@ -1,108 +1,25 @@
 # Architecture
 
-## Architecture across horizons
+## Architecture goals
 
-Yaler's architecture is layered. V1 is minimal — a voice loop with no infrastructure. V2 adds durable state, async execution, and a web frontend on Google Cloud. Each layer extends rather than replaces the previous.
+Yaler should demonstrate a real autonomous workflow while remaining small enough to understand, test, and reproduce.
 
----
-
-## V1 architecture — Voice loop
-
-### System diagram
-
-```mermaid
-sequenceDiagram
-    participant Caller as Café Owner (Phone)
-    participant Vapi as Vapi Voice Agent
-    participant Server as Backend Server
-    participant Gemini as Gemini API
-    participant EL as ElevenLabs (via Vapi)
-
-    Caller->>Vapi: Calls phone number
-    Vapi->>Caller: Greeting + questions
-    Caller->>Vapi: Describes problem, budget, deadline
-    Vapi->>Server: Function call: extracted mandate
-    Server->>Gemini: Rank suppliers against mandate
-    Gemini->>Server: Ranked selection + reasoning
-    Server->>Vapi: Booking confirmation (or escalation)
-    Vapi->>Caller: Speaks result (ElevenLabs voice)
-```
-
-### Components
-
-| Component | Technology | Responsibility |
-|-----------|-----------|----------------|
-| Voice agent | Vapi | Conversational intake, mandate extraction via function calling |
-| Backend | TypeScript (single file or minimal server) | Receives structured mandate, calls Gemini, returns result |
-| LLM | Gemini (Google AI Studio API) | Ranks suppliers, explains selection, detects failures |
-| Voice output | ElevenLabs (configured as Vapi voice) | Natural speech for confirmations and escalations |
-
-### V1 data flow
-
-```text
-Phone call
-  → Vapi extracts: { goal, budget, deadline, location, urgency }
-  → Backend receives structured mandate
-  → Gemini prompt: "Given this mandate and these 3 suppliers, rank them and select the best fit. If none fit, explain why."
-  → Response: { selectedSupplier, reasoning, escalation? }
-  → Vapi speaks: confirmation or escalation message
-```
-
-### V1 Gemini usage
-
-Single prompt pattern — supplier ranking:
-
-```text
-Input:
-- Mandate (goal, budget, deadline, location)
-- 3 supplier profiles (capabilities, pricing, availability, service area, reliability)
-
-Output (structured JSON):
-- ranked list with scores
-- selected supplier or null
-- reasoning string
-- escalation flag + reason if no fit
-```
-
-Use Gemini's structured output / JSON mode to get reliable parsing.
-
-### V1 deployment
-
-- Local development or a single serverless function (Vercel/Cloudflare Worker/Cloud Function).
-- No database. Supplier data is a JSON constant in the code.
-- Vapi handles telephony, conversation state, and voice synthesis.
-- Single environment variable for Gemini API key.
-
-### V1 → V2 migration path
-
-| V1 component | Becomes in V2 |
-|--------------|---------------|
-| Hardcoded supplier JSON | Firestore `agents/` collection |
-| Single Gemini ranking prompt | One of several tool-call patterns in the mission worker |
-| Vapi function call | One mission creation entry point (alongside web UI) |
-| Backend server response | First event in the mission event timeline |
-| ElevenLabs voice output | One notification channel (voice, alongside web timeline) |
-
----
-
-## V2 architecture — Full mission loop
-
-### Architecture goals
+The architecture optimizes for:
 
 - Durable asynchronous missions
 - Explicit policy enforcement
 - Clear separation between model and application logic
 - Fast greenfield implementation
-- Google Cloud evidence for the hackathon
+- Google Cloud deployment
 - Low idle cost
-- Clean path from demo to pilot
+- A clean path from hackathon to pilot
+- Judges can clone and run locally or against cloud services
 
-### System diagram
+## System diagram
 
 ```mermaid
 flowchart TD
     U[Buyer web app] --> A[Astro + React islands]
-    V[Vapi voice agent] --> G
     A --> G[Go API / mission gateway\nCloud Run]
     G --> F[(Firestore)]
     G --> Q[Cloud Tasks]
@@ -110,15 +27,17 @@ flowchart TD
     W --> M[Gemini\nGoogle Gen AI SDK]
     W --> P[Deterministic policy engine]
     W --> F
-    W --> S[Supplier agent endpoints\nweb links / HTTP]
-    W --> C[Cloud Storage\nproof artifacts]
+    W --> S[Supplier agent endpoints\ncurated registry]
+    W --> C[Evidence metadata\nFirestore; Cloud Storage later]
     G --> L[Cloud Logging / Error Reporting]
     W --> L
 ```
 
-### Frontend
+## Frontend
 
-#### Astro
+### Astro
+
+Astro is used for:
 
 - Public landing pages
 - Public supplier agent cards
@@ -126,26 +45,28 @@ flowchart TD
 - Documentation and onboarding
 - Fast initial page loads
 
-#### React islands
+### React islands
 
-Interactive islands only where needed:
+Interactive islands are used only where needed:
 
-- `MissionForm`
-- `MandateEditor`
-- `OfferComparison`
-- `MissionTimeline`
-- `ExceptionPanel`
-- `EvidenceUpload`
+- `MissionForm` — create a mission from natural language
+- `MandateEditor` — review and confirm the generated mandate
+- `OfferComparison` — compare ranked supplier offers
+- `MissionTimeline` — live view of mission progress and events
+- `ExceptionPanel` — handle escalations and approve actions
+- `EvidenceUpload` — supplier evidence submission (mobile-friendly)
 
-Keep public pages server-rendered. Isolate stateful interactions.
+Astro should not become a React application hidden inside a framework. Keep public pages server-rendered and isolate stateful interactions.
 
-### Backend
+## Backend
 
-#### Go mission gateway
+### Go mission gateway
+
+Responsibilities:
 
 - HTTP API
 - Authentication and authorization boundary
-- Mission creation (from web UI or Vapi webhook)
+- Mission creation
 - Mandate validation
 - Event writes
 - Cloud Tasks enqueueing
@@ -153,20 +74,22 @@ Keep public pages server-rendered. Isolate stateful interactions.
 - Idempotency keys
 - API error handling
 
-#### Go mission worker
+### Go mission worker
+
+Responsibilities:
 
 - Load mission state
-- Select next deterministic step
+- Select the next deterministic step
 - Call Gemini where interpretation is needed
 - Execute validated tools
 - Write state and events
-- Schedule next task
+- Schedule the next task
 - Retry transient failures
 - Escalate policy or safety failures
 
-Gateway and worker may initially be one Go service with separate routes. Split only if operationally useful.
+The gateway and worker may initially be one Go service with separate routes. Split deployments only if operationally useful.
 
-### Gemini (V2)
+## Gemini
 
 Use the Google Gen AI Go SDK:
 
@@ -174,7 +97,7 @@ Use the Google Gen AI Go SDK:
 google.golang.org/genai
 ```
 
-Gemini handles:
+Gemini is responsible for:
 
 - Parsing natural-language goals
 - Extracting structured constraints
@@ -185,11 +108,11 @@ Gemini handles:
 - Recommending escalation
 - Generating human-readable explanations
 
-Gemini cannot directly mutate mission state. It proposes a typed action; Go validates and executes.
+Gemini is not allowed to directly mutate mission state. It proposes a typed action; Go validates and executes it.
 
-### Deterministic policy engine
+## Deterministic policy engine
 
-Checks:
+The policy engine checks:
 
 - Budget ceiling
 - Deadline
@@ -201,7 +124,19 @@ Checks:
 - Expiration time
 - Prohibited work categories
 
-### Firestore data model
+Example:
+
+```text
+If proposed price > mandate budget:
+    reject automatic commitment
+    create exception
+
+If task category is regulated or credential evidence is missing:
+    block autonomous dispatch
+    request human verification
+```
+
+## Firestore data model
 
 ```text
 agents/{agentId}
@@ -253,9 +188,11 @@ proofReceipts/{receiptId}
   createdAt
 ```
 
-### Asynchronous execution
+Firestore is preferred because mission state and event timelines are document-oriented and quick to evolve. Move to Cloud SQL only if search, reporting, or relational complexity becomes a demonstrated bottleneck.
 
-Cloud Tasks for mission work:
+## Asynchronous execution
+
+Use Cloud Tasks for mission work:
 
 ```text
 mission.created
@@ -268,44 +205,81 @@ mission.created
 → complete.or.escalate
 ```
 
-Every task includes: mission ID, step ID, expected version, idempotency key, attempt count, deadline.
+Every task must include:
 
-### Evidence
+- Mission ID
+- Step ID
+- Expected mission version
+- Idempotency key
+- Attempt count
+- Deadline
 
-Cloud Storage for photos/documents. Firestore stores metadata and access references. Public receipts are redacted and opt-in.
+A task must be safe to retry.
 
-### Authentication and secrets
+Pub/Sub is not required for the MVP. Add it only when one event needs to fan out to multiple independent consumers.
 
-- Firebase Authentication or minimal email-link flow for pilot.
-- Cloud Run service identity for GCP access.
-- API keys in Secret Manager.
-- No service-account JSON in repo or container.
-- Separate buyer, supplier, and operator permissions.
+## Evidence
 
-### Observability
+For the Kiro kernel, store evidence as Firestore metadata: supplier text, source labels, and an optional labelled fixture reference. Cloud Storage for photos or documents is the Horizon 2 path; add it when real uploads are required.
 
-Every mission event includes: mission ID, agent ID, principal ID, tool/operation, input reference, policy decision, outcome, latency, error classification.
+Do not expose private supplier or buyer information in public proof receipts. Public receipts should be explicitly redacted and opt-in.
 
-### Security boundaries
+## Authentication and secrets
 
-- Model cannot bypass mandate checks.
-- Supplier content is untrusted input.
-- Tool arguments validated with typed schemas.
-- State transitions use optimistic version checks.
+- The Kiro demo has no login. Use a single implicit demo buyer so judges can run the flow without credentials.
+- Firebase Authentication or a minimal email-link flow is for the Horizon 2 pilot, not the submission.
+- Use Cloud Run service identity for Google Cloud access when deployed.
+- Store API keys and signing secrets in Secret Manager in production, and in `.env` locally. Never commit secrets.
+- Do not place service-account JSON keys in the repository or container.
+- Separate buyer, supplier, and operator permissions when auth is added.
+
+## Observability
+
+Every mission event should include:
+
+- Mission ID
+- Agent ID
+- Principal ID
+- Tool or operation
+- Input reference
+- Policy decision
+- Outcome
+- Latency
+- Error classification
+
+Cloud Logging should make it possible to show a judge one mission moving from request to completion.
+
+## Security boundaries
+
+- The model cannot bypass mandate checks.
+- Supplier-provided content is untrusted input.
+- Tool arguments are validated with typed schemas.
+- All state transitions use optimistic version checks.
 - Public receipts contain redacted evidence only.
-- Regulated/unsafe work always escalates.
-- Human stop controls can cancel and revoke delegation.
+- Regulated or unsafe work always escalates.
+- Human stop controls can cancel a mission and revoke delegation.
 
-### Deployment shape
+## Deployment shape
 
 ```text
-yaler-web      Astro on Cloud Run or static hosting
+yaler-web      Astro application on Cloud Run or static hosting
 yaler-agent    Go API and worker on Cloud Run
 firestore      durable state
-cloud-tasks    async mission execution
-cloud-storage  evidence artifacts
+cloud-tasks    asynchronous mission execution
+cloud-storage  optional later; not required for Kiro
 secret-manager credentials
 cloud-logging  runtime evidence
 ```
 
-Combining web and API into one Cloud Run service is acceptable initially. Separate once the mission loop is stable.
+For the first deployment, combining the web and API into one Cloud Run service is acceptable. Separate services are preferred once the mission loop is stable.
+
+## Local development
+
+For judges and contributors to run locally:
+
+- Go service runs with Firestore emulator (or a test GCP project).
+- Astro dev server proxies API calls to the Go service.
+- Cloud Tasks are a labelled direct HTTP call to the worker when `CLOUD_TASKS_EMULATOR=true`. Production enqueues real Cloud Tasks. Do not present the local path as a queue.
+- Gemini API calls use a Google AI Studio key (no GCP project required for the model).
+- `.env.example` documents all required configuration, including costs and rate-limit notes for judges.
+- A `Makefile` or equivalent should provide `make dev`, `make test`, and `make build` once Task 1 exists. Do not document those targets as working before they do.

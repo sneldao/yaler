@@ -1,0 +1,54 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+}
+
+const { title = 'Yaler — Agent-Native Mission Network' } = Astro.props;
+---
+
+<!mhtml>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content="Yaler is an agent-native mission network for independent businesses." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  </head>
+  <body class="font-['Plus_Jakarta_Sans',sans-serif] bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased">
+    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-3 group">
+          <div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-sm group-hover:scale-105 transition">
+            Y
+          </div>
+          <span class="font-bold text-lg text-white tracking-tight">YALER</span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">LONDON</span>
+        </a>
+
+        <nav class="flex items-center gap-6 text-sm font-medium">
+          <a href="/missions/new" class="text-slate-300 hover:text-white transition">New Mission</a>
+          <a href="/suppliers" class="text-slate-300 hover:text-white transition">Suppliers</a>
+          <a href="https://github.com/sneldao/yaler" target="_blank" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold px-4 py-2 rounded-xl transition text-xs">
+            GitHub
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
+      <slot />
+    </main>
+
+    <footer class="border-t border-slate-800 bg-slate-950 py-8 text-xs text-slate-500">
+      <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <p>© 2026 Yaler Network. Built for Ready, Spec, Ship Kiro Hackathon.</p>
+        <p class="font-mono">Gemini Proposes. Go Decides.</p>
+      </div>
+    </footer>
+  </body>
+</html>

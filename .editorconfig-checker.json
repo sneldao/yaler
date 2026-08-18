@@ -1,0 +1,11 @@
+{
+  "Verbose": false,
+  "IgnoreDefaults": false,
+  "Exclude": [
+    "^go\\.sum$",
+    "^bin/",
+    "\\.png$",
+    "\\.ico$",
+    "\\.webp$"
+  ]
+}

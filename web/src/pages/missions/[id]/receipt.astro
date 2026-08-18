@@ -1,0 +1,85 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { getProofReceipt } from '../../../lib/api';
+
+const { id } = Astro.params;
+
+let receipt = null;
+try {
+  if (id) {
+    receipt = await getProofReceipt(id);
+  }
+} catch (e) {
+  receipt = null;
+}
+---
+
+<Layout title={`Proof Receipt ${id} — Yaler`}>
+  <div class="max-w-2xl mx-auto py-6 space-y-6">
+    {receipt ? (
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+              Verified Public Proof Receipt
+            </span>
+            <h1 class="text-2xl font-bold text-white mt-2">Mission Completion Certificate</h1>
+          </div>
+          <span class="text-[10px] font-mono text-slate-500">
+            {new Date(receipt.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
+            <p className="text-xs text-slate-400 font-semibold uppercase">Mission Goal</p>
+            <p className="text-white font-medium text-base">{receipt.summary}</p>
+          </div>
+
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
+            <p className="text-xs text-slate-400 font-semibold uppercase">Resolution Terms</p>
+            <p className="text-slate-200 text-sm">{receipt.agreedTerms}</p>
+          </div>
+
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <p className="text-xs text-slate-400 font-semibold uppercase">Verification Evidence Labels</p>
+            <div className="flex flex-wrap gap-2">
+              {receipt.evidenceLabels.map((lbl: string) => (
+                <span className="text-xs font-mono bg-slate-900 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                  ✓ {lbl}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <p className="text-xs text-slate-400 font-semibold uppercase">Redacted Public Metadata</p>
+            <div className="text-xs space-y-1 text-slate-300 font-mono">
+              {Object.entries(receipt.redactedEvidence).map(([k, v]) => (
+                <div className="flex justify-between border-b border-slate-900/50 py-1">
+                  <span className="text-slate-500 capitalize">{k}:</span>
+                  <span className="text-slate-200">{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500">
+          <span>Share Token: <code className="text-cyan-400">{receipt.shareToken}</code></span>
+          <a href={`/missions/${receipt.missionId}`} className="text-cyan-400 hover:underline">
+            &larr; Back to Mission
+          </a>
+        </div>
+      </div>
+    ) : (
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold text-white">Receipt Pending Verification</h2>
+        <p className="text-slate-400 text-sm">The proof receipt will be available once all evidence milestones are verified.</p>
+        <a href={`/missions/${id}`} className="inline-block bg-cyan-500 text-slate-950 font-semibold px-4 py-2 rounded-xl text-sm">
+          Return to Mission Timeline
+        </a>
+      </div>
+    )}
+  </div>
+</Layout>

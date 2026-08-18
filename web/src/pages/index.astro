@@ -1,0 +1,60 @@
+---
+import Layout from '../layouts/Layout.astro';
+import MissionForm from '../components/islands/MissionForm';
+import { listMissions } from '../lib/api';
+
+let missions = [];
+try {
+  missions = await listMissions();
+} catch (e) {
+  missions = [];
+}
+---
+
+<Layout title="Yaler — Agent-Native Mission Network">
+  <div class="space-y-12">
+    <!-- Hero Section -->
+    <div class="text-center space-y-4 max-w-3xl mx-auto py-6">
+      <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        Agent-Native Hospitality Operations Wedge
+      </span>
+      <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
+        Autonomous operational missions for independent businesses.
+      </h1>
+      <p class="text-slate-400 text-lg">
+        A buyer's agent finds, negotiates with, and supervises local service providers until real-world jobs are completed or safely escalated.
+      </p>
+    </div>
+
+    <!-- Mission Form Island -->
+    <MissionForm client:load />
+
+    <!-- Active Missions Feed -->
+    {missions.length > 0 && (
+      <div class="space-y-4 max-w-2xl mx-auto pt-6">
+        <h3 class="text-lg font-bold text-white flex items-center justify-between">
+          <span>Recent Missions</span>
+          <span class="text-xs font-normal text-slate-400">{missions.length} active</span>
+        </h3>
+        <div class="space-y-3">
+          {missions.map((m) => (
+            <a
+              href={`/missions/${m.id}`}
+              class="block bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl p-4 transition"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                  {m.status}
+                </span>
+                <span class="text-xs font-mono text-slate-500">{new Date(m.createdAt).toLocaleTimeString()}</span>
+              </div>
+              <p class="text-white font-medium text-sm mt-2">{m.goal}</p>
+              <p class="text-xs text-slate-400 mt-1">Budget Max: £{m.mandate.budget.maxAmount} • Area: {m.mandate.serviceArea.postalDistrict}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</Layout>

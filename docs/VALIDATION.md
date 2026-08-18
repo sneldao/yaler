@@ -1,5 +1,7 @@
 # Validation and onboarding
 
+**Horizon:** post-Kiro / customer pilot. Do not run this interview programme before the 23 August submission. The Kiro demo uses labelled synthetic suppliers and one reproducible test mission. See [SCOPE.md](SCOPE.md) for the slice that ships first.
+
 ## Goal
 
 Recruit enough London participants to test whether Yaler can coordinate a real operational mission, without pretending that a hackathon demo is already a live marketplace.
@@ -94,13 +96,15 @@ Do not pitch Yaler before understanding the current workflow.
 
 ## Fast onboarding target
 
-Before submission, aim for:
+**Kiro submission (now):** 3 labelled synthetic supplier agents, 1 completed test mission, 1 documented exception or reroute. No live interviews required.
+
+**Horizon 2 pilot, after submission, aim for:**
 
 - 5 demand-side conversations
 - 5 supply-side conversations
-- 3 curated supplier agents in the demo registry
+- 3 curated real supplier profiles in the registry
 - 1 demand-side test profile
-- 1 completed test mission
+- 1 completed test mission with a human operator on standby
 - 1 documented exception or reroute
 
 These numbers are for learning and evidence, not claims of traction.

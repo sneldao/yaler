@@ -1,0 +1,41 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Go
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# Node / Astro / Frontend
+web/node_modules/
+web/dist/
+web/.astro/
+web/.vercel/
+web/.output/
+web/npm-debug.log*
+
+# Firebase & Emulators
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Tooling caches
+.cache/
+*.orig

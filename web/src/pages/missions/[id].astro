@@ -1,0 +1,41 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import MandateEditor from '../../components/islands/MandateEditor';
+import OfferComparison from '../../components/islands/OfferComparison';
+import MissionTimeline from '../../components/islands/MissionTimeline';
+import { getMission } from '../../lib/api';
+
+const { id } = Astro.params;
+
+let mission = null;
+try {
+  if (id) {
+    mission = await getMission(id);
+  }
+} catch (e) {
+  mission = null;
+}
+---
+
+<Layout title={`Mission ${id} — Yaler`}>
+  {mission ? (
+    <div class="space-y-8">
+      {mission.status === 'DRAFT' ? (
+        <MandateEditor client:load initialMission={mission} />
+      ) : (
+        <>
+          <MissionTimeline client:load missionId={mission.id} />
+          <OfferComparison client:load missionId={mission.id} />
+        </>
+      )}
+    </div>
+  ) : (
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-4">
+      <h2 className="text-xl font-bold text-white">Mission Not Found</h2>
+      <p className="text-slate-400 text-sm">The mission with ID {id} could not be loaded.</p>
+      <a href="/" class="inline-block bg-cyan-500 text-slate-950 font-semibold px-4 py-2 rounded-xl text-sm">
+        Return Home
+      </a>
+    </div>
+  )}
+</Layout>

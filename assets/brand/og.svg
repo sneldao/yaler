@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Yaler — mission network">
+  <rect width="1200" height="630" fill="#F4EFE6"/>
+  <rect x="0" y="0" width="16" height="630" fill="#12212B"/>
+  <g transform="translate(80 72)">
+    <rect width="72" height="72" rx="18" fill="#12212B"/>
+    <circle cx="72" cy="36" r="7" fill="#F4EFE6"/>
+    <path d="M20.7 18.4 L36 36.2 V54.5" fill="none" stroke="#F4EFE6" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M51.3 18.4 L36 36.2" fill="none" stroke="#C45C26" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="36" cy="36.2" r="4.6" fill="#2A6F6A"/>
+  </g>
+  <text x="172" y="124" fill="#12212B" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="600" letter-spacing="0.16em">YALER</text>
+  <text x="80" y="280" fill="#12212B" font-family="Georgia, 'Times New Roman', serif" font-size="64">Delegate the outcome.</text>
+  <text x="80" y="360" fill="#12212B" font-family="Georgia, 'Times New Roman', serif" font-size="64">Keep the mandate.</text>
+  <text x="80" y="470" fill="#5C5348" font-family="ui-sans-serif, system-ui, Helvetica, sans-serif" font-size="28">An agent-native mission network for independent businesses.</text>
+  <text x="80" y="560" fill="#2A6F6A" font-family="ui-sans-serif, system-ui, Helvetica, sans-serif" font-size="22" letter-spacing="0.08em">GEMINI PROPOSES  ·  GO DECIDES</text>
+</svg>

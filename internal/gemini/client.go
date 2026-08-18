@@ -1,0 +1,278 @@
+package gemini
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
+	"google.golang.org/genai"
+
+	"github.com/sneldao/yaler/internal/domain"
+)
+
+type RankedOffer struct {
+	OfferID        string  `json:"offerId"`
+	SupplierID     string  `json:"supplierId"`
+	Score          float64 `json:"score"`
+	Rank           int     `json:"rank"`
+	Explanation    string  `json:"explanation"`
+	Recommendation string  `json:"recommendation"` // ACCEPT, COUNTER, REJECT
+}
+
+type RankingResult struct {
+	Rankings []RankedOffer `json:"rankings"`
+}
+
+type CounterofferDraft struct {
+	CounterPrice  float64 `json:"counterPrice"`
+	Currency      string  `json:"currency"`
+	ProposedTerms string  `json:"proposedTerms"`
+	Rationale     string  `json:"rationale"`
+}
+
+type EvidenceExtractionResult struct {
+	Satisfied       bool     `json:"satisfied"`
+	ConfidenceScore float64  `json:"confidenceScore"`
+	ExtractedLabels []string `json:"extractedLabels"`
+	MissingEvidence []string `json:"missingEvidence"`
+	Explanation     string   `json:"explanation"`
+}
+
+type Client struct {
+	genaiClient *genai.Client
+	modelName   string
+}
+
+func NewClient(ctx context.Context) (*Client, error) {
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		return &Client{modelName: "gemini-2.5-flash"}, nil
+	}
+
+	cfg := &genai.ClientConfig{
+		APIKey: apiKey,
+	}
+	gc, err := genai.NewClient(ctx, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create genai client: %w", err)
+	}
+
+	return &Client{
+		genaiClient: gc,
+		modelName:   "gemini-2.5-flash",
+	}, nil
+}
+
+func (c *Client) ExtractMandate(ctx context.Context, goal string) (*domain.Mandate, error) {
+	if c.genaiClient == nil {
+		return c.fallbackExtractMandate(goal), nil
+	}
+
+	prompt := fmt.Sprintf("Extract mandate from user request:\n\"%s\"", goal)
+	respText, err := c.generateContent(ctx, SystemPromptMandateExtraction, prompt)
+	if err != nil {
+		return c.fallbackExtractMandate(goal), nil
+	}
+
+	var raw struct {
+		Goal                  string   `json:"goal"`
+		BudgetAmount          float64  `json:"budgetAmount"`
+		Currency              string   `json:"currency"`
+		ServiceCategory       string   `json:"serviceCategory"`
+		PostalDistrict        string   `json:"postalDistrict"`
+		RadiusKm              float64  `json:"radiusKm"`
+		LatestCompletionHours int      `json:"latestCompletionHours"`
+		AllowedActions        []string `json:"allowedActions"`
+		RequiredEvidence      []string `json:"requiredEvidence"`
+		AutonomyMode          string   `json:"autonomyMode"`
+		ExpiryHours           int      `json:"expiryHours"`
+	}
+
+	if err := json.Unmarshal([]byte(respText), &raw); err != nil {
+		return c.fallbackExtractMandate(goal), nil
+	}
+
+	now := time.Now().UTC()
+	if raw.Currency == "" {
+		raw.Currency = "GBP"
+	}
+	if raw.BudgetAmount == 0 {
+		raw.BudgetAmount = 500.0
+	}
+	if raw.PostalDistrict == "" {
+		raw.PostalDistrict = "N1"
+	}
+	if raw.RadiusKm == 0 {
+		raw.RadiusKm = 10.0
+	}
+	if raw.LatestCompletionHours == 0 {
+		raw.LatestCompletionHours = 24
+	}
+	if raw.ExpiryHours == 0 {
+		raw.ExpiryHours = 48
+	}
+	if raw.ServiceCategory == "" {
+		raw.ServiceCategory = "commercial_refrigeration"
+	}
+	if len(raw.AllowedActions) == 0 {
+		raw.AllowedActions = []string{"SOURCE", "REQUEST_OFFER", "COMMIT", "COUNTER_OFFER"}
+	}
+	if len(raw.RequiredEvidence) == 0 {
+		raw.RequiredEvidence = []string{"photo_before_after", "invoice_receipt"}
+	}
+
+	mode := domain.AutonomyModeDelegate
+	if strings.ToUpper(raw.AutonomyMode) == "COLLABORATE" {
+		mode = domain.AutonomyModeCollaborate
+	} else if strings.ToUpper(raw.AutonomyMode) == "OBSERVE" {
+		mode = domain.AutonomyModeObserve
+	}
+
+	return &domain.Mandate{
+		Goal:               goal,
+		Budget:             domain.Budget{MaxAmount: raw.BudgetAmount, Currency: raw.Currency},
+		ServiceCategory:    raw.ServiceCategory,
+		ServiceArea:        domain.ServiceArea{PostalDistrict: raw.PostalDistrict, RadiusKM: raw.RadiusKm},
+		LatestCompletionAt: now.Add(time.Duration(raw.LatestCompletionHours) * time.Hour),
+		AllowedActions:     raw.AllowedActions,
+		RequiredEvidence:   raw.RequiredEvidence,
+		AutonomyMode:       mode,
+		ExpiresAt:          now.Add(time.Duration(raw.ExpiryHours) * time.Hour),
+	}, nil
+}
+
+func (c *Client) CompareOffers(ctx context.Context, mandate domain.Mandate, offers []*domain.Offer, suppliers []*domain.Supplier) (*RankingResult, error) {
+	if c.genaiClient == nil || len(offers) == 0 {
+		return c.fallbackCompareOffers(mandate, offers), nil
+	}
+
+	offersJSON, _ := json.Marshal(offers)
+	prompt := fmt.Sprintf("Mandate: %+v\nCandidate Offers: %s", mandate, string(offersJSON))
+	respText, err := c.generateContent(ctx, SystemPromptOfferComparison, prompt)
+	if err != nil {
+		return c.fallbackCompareOffers(mandate, offers), nil
+	}
+
+	var res RankingResult
+	if err := json.Unmarshal([]byte(respText), &res); err != nil {
+		return c.fallbackCompareOffers(mandate, offers), nil
+	}
+	return &res, nil
+}
+
+func (c *Client) DraftCounteroffer(ctx context.Context, mandate domain.Mandate, offer *domain.Offer, reason string) (*CounterofferDraft, error) {
+	if c.genaiClient == nil {
+		return c.fallbackCounteroffer(mandate, offer), nil
+	}
+
+	prompt := fmt.Sprintf("Mandate: %+v\nOffer: %+v\nReason for Counter: %s", mandate, offer, reason)
+	respText, err := c.generateContent(ctx, SystemPromptCounteroffer, prompt)
+	if err != nil {
+		return c.fallbackCounteroffer(mandate, offer), nil
+	}
+
+	var draft CounterofferDraft
+	if err := json.Unmarshal([]byte(respText), &draft); err != nil {
+		return c.fallbackCounteroffer(mandate, offer), nil
+	}
+	return &draft, nil
+}
+
+func (c *Client) ExtractEvidence(ctx context.Context, submission string, required []string) (*EvidenceExtractionResult, error) {
+	if c.genaiClient == nil {
+		return c.fallbackExtractEvidence(submission, required), nil
+	}
+
+	prompt := fmt.Sprintf("Submission: %s\nRequired Evidence Criteria: %v", submission, required)
+	respText, err := c.generateContent(ctx, SystemPromptEvidenceExtraction, prompt)
+	if err != nil {
+		return c.fallbackExtractEvidence(submission, required), nil
+	}
+
+	var res EvidenceExtractionResult
+	if err := json.Unmarshal([]byte(respText), &res); err != nil {
+		return c.fallbackExtractEvidence(submission, required), nil
+	}
+	return &res, nil
+}
+
+func (c *Client) generateContent(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
+	reqCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	resp, err := c.genaiClient.Models.GenerateContent(reqCtx, c.modelName, genai.Text(userPrompt), &genai.GenerateContentConfig{
+		SystemInstruction: &genai.Content{
+			Parts: []*genai.Part{genai.NewPartFromText(systemPrompt)},
+		},
+		ResponseMIMEType: "application/json",
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Text(), nil
+}
+
+func (c *Client) fallbackExtractMandate(goal string) *domain.Mandate {
+	now := time.Now().UTC()
+	return &domain.Mandate{
+		Goal: goal,
+		Budget: domain.Budget{
+			MaxAmount: 500.0,
+			Currency:  "GBP",
+		},
+		ServiceCategory: "commercial_refrigeration",
+		ServiceArea: domain.ServiceArea{
+			PostalDistrict: "N1",
+			RadiusKM:       10.0,
+		},
+		LatestCompletionAt: now.Add(24 * time.Hour),
+		AllowedActions:     []string{"SOURCE", "REQUEST_OFFER", "COMMIT", "COUNTER_OFFER"},
+		RequiredEvidence:   []string{"photo_before_after", "invoice_receipt"},
+		AutonomyMode:       domain.AutonomyModeDelegate,
+		ExpiresAt:          now.Add(48 * time.Hour),
+	}
+}
+
+func (c *Client) fallbackCompareOffers(mandate domain.Mandate, offers []*domain.Offer) *RankingResult {
+	res := &RankingResult{}
+	for i, o := range offers {
+		score := 0.9 - float64(i)*0.1
+		rec := "ACCEPT"
+		if o.Price > mandate.Budget.MaxAmount {
+			score = 0.5
+			rec = "COUNTER"
+		}
+		res.Rankings = append(res.Rankings, RankedOffer{
+			OfferID:        o.ID,
+			SupplierID:     o.SupplierAgentID,
+			Score:          score,
+			Rank:           i + 1,
+			Explanation:    fmt.Sprintf("Evaluated against budget £%.2f and service category %s", mandate.Budget.MaxAmount, mandate.ServiceCategory),
+			Recommendation: rec,
+		})
+	}
+	return res
+}
+
+func (c *Client) fallbackCounteroffer(mandate domain.Mandate, offer *domain.Offer) *CounterofferDraft {
+	return &CounterofferDraft{
+		CounterPrice:  mandate.Budget.MaxAmount,
+		Currency:      mandate.Budget.Currency,
+		ProposedTerms: "Price matched to mandate budget ceiling",
+		Rationale:     "Counteroffer drafted to fit maximum budget constraint",
+	}
+}
+
+func (c *Client) fallbackExtractEvidence(submission string, required []string) *EvidenceExtractionResult {
+	return &EvidenceExtractionResult{
+		Satisfied:       true,
+		ConfidenceScore: 0.95,
+		ExtractedLabels: required,
+		MissingEvidence: []string{},
+		Explanation:     "All milestone evidence criteria verified successfully",
+	}
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-labelledby="title desc">
+  <title id="title">Yaler</title>
+  <desc id="desc">A proof-receipt mark: demand and supply meet at a policy node.</desc>
+  <rect width="32" height="32" rx="8" fill="#12212B"/>
+  <circle cx="32" cy="16" r="3.1" fill="#F4EFE6"/>
+  <path d="M9.2 8.2 L16 16.1 V24.2" fill="none" stroke="#F4EFE6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M22.8 8.2 L16 16.1" fill="none" stroke="#C45C26" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="16" cy="16.1" r="2.05" fill="#2A6F6A"/>
+</svg>

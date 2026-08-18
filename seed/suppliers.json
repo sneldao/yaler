@@ -1,0 +1,72 @@
+[
+  {
+    "id": "sup_rapid_coldcare",
+    "principalType": "supplier_agent",
+    "displayName": "London Rapid ColdCare (Synthetic)",
+    "capabilities": [
+      "commercial_refrigeration",
+      "emergency_repair",
+      "freezer_maintenance",
+      "equipment_repair"
+    ],
+    "serviceArea": {
+      "postalDistrict": "N1",
+      "radiusKm": 15.0
+    },
+    "availability": "SAME_DAY_2HR",
+    "reliabilityScore": 0.96,
+    "priceTier": "PREMIUM",
+    "evidence": [
+      "f_gas_certified",
+      "refcom_registered",
+      "public_liability_5m"
+    ],
+    "status": "ACTIVE"
+  },
+  {
+    "id": "sup_capital_kitchen",
+    "principalType": "supplier_agent",
+    "displayName": "Capital Kitchen Services (Synthetic)",
+    "capabilities": [
+      "commercial_refrigeration",
+      "catering_equipment",
+      "scheduled_maintenance",
+      "equipment_repair"
+    ],
+    "serviceArea": {
+      "postalDistrict": "N1",
+      "radiusKm": 10.0
+    },
+    "availability": "NEXT_DAY",
+    "reliabilityScore": 0.92,
+    "priceTier": "MODERATE",
+    "evidence": [
+      "safe_contractor_approved",
+      "public_liability_2m"
+    ],
+    "status": "ACTIVE"
+  },
+  {
+    "id": "sup_east_catering",
+    "principalType": "supplier_agent",
+    "displayName": "East London Catering Technicians (Synthetic)",
+    "capabilities": [
+      "commercial_refrigeration",
+      "extraction_cleaning",
+      "general_maintenance",
+      "equipment_repair"
+    ],
+    "serviceArea": {
+      "postalDistrict": "E1",
+      "radiusKm": 12.0
+    },
+    "availability": "SAME_DAY_4HR",
+    "reliabilityScore": 0.88,
+    "priceTier": "BUDGET",
+    "evidence": [
+      "nvq_level_3_technicians",
+      "public_liability_2m"
+    ],
+    "status": "ACTIVE"
+  }
+]

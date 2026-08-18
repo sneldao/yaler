@@ -4,15 +4,30 @@
 
 Yaler is an autonomous mission network that helps independent businesses get urgent operational work completed by coordinating demand-side and supply-side agents. The first vertical is London independent hospitality (cafés, restaurants, takeaways) needing urgent equipment repair, cleaning, or maintenance.
 
-## Three horizons
+## Target
 
-1. **V1 (Build Club hack night):** Voice-first mission intake via Vapi + Gemini + ElevenLabs. No database, no frontend. A phone call that books a provider.
-2. **V2 (All Things Agentic hackathon):** Full durable mission loop — Go backend, Firestore, Cloud Tasks, Astro frontend, proof receipts.
-3. **V3 (Customer launch):** Real London pilot with live providers and repeat missions.
+**Ready, Spec, Ship Hackathon** (Kiro Hackathon) — submission deadline August 23, 2026.
 
-## Current phase: V1
+Evaluation criteria:
+- Application Quality: 40 pts
+- Kiro Usage: 20 pts
+- Documentation: 20 pts
+- Innovation and Potential: 15 pts
+- Presentation: 5 pts
 
-We are building the voice loop for the Build Club hack night. The entire interaction is a phone call. No web UI, no database, no cloud infrastructure beyond the serverless function hosting the backend.
+After submission, the system extends toward the All Things Agentic hackathon and then a real London pilot.
+
+## Stack
+
+- **Frontend:** Astro with React islands
+- **Backend:** Go (mission gateway + worker)
+- **LLM:** Gemini via Google Gen AI Go SDK
+- **Database:** Firestore
+- **Async execution:** Cloud Tasks in production; labelled direct worker calls locally
+- **Storage:** Firestore evidence metadata for Kiro; Cloud Storage after submission
+- **Deployment:** Local emulator path required; Cloud Run optional
+- **Secrets:** `.env` locally; Secret Manager when deployed
+- **Observability:** Mission events; Cloud Logging when deployed
 
 ## Key concepts
 
@@ -20,14 +35,25 @@ We are building the voice loop for the Build Club hack night. The entire interac
 - **Mandate:** Budget, deadline, geography, allowed actions, escalation rules — the boundary within which the agent may act.
 - **Proof receipt:** A record of what was requested, who accepted, what happened, and whether it completed.
 - **Bounded autonomy:** Agents act within mandates. They escalate at policy boundaries, not after.
+- **Policy engine:** Deterministic Go code that validates every action against the mandate. Gemini proposes, Go decides.
+
+## Critical constraints
+
+- Judges must be able to clone and run the project locally.
+- The `.kiro/` directory must demonstrate meaningful spec-driven development.
+- No simulated features presented as working — the coordination logic must be real. Local Cloud Tasks are a labelled direct call.
+- Supplier data is synthetic but clearly labelled; the mission execution system is genuine.
+- No login in the Kiro demo. Ship Delegate plus one escalation gate, not every autonomy mode.
+- Demo video is at most 3 minutes.
 
 ## Documentation
 
 - `docs/PRODUCT.md` — problem, users, product loop, differentiation
 - `docs/STRATEGY.md` — market landscape, whitespace, strategic analysis
-- `docs/SCOPE.md` — V1 and V2 scope definitions
-- `docs/ARCHITECTURE.md` — V1 voice loop and V2 full system architecture
+- `docs/SCOPE.md` — MVP scope and definition of done
+- `docs/ARCHITECTURE.md` — full system architecture
 - `docs/AGENT-OPERATING-MODEL.md` — mandates, autonomy modes, messages, escalation
-- `docs/ROADMAP.md` — three-horizon plan with success criteria
-- `docs/VALIDATION.md` — pilot recruitment and interview guides
+- `docs/ROADMAP.md` — build plan with success criteria
+- `docs/VALIDATION.md` — Horizon 2 pilot recruitment (not a Kiro-week task)
 - `docs/DECISIONS.md` — choices made and open questions
+- `docs/BRAND.md` — mark, palette, favicon, and site metadata
