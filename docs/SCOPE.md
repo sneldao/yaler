@@ -183,7 +183,7 @@ Do not build these before the core loop works:
 - Real payments or escrow
 - An open agent marketplace
 - General-purpose procurement
-- Voice channel (Vapi/ElevenLabs) — stretch goal for post-submission
+- Full voice ops channel (SMS / WhatsApp / outbound calls) — speak-in and hear-the-receipt are already shipped
 - WhatsApp or SMS integration
 - Automated dispatch of regulated work (gas, electrical, structural)
 - Complex ratings and review systems

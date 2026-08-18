@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { type Offer, approveException, getOffers } from '../../lib/api';
+import {
+  type CredentialCheck,
+  type FoundEngineer,
+  type Offer,
+  approveException,
+  checkCredential,
+  findNearby,
+  getOffers,
+} from '../../lib/api';
 import { formatMoney, supplierLabel } from '../../lib/copy';
 
 interface Props {
@@ -7,6 +15,8 @@ interface Props {
   offers?: Offer[];
   rehearsal?: boolean;
   onBooked?: (offer: Offer) => void;
+  district?: string;
+  category?: string;
 }
 
 export default function OfferComparison({
@@ -14,6 +24,8 @@ export default function OfferComparison({
   offers: offersProp,
   rehearsal = false,
   onBooked,
+  district = 'N1',
+  category = 'commercial_refrigeration',
 }: Props) {
   const initialSelected = rehearsal
     ? offersProp?.find((offer) => offer.status === 'BLOCKED')?.id ?? offersProp?.[0]?.id ?? null
@@ -23,6 +35,8 @@ export default function OfferComparison({
   const [showCompare, setShowCompare] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [found, setFound] = useState<FoundEngineer[]>([]);
+  const [credentials, setCredentials] = useState<Record<string, CredentialCheck>>({});
 
   useEffect(() => {
     if (offersProp) {
@@ -41,6 +55,28 @@ export default function OfferComparison({
       })
       .catch(console.error);
   }, [missionId, offersProp]);
+
+  useEffect(() => {
+    findNearby(category, district).then(setFound).catch(() => setFound([]));
+  }, [category, district]);
+
+  useEffect(() => {
+    const names = offers.map((o) => o.supplierAgentId).filter(Boolean);
+    if (names.length === 0) return;
+    let cancelled = false;
+    Promise.all(names.map(async (name) => {
+      const cred = await checkCredential(name);
+      return [name, cred] as const;
+    })).then((pairs) => {
+      if (cancelled) return;
+      const next: Record<string, CredentialCheck> = {};
+      for (const [name, cred] of pairs) next[name] = cred;
+      setCredentials(next);
+    }).catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [offers]);
 
   if (offers.length === 0) {
     return (
@@ -129,6 +165,11 @@ export default function OfferComparison({
               {isSelected && offer.explanation && (
                 <p className="text-xs text-ink-muted mt-2">{offer.explanation}</p>
               )}
+              <p className="text-[11px] text-ink-muted mt-2">
+                {credentials[offer.supplierAgentId]?.status === 'listed'
+                  ? `${credentials[offer.supplierAgentId].register} listed · ${credentials[offer.supplierAgentId].asOf}`
+                  : 'Public register: not checked'}
+              </p>
             </button>
           );
         })}
@@ -176,6 +217,24 @@ export default function OfferComparison({
       </div>
 
       {message && <p className="text-sm text-ink-muted animate-pop-in">{message}</p>}
+
+      {found.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-ink">Found this morning</h4>
+          <p className="text-xs text-ink-muted">Nearby names from the open web. Not on our roster. Not bookable.</p>
+          {found.map((item) => (
+            <div key={`${item.name}-${item.url}`} className="paper-card rounded-2xl p-4 space-y-1">
+              <p className="text-[11px] uppercase tracking-wider text-ink-muted">{item.label}</p>
+              <p className="font-medium text-ink">{item.name}</p>
+              {item.url && (
+                <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-xs text-mandate break-all">
+                  {item.url}
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -118,17 +119,17 @@ func (d *DiscoveryService) SearchExa(ctx context.Context, category, district str
 		suppliers = append(suppliers, &domain.Supplier{
 			ID:            id,
 			DisplayName:   name,
-			PrincipalType: "EXA_SEARCH_AGENT",
-			Capabilities:  []string{category, "commercial_repair"},
+			PrincipalType: "FOUND",
+			Capabilities:  []string{category, r.URL},
 			ServiceArea: domain.ServiceArea{
 				PostalDistrict: district,
 				RadiusKM:       15,
 			},
-			Availability:     "AVAILABLE",
-			ReliabilityScore: 0.92,
-			PriceTier:        "MODERATE",
-			Evidence:         []string{"Exa Neural Search Verified", "Refcom Certified"},
-			Status:           "ACTIVE",
+			Availability:     "UNVETTED",
+			ReliabilityScore: 0,
+			PriceTier:        "UNKNOWN",
+			Evidence:         []string{"found_this_morning", r.URL},
+			Status:           "FOUND",
 		})
 	}
 
@@ -141,4 +142,83 @@ func (d *DiscoveryService) SearchExa(ctx context.Context, category, district str
 	d.mu.Unlock()
 
 	return suppliers, nil
+}
+
+// Credential is a fail-closed public-register check.
+type Credential struct {
+	Name     string `json:"name"`
+	Status   string `json:"status"` // listed | not_checked
+	Register string `json:"register,omitempty"`
+	AsOf     string `json:"asOf,omitempty"`
+	Detail   string `json:"detail,omitempty"`
+}
+
+// CheckCredential looks up a name on Companies House via Apify.
+// Any missing key, timeout, or unexpected page returns not_checked.
+func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Credential {
+	out := Credential{Name: name, Status: "not_checked"}
+	if d.apifyKey == "" || strings.TrimSpace(name) == "" {
+		return out
+	}
+
+	q := strings.TrimSpace(name)
+	q = strings.ReplaceAll(q, "(Synthetic)", "")
+	q = strings.TrimSpace(q)
+	startURL := "https://find-and-update.company-information.service.gov.uk/search/companies?q=" + url.QueryEscape(q)
+
+	pageFn := "async function pageFunction(context) { const $ = context.$; return { text: $('body').text().replace(/\\s+/g, ' ').slice(0, 4000) }; }"
+	body, _ := json.Marshal(map[string]any{
+		"startUrls":    []map[string]string{{"url": startURL}},
+		"pageFunction": pageFn,
+	})
+
+	req, err := http.NewRequestWithContext(ctx, "POST",
+		"https://api.apify.com/v2/acts/apify~cheerio-scraper/run-sync-get-dataset-items?token="+d.apifyKey,
+		bytes.NewBuffer(body),
+	)
+	if err != nil {
+		return out
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 12 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return out
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return out
+	}
+
+	var rows []struct {
+		Text string `json:"text"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&rows); err != nil || len(rows) == 0 {
+		return out
+	}
+
+	hay := strings.ToLower(rows[0].Text)
+	needles := strings.Fields(strings.ToLower(q))
+	if len(needles) == 0 {
+		return out
+	}
+	hits := 0
+	for _, n := range needles {
+		if len(n) < 4 {
+			continue
+		}
+		if strings.Contains(hay, n) {
+			hits++
+		}
+	}
+	if hits < 2 || !strings.Contains(hay, "companies house") {
+		return out
+	}
+
+	out.Status = "listed"
+	out.Register = "Companies House"
+	out.AsOf = time.Now().UTC().Format("2 Jan 2006")
+	out.Detail = "Name appears on the public company search"
+	return out
 }

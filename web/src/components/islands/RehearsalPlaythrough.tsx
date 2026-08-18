@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import type { Mission, Offer } from '../../lib/api';
+import type { CredentialCheck, Mission, Offer } from '../../lib/api';
+import { checkCredential } from '../../lib/api';
 import {
   REHEARSAL_MANDATE,
   REHEARSAL_OFFERS,
@@ -13,6 +14,8 @@ import MandateEditor from './MandateEditor';
 import MissionTimeline from './MissionTimeline';
 import OfferComparison from './OfferComparison';
 import RehearsalBanner from '../primitives/RehearsalBanner';
+import SpeakNote from '../primitives/SpeakNote';
+import HearReceipt from '../primitives/HearReceipt';
 import { formatMoney } from '../../lib/copy';
 
 type Phase = 'details' | 'looking' | 'quotes' | 'receipt';
@@ -36,6 +39,7 @@ export default function RehearsalPlaythrough() {
   const [mission, setMission] = useState<Mission>(rehearsalMission('DRAFT'));
   const [booked, setBooked] = useState<Offer | null>(null);
   const [saved, setSaved] = useState(false);
+  const [bookedCred, setBookedCred] = useState<CredentialCheck | null>(null);
 
   useEffect(() => {
     if (phase !== 'looking') return;
@@ -56,6 +60,9 @@ export default function RehearsalPlaythrough() {
       selectedSupplierId: offer.supplierAgentId,
     }));
     setPhase('receipt');
+    checkCredential(offer.supplierAgentId).then(setBookedCred).catch(() => {
+      setBookedCred({ name: offer.supplierAgentId, status: 'not_checked' });
+    });
   };
 
   const persistRules = () => {
@@ -106,11 +113,27 @@ export default function RehearsalPlaythrough() {
       </p>
 
       {phase === 'details' && (
-        <MandateEditor
-          initialMission={rehearsalMission('DRAFT', { mandate: { ...REHEARSAL_MANDATE } })}
-          rehearsal
-          onStarted={handleStarted}
-        />
+        <>
+          <div className="paper-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p className="text-sm text-ink">Hands wet? Speak last Tuesday’s job. We’ll still show the written note below.</p>
+            <SpeakNote
+              label="Speak last Tuesday’s job"
+              onTranscript={(text) => {
+                setMission((prev) => ({
+                  ...prev,
+                  goal: text,
+                  mandate: { ...prev.mandate, goal: text },
+                }));
+              }}
+            />
+          </div>
+          <MandateEditor
+            key={mission.goal}
+            initialMission={mission}
+            rehearsal
+            onStarted={handleStarted}
+          />
+        </>
       )}
 
       {phase === 'looking' && (
@@ -176,6 +199,14 @@ export default function RehearsalPlaythrough() {
                 <span className="text-sm text-ink-muted">Paid</span>
                 <span className="font-display text-2xl text-ink">{formatMoney(booked.price, booked.currency)}</span>
               </div>
+              <p className="text-xs text-ink-muted">
+                {bookedCred?.status === 'listed'
+                  ? `${bookedCred.register} listed · ${bookedCred.asOf}`
+                  : 'Public register: not checked'}
+              </p>
+              <HearReceipt
+                text={`Receipt. ${receipt.summary} ${receipt.agreedTerms} Nothing was booked. This was a rehearsal.`}
+              />
             </div>
             <div className="receipt-perf" />
           </article>

@@ -40,7 +40,7 @@ Speak or type → Check the details → Ask nearby engineers → Book inside the
 
 ## 🚀 Key Frontiers Built
 
-1. **🎬 N1 fridge rehearsal & hands-free voice**: A labelled playthrough of last Tuesday’s job (nothing booked) plus Web Audio / Speech voice input for a live callout.
+1. **🎬 N1 fridge rehearsal**: Speak last Tuesday’s job, feel the over-budget stop, hear the paper. Nothing is booked.
 2. **⚡ Gemini 2.5 Mandate Engine**: Converts messy speech/text into structured policy mandates with budget ceilings and SLAs.
 3. **🤝 Agent-to-Agent (A2A) Protocol**: Standardized JSON-RPC 2.0 endpoint (`/api/a2a`) with cryptographic payload signing (`RSA-2048`).
 4. **🛡️ Go Policy Guardrails**: Enforces hard budget ceilings, geographic postal boundaries, and mandatory safety escalations.
@@ -55,8 +55,10 @@ Speak or type → Check the details → Ask nearby engineers → Book inside the
 |---|---|
 | **Gemini / Google DeepMind** | Mandate extraction, supplier offer ranking, counter-offer drafting, photo evidence verification, and privacy redaction. |
 | **GCP Cloud Run & Cloud Storage** | Serverless backend/frontend container deployment with Secret Manager binding and direct Cloud Storage bucket uploads. |
-| **Vapi & ElevenLabs** | Hands-free voice callout creation via Vapi plus realistic voice briefing synthesis via ElevenLabs API (`POST /api/tts`). |
-| **Exa & Apify** | Service provider web discovery & verification infrastructure. |
+| **Vapi** | Speak a job on rehearsal and the live form (Web Speech fallback). |
+| **ElevenLabs** | `Hear the paper` on rehearsal and live receipts (`POST /api/tts`). |
+| **Exa** | Nearby names as “found this morning” — labelled, not bookable (`GET /api/discovery`). |
+| **Apify** | Companies House check; fails closed to “not checked” (`GET /api/credentials`). |
 
 ---
 

@@ -1,5 +1,6 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
+import HearReceipt from '../../../components/primitives/HearReceipt';
 import { getProofReceipt } from '../../../lib/api';
 
 export function getStaticPaths() {
@@ -70,6 +71,8 @@ try {
               ))}
             </dl>
           </div>
+
+          <HearReceipt client:load text={`${receipt.summary} ${receipt.agreedTerms}`} />
 
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs text-ink-muted pt-2">
             <p>Share code <span class="text-ink">{receipt.shareToken}</span></p>

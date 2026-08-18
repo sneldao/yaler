@@ -53,6 +53,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/a2a", h.HandleA2A)
 	mux.HandleFunc("POST /api/upload", h.HandleUpload)
 	mux.HandleFunc("POST /api/tts", h.HandleTTS)
+	mux.HandleFunc("GET /api/discovery", h.HandleDiscovery)
+	mux.HandleFunc("GET /api/credentials", h.HandleCredentials)
 	mux.HandleFunc("POST /api/worker/step", h.HandleWorkerStep)
 
 	// Ensure uploads directory exists and serve uploaded media files
@@ -66,6 +68,59 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 
 func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "service": "yaler-agent"})
+}
+
+func (h *Handler) HandleDiscovery(w http.ResponseWriter, r *http.Request) {
+	category := r.URL.Query().Get("category")
+	district := r.URL.Query().Get("district")
+	if category == "" {
+		category = "commercial_refrigeration"
+	}
+	if district == "" {
+		district = "N1"
+	}
+	if h.discoveryService == nil || !h.discoveryService.IsConfigured() {
+		writeJSON(w, http.StatusOK, map[string]any{"found": []any{}, "note": "not_checked"})
+		return
+	}
+	suppliers, err := h.discoveryService.SearchExa(r.Context(), category, district)
+	if err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{"found": []any{}, "note": "not_checked"})
+		return
+	}
+	type foundCard struct {
+		Name     string `json:"name"`
+		URL      string `json:"url"`
+		Label    string `json:"label"`
+		Bookable bool   `json:"bookable"`
+	}
+	var cards []foundCard
+	for _, s := range suppliers {
+		src := ""
+		if len(s.Evidence) > 1 {
+			src = s.Evidence[1]
+		}
+		cards = append(cards, foundCard{
+			Name:     s.DisplayName,
+			URL:      src,
+			Label:    "Found this morning — not on our roster",
+			Bookable: false,
+		})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"found": cards})
+}
+
+func (h *Handler) HandleCredentials(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("name")
+	if name == "" {
+		writeJSON(w, http.StatusOK, discovery.Credential{Status: "not_checked"})
+		return
+	}
+	if h.discoveryService == nil {
+		writeJSON(w, http.StatusOK, discovery.Credential{Name: name, Status: "not_checked"})
+		return
+	}
+	writeJSON(w, http.StatusOK, h.discoveryService.CheckCredential(r.Context(), name))
 }
 
 // 1. Create Mission (Goal -> Gemini Extract Mandate -> Draft Mission)
@@ -448,15 +503,7 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 
 	switch m.Status {
 	case domain.StatusMandateConfirmed, domain.StatusRerouted:
-		// Step: Source Suppliers via Exa (if API key available)
-		if h.discoveryService != nil && h.discoveryService.IsConfigured() {
-			exaSuppliers, err := h.discoveryService.SearchExa(ctx, m.Mandate.ServiceCategory, m.Mandate.ServiceArea.PostalDistrict)
-			if err == nil && len(exaSuppliers) > 0 {
-				for _, sup := range exaSuppliers {
-					_ = h.store.SaveSupplier(ctx, sup)
-				}
-			}
-		}
+		// Exa finds stay off the bookable roster. They are listed separately via GET /api/discovery.
 
 		suppliers, err := h.store.SearchSuppliers(ctx, m.Mandate.ServiceCategory, m.Mandate.ServiceArea.PostalDistrict)
 		if err != nil || len(suppliers) == 0 {

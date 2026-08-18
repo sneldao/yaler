@@ -165,6 +165,34 @@ export async function getProofReceiptByToken(token: string): Promise<ProofReceip
   return res.json();
 }
 
+export interface FoundEngineer {
+  name: string;
+  url: string;
+  label: string;
+  bookable: boolean;
+}
+
+export interface CredentialCheck {
+  name: string;
+  status: 'listed' | 'not_checked';
+  register?: string;
+  asOf?: string;
+  detail?: string;
+}
+
+export async function findNearby(category = 'commercial_refrigeration', district = 'N1'): Promise<FoundEngineer[]> {
+  const res = await fetch(`${API_BASE}/api/discovery?category=${encodeURIComponent(category)}&district=${encodeURIComponent(district)}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data.found) ? data.found : [];
+}
+
+export async function checkCredential(name: string): Promise<CredentialCheck> {
+  const res = await fetch(`${API_BASE}/api/credentials?name=${encodeURIComponent(name)}`);
+  if (!res.ok) return { name, status: 'not_checked' };
+  return res.json();
+}
+
 export async function listSuppliers(): Promise<Supplier[]> {
   const res = await fetch(`${API_BASE}/api/suppliers`);
   if (!res.ok) throw new Error('Failed to list suppliers');

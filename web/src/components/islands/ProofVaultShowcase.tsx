@@ -1,51 +1,10 @@
 import React, { useState } from 'react';
-import { API_BASE } from '../../lib/api';
 import InlineEvidenceText from '../primitives/InlineEvidenceText';
 import FullscreenClipModal from '../primitives/FullscreenClipModal';
+import HearReceipt from '../primitives/HearReceipt';
 
 export default function ProofVaultShowcase() {
   const [redacted, setRedacted] = useState(true);
-  const [playing, setPlaying] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const playVoiceBriefing = async () => {
-    if (playing) return;
-    setLoading(true);
-    try {
-      const summaryText = "Receipt. Photo confirms the walk-in freezer compressor was replaced in N1. Temperature is stable at minus 18. Settlement was £480, inside the £500 ceiling.";
-      const res = await fetch(`${API_BASE}/api/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: summaryText })
-      });
-
-      if (!res.ok) {
-        throw new Error('TTS service unavailable');
-      }
-
-      const blob = await res.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      const audio = new Audio(audioUrl);
-      setPlaying(true);
-      setLoading(false);
-
-      audio.onended = () => {
-        setPlaying(false);
-      };
-
-      await audio.play();
-    } catch (err) {
-      console.warn('TTS fallback to Web Speech:', err);
-      if ('speechSynthesis' in window) {
-        const synth = window.speechSynthesis;
-        const utterance = new SpeechSynthesisUtterance("Receipt. Walk-in freezer repair checked in N1 at minus 18 degrees. Settlement within budget.");
-        utterance.onend = () => setPlaying(false);
-        setPlaying(true);
-        synth.speak(utterance);
-      }
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="paper-card rounded-2xl p-5 sm:p-6 space-y-5">
@@ -56,14 +15,7 @@ export default function ProofVaultShowcase() {
           <p className="text-sm text-ink-muted mt-1">Names stay hidden unless you choose to show them.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={playVoiceBriefing}
-            disabled={loading}
-            className="btn-secondary text-xs py-2"
-          >
-            {loading ? 'Preparing…' : playing ? 'Playing…' : 'Hear it'}
-          </button>
+          <HearReceipt text="Receipt. Photo confirms the walk-in freezer compressor was replaced in N1. Temperature is stable at minus 18. Settlement was £480, inside the £500 ceiling." />
           <button
             type="button"
             onClick={() => setRedacted(!redacted)}

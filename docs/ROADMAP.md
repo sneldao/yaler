@@ -86,7 +86,7 @@ The `.kiro/` directory must demonstrate meaningful spec-driven development:
 ### What extends from Horizon 1
 
 - Supplier registry becomes a real curated network (manually verified providers).
-- Voice channel added (Vapi + ElevenLabs) as an alternative mission creation path.
+- Voice already covers speak-in and hear-the-receipt. Horizon 2 is outbound milestone calls / SMS, not first capture.
 - A2A-compatible external agent endpoints for third-party supplier agents.
 - Mobile-first supplier evidence submission.
 - Real-time notifications (SMS/email/voice) for milestone updates.

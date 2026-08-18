@@ -88,9 +88,9 @@
 
 ### D015 — Voice channel is a stretch goal
 
-**Decision:** Vapi + ElevenLabs voice integration is deferred to post-submission. The primary interface is the Astro web UI.
+**Decision:** Full outbound voice ops (calls, SMS, WhatsApp) stay post-pilot. Speak-in and hear-the-receipt shipped later as D026.
 
-**Reason:** The web UI is required for the demo video and judge evaluation. Voice is impressive but adds integration complexity that doesn't contribute to the core mission loop. Build it after the hackathon submission when targeting the agentic hackathon.
+**Reason:** The web UI is still the primary interface. A full comms channel is a different product. Two bounded voice jobs on the existing loop were enough for operators and for the receipt.
 
 ### D016 — Synthetic but realistic supplier data
 
@@ -152,6 +152,12 @@
 
 **Reason:** First-time operators could not tell where to start or what had just happened. A talking agent would undo D023. Bounded, quiet guidance is the product: the stop is the lesson.
 
+### D026 — Voice, find, and credentials are jobs, not logos
+
+**Decision:** Vapi is how a kitchen manager speaks a job (rehearsal and live form). ElevenLabs reads the receipt aloud (`Hear the paper`). Exa lists nearby names as “found this morning” — labelled, not bookable, never written into the dispatch roster. Apify checks one public register (Companies House) and **fails closed** (`not_checked`) on any error. D015’s deferral of voice is superseded for these two surfaces only.
+
+**Reason:** Operators, landlords, and future employees need different proofs from the same loop. Search results are not vetted engineers. A missing register check must never look like a pass.
+
 ---
 
 ## Open questions
@@ -174,7 +180,7 @@ Test whether suppliers value better-scoped leads, faster acceptance, repeat work
 
 ### Q005 — Communication channel
 
-Start with web UI. Add voice (Vapi), SMS, or WhatsApp only after the core mission flow is validated.
+Web UI plus speak-in / hear-the-receipt (D026). SMS or WhatsApp only after the core mission flow is validated.
 
 ### Q006 — External agent protocol
 

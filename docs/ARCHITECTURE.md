@@ -50,12 +50,14 @@ Astro is used for:
 Interactive islands are used only where needed:
 
 - `MissionForm` — speak or type what’s broken; creates a live mission
+- `SpeakNote` — Vapi (Web Speech fallback) on rehearsal and the live form
+- `HearReceipt` — ElevenLabs reads the paper (`POST /api/tts`)
 - `SavedMandateCard` — shows rules saved after a rehearsal
 - `MandateEditor` — check budget and area, then start looking (no page reload)
-- `OfferComparison` — ranked quotes; confirm books the engineer (rehearsal lands on the blocked row)
+- `OfferComparison` — ranked quotes; Exa “found this morning” cards (not bookable); fail-closed register line
 - `MissionTimeline` — goal, plain-English status, next action; traces are opt-in
 - `EvidenceForm` — engineer photo and note (`/evidence/[id]`)
-- `RehearsalPlaythrough` — labelled N1 fridge rehearsal on the same chrome; phase rail + one guide line; no backend writes
+- `RehearsalPlaythrough` — labelled N1 fridge rehearsal; speak in, hear the receipt; no live booking
 
 Shared operator copy lives in `web/src/lib/copy.ts`. Rehearsal fixtures live in `web/src/lib/rehearsal.ts`. The visual system is paper/ink/mandate (`docs/BRAND.md`), not a dark agent console.
 
@@ -91,6 +93,12 @@ Responsibilities:
 - Escalate policy or safety failures
 
 The gateway and worker may initially be one Go service with separate routes. Split deployments only if operationally useful.
+
+### Find and credentials (not dispatch)
+
+- `GET /api/discovery` — Exa nearby names + URLs. Labelled “found this morning.” Never written into the bookable supplier store.
+- `GET /api/credentials` — Apify reads Companies House. Returns `listed` or **fails closed** to `not_checked`.
+- `POST /api/tts` — ElevenLabs reads the receipt. Frontend falls back to Web Speech if the key is missing.
 
 ## Gemini
 

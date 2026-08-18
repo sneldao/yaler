@@ -73,7 +73,8 @@ The Astro app must look like this document, not like an agent dashboard.
 - **Accent:** mandate teal for success and primary actions; escalation rust only for things that need a human.
 - **Operator copy:** kitchen English. Statuses are “Asking nearby engineers”, “Needs you”, “Done” — never raw enums. Model, protocol, and runtime names stay off buttons and headers.
 - **Disclosure:** first visit leads with rehearsal. The live form sits under “This is a real job.” Radar, sample receipt, traces, autonomy modes, and checklists are opt-in.
-- **Rehearsal:** `/rehearsal` is last Tuesday’s fridge in N1. Same chrome as a live job, labelled, nothing booked. A phase rail (Details → Looking → Quotes → Receipt) plus one mandate-voice guide line walks the user. Quotes open on the over-ceiling row. The only exit is **Save these rules** — never a live create. Saved rules reappear on home.
+- **Rehearsal:** `/rehearsal` is last Tuesday’s fridge in N1. Same chrome as a live job, labelled, nothing booked. A phase rail (Details → Looking → Quotes → Receipt) plus one mandate-voice guide line walks the user. Quotes open on the over-ceiling row. Speak the job in; hear the paper out. The only exit is **Save these rules** — never a live create. Saved rules reappear on home.
+- **Quotes:** roster first. “Found this morning” cards are not bookable. Public-register line is `listed` or **not checked** — never a fake tick.
 - **Motion:** Astro view transitions and in-app `navigate()`. No aurora, no pointer-tracking backdrop, no page reload after mandate confirm. Honor `prefers-reduced-motion`.
 
 Copy helpers live in `web/src/lib/copy.ts`. Tokens live in `web/src/styles/global.css` and `web/tailwind.config.mjs`.

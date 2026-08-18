@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { navigate } from 'astro:transitions/client';
-import Vapi from '@vapi-ai/web';
 import { createMission } from '../../lib/api';
 import { loadSavedMandate } from '../../lib/rehearsal';
 import { LoaderGrid } from '../primitives/LoaderGrid';
-
-const VAPI_PUBLIC_KEY = '374778cc-e3a0-4557-a9f2-3908ca8dbdbd';
+import SpeakNote from '../primitives/SpeakNote';
 
 export default function MissionForm() {
   const [goal, setGoal] = useState('');
   const [loading, setLoading] = useState(false);
-  const [listening, setListening] = useState(false);
-  const [vapi, setVapi] = useState<Vapi | null>(null);
-  const [vapiActive, setVapiActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSamples, setShowSamples] = useState(false);
   const [savedHint, setSavedHint] = useState<string | null>(null);
@@ -24,59 +19,6 @@ export default function MissionForm() {
       setSavedHint(`Using the rules you saved: under £${saved.budget} in ${saved.postalDistrict}.`);
     }
   }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const instance = new Vapi(VAPI_PUBLIC_KEY);
-        instance.on('call-start', () => setVapiActive(true));
-        instance.on('call-end', () => setVapiActive(false));
-        instance.on('message', (message: any) => {
-          if (message.type === 'transcript' && message.transcriptType === 'final') {
-            setGoal((prev) => (prev ? `${prev} ${message.transcript}` : message.transcript));
-          }
-        });
-        setVapi(instance);
-      } catch (e) {
-        console.warn('Vapi init error:', e);
-      }
-    }
-  }, []);
-
-  const toggleVapiVoice = async () => {
-    if (!vapi) {
-      handleVoiceInput();
-      return;
-    }
-    if (vapiActive) {
-      vapi.stop();
-      setVapiActive(false);
-    } else {
-      setError(null);
-      try {
-        await vapi.start({
-          model: {
-            provider: 'openai',
-            model: 'gpt-4o-mini',
-            messages: [
-              {
-                role: 'system',
-                content:
-                  'You are Yaler Voice Assistant for London kitchen managers. Ask what equipment emergency they need help with (commercial fridge, extraction hood, freezer), their district (e.g. N1, E1), and budget.',
-              },
-            ],
-          },
-          voice: {
-            provider: 'playht',
-            voiceId: 'jennifer',
-          },
-        });
-      } catch (err: any) {
-        console.warn('Vapi start error, using Web Speech fallback:', err);
-        handleVoiceInput();
-      }
-    }
-  };
 
   const presets = [
     {
@@ -95,50 +37,6 @@ export default function MissionForm() {
       badge: 'SW1 · £600',
     },
   ];
-
-  const handleVoiceInput = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setError('Voice is not available in this browser. Type it instead, or try Chrome or Safari.');
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-GB';
-
-      recognition.onstart = () => {
-        setListening(true);
-        setError(null);
-      };
-
-      recognition.onresult = (event: any) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        if (transcript) {
-          setGoal(transcript);
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        setError(`Voice input error: ${event.error}`);
-        setListening(false);
-      };
-
-      recognition.onend = () => {
-        setListening(false);
-      };
-
-      recognition.start();
-    } catch (e: any) {
-      setError('Could not start the microphone.');
-      setListening(false);
-    }
-  };
 
   const typePreset = (text: string) => {
     setGoal('');
@@ -177,17 +75,10 @@ export default function MissionForm() {
           </p>
           {savedHint && <p className="text-xs text-mandate mt-2">{savedHint}</p>}
         </div>
-        <button
-          type="button"
-          onClick={toggleVapiVoice}
-          className={`self-start px-3 py-2 rounded-xl border text-xs font-medium transition-colors ${
-            vapiActive || listening
-              ? 'bg-mandate-light text-mandate border-mandate/30'
-              : 'bg-paper text-ink border-ink/10 hover:border-ink/25'
-          }`}
-        >
-          {vapiActive || listening ? 'Listening… tap to stop' : 'Speak it'}
-        </button>
+        <SpeakNote
+          className="self-start"
+          onTranscript={(text) => setGoal((prev) => (prev ? `${prev} ${text}` : text))}
+        />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
