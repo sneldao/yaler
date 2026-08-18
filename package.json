@@ -1,0 +1,7 @@
+{
+  "name": "yaler-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix web run build"
+  }
+}
