@@ -1,5 +1,5 @@
 # Build stage for Go backend server
-FROM golang:1.22-alpine AS builder
+FROM golang:alpine AS builder
 
 WORKDIR /app
 
@@ -19,11 +19,8 @@ RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 
 COPY --from=builder /app/bin/server /app/server
-COPY --from=builder /app/bin/seed /app/seed
-COPY --from=builder /app/seed/suppliers.json /app/seed/suppliers.json
+COPY --from=builder /app/seed /app/seed
 
-EXPOSE 8081
-
-ENV PORT=8081
+EXPOSE 8080
 
 CMD ["/app/server"]

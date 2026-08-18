@@ -1,4 +1,11 @@
-const API_BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8081';
+const getApiBase = () => {
+  if (import.meta.env.PUBLIC_API_URL) return import.meta.env.PUBLIC_API_URL;
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('run.app')) {
+    return 'https://yaler-backend-48617502162.europe-west2.run.app';
+  }
+  return 'http://localhost:8081';
+};
+const API_BASE = getApiBase();
 
 export interface Mandate {
   goal: string;
