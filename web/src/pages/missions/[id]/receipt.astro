@@ -17,66 +17,77 @@ try {
 <Layout title={`Proof Receipt ${id} — Yaler`}>
   <div class="max-w-2xl mx-auto py-6 space-y-6">
     {receipt ? (
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl space-y-6">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+      <div class="bg-gradient-to-b from-slate-900/95 to-slate-950/95 border border-slate-800/80 rounded-3xl p-8 shadow-2xl space-y-6 relative overflow-hidden">
+        <!-- Certificate Accent Badge -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div class="space-y-1">
+            <span class="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
               Verified Public Proof Receipt
             </span>
-            <h1 class="text-2xl font-bold text-white mt-2">Mission Completion Certificate</h1>
+            <h1 class="text-2xl font-extrabold text-white tracking-tight pt-1">Mission Completion Certificate</h1>
           </div>
-          <span class="text-[10px] font-mono text-slate-500">
-            {new Date(receipt.createdAt).toLocaleDateString()}
-          </span>
+          <div class="text-left sm:text-right font-mono text-xs text-slate-400">
+            <div>Issued: <span class="text-slate-200">{new Date(receipt.createdAt).toLocaleDateString()}</span></div>
+            <div>Mission ID: <span class="text-cyan-400">{receipt.missionId}</span></div>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
-            <p className="text-xs text-slate-400 font-semibold uppercase">Mission Goal</p>
-            <p className="text-white font-medium text-base">{receipt.summary}</p>
+        <div class="space-y-4">
+          <!-- Summary Box -->
+          <div class="bg-[#060a12] p-5 rounded-2xl border border-slate-800 space-y-1">
+            <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Operational Goal</span>
+            <p class="text-white font-semibold text-base leading-relaxed">{receipt.summary}</p>
           </div>
 
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
-            <p className="text-xs text-slate-400 font-semibold uppercase">Resolution Terms</p>
-            <p className="text-slate-200 text-sm">{receipt.agreedTerms}</p>
+          <!-- Resolution Terms -->
+          <div class="bg-[#060a12] p-5 rounded-2xl border border-slate-800 space-y-1">
+            <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Agreed Resolution Terms</span>
+            <p class="text-slate-200 text-sm">{receipt.agreedTerms}</p>
           </div>
 
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-            <p className="text-xs text-slate-400 font-semibold uppercase">Verification Evidence Labels</p>
-            <div className="flex flex-wrap gap-2">
+          <!-- Evidence Verification Badges -->
+          <div class="bg-[#060a12] p-5 rounded-2xl border border-slate-800 space-y-2.5">
+            <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Verified Evidence Markers</span>
+            <div class="flex flex-wrap gap-2">
               {receipt.evidenceLabels.map((lbl: string) => (
-                <span className="text-xs font-mono bg-slate-900 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                <span class="text-xs font-mono bg-slate-900 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5">
                   ✓ {lbl}
                 </span>
               ))}
             </div>
           </div>
 
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-            <p className="text-xs text-slate-400 font-semibold uppercase">Redacted Public Metadata</p>
-            <div className="text-xs space-y-1 text-slate-300 font-mono">
+          <!-- Redacted Metadata Table -->
+          <div class="bg-[#060a12] p-5 rounded-2xl border border-slate-800 space-y-2.5">
+            <span class="text-[10px] font-mono font-bold text-slate-400 uppercase">Redacted Public Metadata</span>
+            <div class="text-xs space-y-2 text-slate-300 font-mono">
               {Object.entries(receipt.redactedEvidence).map(([k, v]) => (
-                <div className="flex justify-between border-b border-slate-900/50 py-1">
-                  <span className="text-slate-500 capitalize">{k}:</span>
-                  <span className="text-slate-200">{v}</span>
+                <div class="flex justify-between items-center border-b border-slate-800/60 pb-1.5">
+                  <span class="text-slate-500 capitalize">{k}:</span>
+                  <span class="text-slate-200 font-bold">{v}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500">
-          <span>Share Token: <code className="text-cyan-400">{receipt.shareToken}</code></span>
-          <a href={`/missions/${receipt.missionId}`} className="text-cyan-400 hover:underline">
-            &larr; Back to Mission
+        <!-- Footer Token & Back Navigation -->
+        <div class="pt-4 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs font-mono text-slate-500">
+          <div class="flex items-center gap-2">
+            <span>Share Token:</span>
+            <code class="text-cyan-400 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">{receipt.shareToken}</code>
+          </div>
+          <a href={`/missions/${receipt.missionId}`} class="text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1 font-bold">
+            ← Back to Mission Timeline
           </a>
         </div>
       </div>
     ) : (
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-4">
-        <h2 className="text-xl font-bold text-white">Receipt Pending Verification</h2>
-        <p className="text-slate-400 text-sm">The proof receipt will be available once all evidence milestones are verified.</p>
-        <a href={`/missions/${id}`} className="inline-block bg-cyan-500 text-slate-950 font-semibold px-4 py-2 rounded-xl text-sm">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-8 text-center space-y-4">
+        <h2 class="text-xl font-bold text-white">Receipt Pending Verification</h2>
+        <p class="text-slate-400 text-sm">The proof receipt will be generated automatically once milestone evidence is submitted and verified.</p>
+        <a href={`/missions/${id}`} class="inline-block bg-cyan-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm">
           Return to Mission Timeline
         </a>
       </div>

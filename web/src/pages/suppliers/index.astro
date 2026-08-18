@@ -10,44 +10,53 @@ try {
 }
 ---
 
-<Layout title="Supplier Registry — Yaler">
-  <div class="space-y-6">
-    <div>
-      <h1 className="text-2xl font-bold text-white">Curated Supplier Agent Registry</h1>
-      <p className="text-slate-400 text-sm">Verified London service providers registered on the Yaler mission network.</p>
+<Layout title="Curated Supplier Agent Registry — Yaler">
+  <div class="space-y-8 py-4">
+    <div class="space-y-2 border-b border-slate-800 pb-5">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-mono font-bold">
+        <span>Verified Network Partners</span>
+      </div>
+      <h1 class="text-3xl font-extrabold text-white tracking-tight">Curated Supplier Agent Registry</h1>
+      <p class="text-slate-400 text-sm max-w-2xl">
+        Verified London operational service providers integrated into Yaler's agentic mission network.
+      </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {suppliers.map((s) => (
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-6 space-y-4 shadow-xl transition-all">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-              {s.priceTier}
+            <span className={`text-xs font-bold font-mono px-2.5 py-0.5 rounded-full border ${
+              s.priceTier === 'PREMIUM' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
+            }`}>
+              {s.priceTier} TIER
             </span>
-            <span class="text-xs text-emerald-400 font-semibold">Reliability: {(s.reliabilityScore * 100).toFixed(0)}%</span>
+            <span class="text-xs text-emerald-400 font-mono font-bold">
+              ★ {(s.reliabilityScore * 100).toFixed(0)}% Reliability
+            </span>
           </div>
 
           <div>
-            <h3 className="font-semibold text-white text-lg">{s.displayName}</h3>
-            <p class="text-xs text-slate-400">Postal District {s.serviceArea.postalDistrict} ({s.serviceArea.radiusKm} km radius)</p>
+            <h3 class="font-bold text-white text-lg tracking-tight">{s.displayName}</h3>
+            <p class="text-xs text-slate-400 font-mono mt-0.5">District {s.serviceArea.postalDistrict} • {s.serviceArea.radiusKm} km coverage</p>
           </div>
 
-          <div class="space-y-2">
-            <p class="text-xs font-semibold uppercase text-slate-500">Capabilities</p>
+          <div class="space-y-1.5">
+            <p class="text-[10px] font-mono font-bold uppercase text-slate-400">Capabilities & Services</p>
             <div class="flex flex-wrap gap-1.5">
               {s.capabilities.map((c) => (
-                <span class="text-[10px] font-mono bg-slate-950 text-slate-300 px-2 py-0.5 rounded border border-slate-800">
+                <span class="text-[11px] font-mono bg-[#060a12] text-slate-300 px-2.5 py-1 rounded-lg border border-slate-800">
                   {c}
                 </span>
               ))}
             </div>
           </div>
 
-          <div class="space-y-2">
-            <p class="text-xs font-semibold uppercase text-slate-500">Verified Evidence Credentials</p>
+          <div class="space-y-1.5 pt-1 border-t border-slate-800/60">
+            <p class="text-[10px] font-mono font-bold uppercase text-slate-400">Verified Evidence Credentials</p>
             <div class="flex flex-wrap gap-1.5">
               {s.evidence.map((e) => (
-                <span class="text-[10px] font-mono bg-slate-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">
+                <span class="text-[11px] font-mono bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded-lg border border-emerald-500/20">
                   ✓ {e}
                 </span>
               ))}

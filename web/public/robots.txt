@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Public proof receipts are redacted and opt-in.
+# Do not invent sitemap URLs until the Astro app ships.

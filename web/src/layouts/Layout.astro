@@ -3,51 +3,97 @@ import '../styles/global.css';
 
 interface Props {
   title?: string;
+  description?: string;
 }
 
-const { title = 'Yaler — Agent-Native Mission Network' } = Astro.props;
+const {
+  title = 'Yaler — Agent-Native Mission Network',
+  description = 'Autonomous operational mission execution for London independent businesses. Gemini proposes, Go decides.'
+} = Astro.props;
 ---
 
-<!mhtml>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
-    <meta name="description" content="Yaler is an agent-native mission network for independent businesses." />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
-  <body class="font-['Plus_Jakarta_Sans',sans-serif] bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased">
-    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+  <body class="font-['Plus_Jakarta_Sans',sans-serif] bg-[#080d16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+    <!-- Top Ambient Glow -->
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-gradient-to-b from-cyan-600/10 via-blue-600/5 to-transparent blur-3xl pointer-events-none -z-10"></div>
+
+    <!-- Navigation Header -->
+    <header class="border-b border-slate-800/80 bg-[#080d16]/80 backdrop-blur-xl sticky top-0 z-50 transition-all">
+      <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <a href="/" class="flex items-center gap-3 group">
-          <div class="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-sm group-hover:scale-105 transition">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-extrabold text-sm group-hover:scale-105 group-hover:border-cyan-400 transition-all shadow-lg shadow-cyan-500/10">
             Y
           </div>
-          <span class="font-bold text-lg text-white tracking-tight">YALER</span>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">LONDON</span>
+          <div class="flex flex-col">
+            <span class="font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
+              YALER
+              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">v1.0</span>
+            </span>
+            <span class="text-[10px] font-mono text-slate-400 -mt-1 tracking-wider uppercase">Mission Network</span>
+          </div>
         </a>
 
         <nav class="flex items-center gap-6 text-sm font-medium">
-          <a href="/missions/new" class="text-slate-300 hover:text-white transition">New Mission</a>
-          <a href="/suppliers" class="text-slate-300 hover:text-white transition">Suppliers</a>
-          <a href="https://github.com/sneldao/yaler" target="_blank" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold px-4 py-2 rounded-xl transition text-xs">
+          <a href="/missions/new" class="text-slate-300 hover:text-white transition flex items-center gap-1.5">
+            <span class="text-cyan-400">✦</span> New Mission
+          </a>
+          <a href="/suppliers" class="text-slate-300 hover:text-white transition">
+            Suppliers
+          </a>
+          <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Gateway Ready</span>
+          </div>
+          <a
+            href="https://github.com/sneldao/yaler"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700/80 font-medium px-3.5 py-1.5 rounded-xl transition text-xs flex items-center gap-1.5"
+          >
+            <svg class="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
             GitHub
           </a>
         </nav>
       </div>
     </header>
 
+    <!-- Main Content Container -->
     <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
       <slot />
     </main>
 
-    <footer class="border-t border-slate-800 bg-slate-950 py-8 text-xs text-slate-500">
-      <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-        <p>© 2026 Yaler Network. Built for Ready, Spec, Ship Kiro Hackathon.</p>
-        <p class="font-mono">Gemini Proposes. Go Decides.</p>
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-[#060910] py-8 text-xs text-slate-500">
+      <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold text-xs">
+            Y
+          </div>
+          <p>© 2026 Yaler Mission Network. Built for Ready, Spec, Ship Kiro Hackathon.</p>
+        </div>
+        <div class="flex items-center gap-4 font-mono text-[11px] text-slate-400">
+          <span class="text-emerald-400">Gemini Proposes</span>
+          <span class="text-slate-600">•</span>
+          <span class="text-cyan-400">Go Decides</span>
+        </div>
       </div>
     </footer>
   </body>

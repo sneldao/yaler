@@ -29,53 +29,72 @@ export default function EvidenceForm({ missionId }: Props) {
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-xl mx-auto shadow-xl space-y-6">
+    <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-800/80 rounded-2xl p-6 sm:p-8 max-w-xl mx-auto shadow-2xl space-y-6">
       <div className="border-b border-slate-800 pb-4">
-        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+        <span className="text-xs font-bold font-mono px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
           Supplier Evidence Portal
         </span>
-        <h2 className="text-xl font-semibold text-white mt-2">Submit Completion Report</h2>
-        <p className="text-sm text-slate-400">Upload job report and completion photo for AI verification.</p>
+        <h2 className="text-xl font-bold text-white mt-2">Submit Job Completion Report</h2>
+        <p className="text-xs text-slate-400 mt-0.5">Upload service report and photo evidence for instant Gemini verification.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">Technician Text Report</label>
+          <label className="block text-xs font-mono font-bold uppercase text-slate-400 mb-1.5">
+            Technician Service Report
+          </label>
           <textarea
             value={report}
             onChange={(e) => setReport(e.target.value)}
             rows={4}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-white focus:outline-none focus:border-cyan-500 text-sm"
+            className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-500 rounded-xl p-3.5 text-white focus:outline-none text-sm leading-relaxed"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1">Photo Reference URL</label>
+          <label className="block text-xs font-mono font-bold uppercase text-slate-400 mb-1.5">
+            Photo Evidence Reference URL
+          </label>
           <input
             type="text"
             value={photoUrl}
             onChange={(e) => setPhotoUrl(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm font-mono"
+            className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-500 rounded-xl p-3 text-white focus:outline-none text-xs font-mono"
           />
         </div>
 
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-sm">
-            {error}
+          <div className="p-3.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-xs sm:text-sm">
+            ⚠️ {error}
           </div>
         )}
 
         {result && (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl text-sm space-y-1">
-            <p className="font-bold">✅ Evidence Verified & Accepted by Gemini!</p>
-            <p className="text-xs text-slate-300">Redirecting to mission timeline and proof receipt...</p>
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs sm:text-sm space-y-2">
+            <p className="font-bold flex items-center gap-2">
+              <span>✅ Evidence Verified & Approved by Gemini AI!</span>
+            </p>
+            {result.evidence?.confidenceScore && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Confidence Score:</span>
+                  <span className="font-bold text-emerald-400">{(result.evidence.confidenceScore * 100).toFixed(0)}%</span>
+                </div>
+                <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-emerald-400 h-full" style={{ width: `${result.evidence.confidenceScore * 100}%` }} />
+                </div>
+              </div>
+            )}
+            <p className="text-[11px] text-slate-300 font-mono pt-1">
+              Redirecting to mission timeline and proof receipt...
+            </p>
           </div>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold py-3 px-6 rounded-xl transition shadow-lg shadow-emerald-500/20"
+          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] cursor-pointer text-sm sm:text-base"
         >
           {loading ? 'Verifying Evidence via Gemini...' : 'Submit Evidence & Complete Mission 🚀'}
         </button>

@@ -7,9 +7,21 @@ export default function MissionForm() {
   const [error, setError] = useState<string | null>(null);
 
   const presets = [
-    "My commercial fridge is down, need repair before lunch, budget £500, we're in N1.",
-    "Extraction hood cleaning required before food safety inspection tomorrow, budget £350 in E1.",
-    "Walk-in freezer temperature warning 6°C, urgent technician callout needed in SW1, budget £600.",
+    {
+      title: 'Commercial Refrigeration Emergency',
+      text: "My commercial fridge is down, need repair before lunch, budget £500, we're in N1.",
+      badge: 'N1 • £500',
+    },
+    {
+      title: 'Grease Extract Duct Cleaning',
+      text: 'Extraction hood cleaning required before food safety inspection tomorrow, budget £350 in E1.',
+      badge: 'E1 • £350',
+    },
+    {
+      title: 'Walk-In Freezer Temperature Warning',
+      text: 'Walk-in freezer temperature warning 6°C, urgent technician callout needed in SW1, budget £600.',
+      badge: 'SW1 • £600',
+    },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,46 +40,66 @@ export default function MissionForm() {
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl max-w-2xl mx-auto">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold">
+    <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl max-w-3xl mx-auto relative overflow-hidden">
+      {/* Ambient Card Accent */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
+
+      <div className="flex items-center gap-3.5 mb-6">
+        <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-lg shadow-inner">
           ⚡
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-white">Create Operational Mission</h2>
-          <p className="text-sm text-slate-400">Describe the urgent job in plain English. Gemini extracts the mandate.</p>
+          <h2 className="text-xl font-bold text-white tracking-tight">Create Operational Mission</h2>
+          <p className="text-xs sm:text-sm text-slate-400">Describe the urgent job in natural language. Gemini extracts the mandate automatically.</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="relative">
           <textarea
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
             placeholder="e.g. My commercial fridge is down, need repair before lunch, budget £500, we're in N1."
             rows={4}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition text-base"
+            className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-500/80 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all text-sm sm:text-base leading-relaxed"
             disabled={loading}
           />
+          {goal.length > 0 && (
+            <span className="absolute bottom-3 right-3 text-[10px] font-mono text-slate-500">
+              {goal.length} chars
+            </span>
+          )}
         </div>
 
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-sm">
-            {error}
+          <div className="p-3.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-xs sm:text-sm flex items-center gap-2">
+            <span>⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Sample Prompt Templates:</p>
-          <div className="flex flex-col gap-2">
-            {presets.map((preset, idx) => (
+        {/* Sample Prompt Templates */}
+        <div className="space-y-2.5">
+          <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+            <span>Sample Operational Scenarios</span>
+            <span className="text-[10px] font-normal text-slate-400">Click to fill</span>
+          </p>
+
+          <div className="grid grid-cols-1 gap-2">
+            {presets.map((p, idx) => (
               <button
                 key={idx}
                 type="button"
-                onClick={() => setGoal(preset)}
-                className="text-left text-xs bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg p-2.5 text-slate-300 hover:text-white transition"
+                onClick={() => setGoal(p.text)}
+                className="group text-left bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/40 rounded-xl p-3 transition-all flex items-center justify-between gap-3"
               >
-                "{preset}"
+                <div className="space-y-0.5">
+                  <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition">{p.title}</div>
+                  <p className="text-xs text-slate-400 line-clamp-1">"{p.text}"</p>
+                </div>
+                <span className="text-[10px] font-mono font-bold bg-slate-900 group-hover:bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded border border-slate-800 shrink-0">
+                  {p.badge}
+                </span>
               </button>
             ))}
           </div>
@@ -76,7 +108,7 @@ export default function MissionForm() {
         <button
           type="submit"
           disabled={loading || !goal.trim()}
-          className="w-full bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-semibold py-3.5 px-6 rounded-xl transition shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-40 text-slate-950 font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-cyan-500/20 active:scale-[0.99] flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
         >
           {loading ? (
             <>
@@ -87,7 +119,10 @@ export default function MissionForm() {
               <span>Extracting Mandate via Gemini...</span>
             </>
           ) : (
-            <span>Generate Mandate & Review &rarr;</span>
+            <>
+              <span>Extract Mandate & Proceed to Review</span>
+              <span className="text-lg">→</span>
+            </>
           )}
         </button>
       </form>

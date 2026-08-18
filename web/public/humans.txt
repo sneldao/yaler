@@ -1,0 +1,12 @@
+/* TEAM */
+Builder: Yaler
+Location: London
+Contact: see the public repository
+
+/* SITE */
+Standards: HTML, CSS, Go, Gemini structured output
+Software: Astro, Go, Firestore, Cloud Tasks
+Last update: 2026-08-18
+Doctype: HTML5
+Language: English
+*/
