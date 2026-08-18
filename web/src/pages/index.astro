@@ -8,10 +8,12 @@ import { listMissions } from '../lib/api';
 
 let missions = [];
 try {
-  missions = await listMissions();
+  const res = await listMissions();
+  if (Array.isArray(res)) missions = res;
 } catch (e) {
   missions = [];
 }
+if (!Array.isArray(missions)) missions = [];
 ---
 
 <Layout title="Yaler — Agent-Native Mission Network">
@@ -67,7 +69,7 @@ try {
     </div>
 
     <!-- Active Missions Feed -->
-    {missions.length > 0 && (
+    {Array.isArray(missions) && missions.length > 0 && (
       <div class="space-y-4 max-w-3xl mx-auto pt-6">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 class="text-lg font-bold text-white flex items-center gap-2">
