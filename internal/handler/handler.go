@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/sneldao/yaler/internal/discovery"
 	"github.com/sneldao/yaler/internal/domain"
 	"github.com/sneldao/yaler/internal/gemini"
 	"github.com/sneldao/yaler/internal/policy"
@@ -17,18 +18,20 @@ import (
 )
 
 type Handler struct {
-	store        store.Store
-	policyEngine *policy.Engine
-	geminiClient *gemini.Client
-	taskClient   tasks.Client
+	store            store.Store
+	policyEngine     *policy.Engine
+	geminiClient     *gemini.Client
+	taskClient       tasks.Client
+	discoveryService *discovery.DiscoveryService
 }
 
 func NewHandler(st store.Store, pe *policy.Engine, gc *gemini.Client, tc tasks.Client) *Handler {
 	return &Handler{
-		store:        st,
-		policyEngine: pe,
-		geminiClient: gc,
-		taskClient:   tc,
+		store:            st,
+		policyEngine:     pe,
+		geminiClient:     gc,
+		taskClient:       tc,
+		discoveryService: discovery.NewDiscoveryService(),
 	}
 }
 
@@ -440,7 +443,16 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 
 	switch m.Status {
 	case domain.StatusMandateConfirmed, domain.StatusRerouted:
-		// Step: Source Suppliers
+		// Step: Source Suppliers via Exa (if API key available)
+		if h.discoveryService != nil && h.discoveryService.IsConfigured() {
+			exaSuppliers, err := h.discoveryService.SearchExa(ctx, m.Mandate.ServiceCategory, m.Mandate.ServiceArea.PostalDistrict)
+			if err == nil && len(exaSuppliers) > 0 {
+				for _, sup := range exaSuppliers {
+					_ = h.store.SaveSupplier(ctx, sup)
+				}
+			}
+		}
+
 		suppliers, err := h.store.SearchSuppliers(ctx, m.Mandate.ServiceCategory, m.Mandate.ServiceArea.PostalDistrict)
 		if err != nil || len(suppliers) == 0 {
 			// Try broader search
