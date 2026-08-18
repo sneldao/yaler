@@ -1,7 +1,50 @@
 import React, { useState } from 'react';
+import { API_BASE } from '../../lib/api';
 
 export default function ProofVaultShowcase() {
   const [redacted, setRedacted] = useState(true);
+  const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const playVoiceBriefing = async () => {
+    if (playing) return;
+    setLoading(true);
+    try {
+      const summaryText = "Yaler Zero-Knowledge Verification Receipt. Photo evidence confirms commercial walk-in freezer compressor replacement completed in London district N1. Temperature gauge reading stable at -18°C. Settlement amount: £480, within the £500 mandate ceiling.";
+      const res = await fetch(`${API_BASE}/api/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: summaryText })
+      });
+
+      if (!res.ok) {
+        throw new Error('TTS service unavailable');
+      }
+
+      const blob = await res.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      setPlaying(true);
+      setLoading(false);
+
+      audio.onended = () => {
+        setPlaying(false);
+      };
+
+      await audio.play();
+    } catch (err) {
+      console.warn('ElevenLabs TTS fallback to Web Speech:', err);
+      // Fallback to Web Speech API if ElevenLabs backend API key is not bound
+      if ('speechSynthesis' in window) {
+        const synth = window.speechSynthesis;
+        const utterance = new SpeechSynthesisUtterance("Yaler Zero-Knowledge Verification Receipt. Walk-in freezer repair verified in district N1 at minus 18 degrees Celsius. Settlement within budget.");
+        utterance.onend = () => setPlaying(false);
+        setPlaying(true);
+        synth.speak(utterance);
+      }
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-800/90 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl max-w-3xl mx-auto space-y-6 relative overflow-hidden">
@@ -15,19 +58,34 @@ export default function ProofVaultShowcase() {
           <p className="text-xs text-slate-400">Gemini extracts proof metadata while redacting PII before store persistence.</p>
         </div>
 
-        {/* Redaction Toggle Switch */}
-        <button
-          type="button"
-          onClick={() => setRedacted(!redacted)}
-          className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 border cursor-pointer ${
-            redacted
-              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-lg shadow-emerald-500/10'
-              : 'bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-lg shadow-amber-500/10'
-          }`}
-        >
-          <span>{redacted ? '🔒 Privacy Redacted' : '🔓 Raw Unredacted'}</span>
-          <span className="text-[10px] underline">Toggle</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* ElevenLabs Voice Briefing Button */}
+          <button
+            type="button"
+            onClick={playVoiceBriefing}
+            disabled={loading}
+            className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
+              playing
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 animate-pulse'
+                : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-500'
+            }`}
+          >
+            <span>{loading ? '⏳ Generating...' : playing ? '🔊 Playing Audio...' : '🔊 ElevenLabs Voice Brief'}</span>
+          </button>
+
+          {/* Redaction Toggle Switch */}
+          <button
+            type="button"
+            onClick={() => setRedacted(!redacted)}
+            className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 border cursor-pointer ${
+              redacted
+                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+                : 'bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-lg shadow-amber-500/10'
+            }`}
+          >
+            <span>{redacted ? '🔒 Redacted' : '🔓 Unredacted'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Proof Card Display */}

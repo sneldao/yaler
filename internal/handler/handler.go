@@ -52,6 +52,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/suppliers", h.HandleListSuppliers)
 	mux.HandleFunc("POST /api/a2a", h.HandleA2A)
 	mux.HandleFunc("POST /api/upload", h.HandleUpload)
+	mux.HandleFunc("POST /api/tts", h.HandleTTS)
 	mux.HandleFunc("POST /api/worker/step", h.HandleWorkerStep)
 
 	// Ensure uploads directory exists and serve uploaded media files

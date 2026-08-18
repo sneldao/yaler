@@ -5,7 +5,7 @@ const getApiBase = () => {
   }
   return 'http://localhost:8081';
 };
-const API_BASE = getApiBase();
+export const API_BASE = getApiBase();
 
 export interface Mandate {
   goal: string;
