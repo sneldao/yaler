@@ -6,6 +6,16 @@
 
 Yaler starts with one narrow London workflow: helping independent cafés, restaurants, and food businesses resolve urgent operational jobs through local service providers. The first mission class is low-risk commercial kitchen uptime: equipment repair, cleaning, maintenance, or replacement coordination.
 
+## 🚀 Live Hosted Deployment (GCP Cloud Run)
+
+Judges can interact with the live hosted production environment directly in addition to local docker execution:
+
+- **Frontend Application**: [https://yaler-frontend-48617502162.europe-west2.run.app](https://yaler-frontend-48617502162.europe-west2.run.app)
+- **Backend Gateway & A2A Endpoint**: [https://yaler-backend-48617502162.europe-west2.run.app](https://yaler-backend-48617502162.europe-west2.run.app)
+  - **A2A JSON-RPC 2.0**: `POST /api/a2a` ([Documentation](docs/A2A-PROTOCOL.md))
+  - **Direct Uploads**: `POST /api/upload`
+  - **Suppliers**: `GET /api/suppliers`
+
 ## Current milestone
 
 Yaler is being built for the [Ready, Spec, Ship Kiro Hackathon](https://codingagents.fyi/hackathon/kiro/), with submissions due **August 23, 2026 at 23:59 UTC**.
