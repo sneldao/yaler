@@ -53,7 +53,7 @@ Voice / Text Callout → Mandate Extraction → A2A Supplier Discovery → Polic
 |---|---|
 | **Gemini / Google DeepMind** | Mandate extraction, supplier offer ranking, counter-offer drafting, photo evidence verification, and privacy redaction. |
 | **GCP Cloud Run & Cloud Storage** | Serverless backend/frontend container deployment with Secret Manager binding and direct Cloud Storage bucket uploads. |
-| **Vapi & Web Audio** | Hands-free voice callout creation for kitchen managers on the line. |
+| **Vapi & ElevenLabs** | Hands-free voice callout creation via Vapi plus realistic voice briefing synthesis via ElevenLabs API (`POST /api/tts`). |
 | **Exa & Apify** | Service provider web discovery & verification infrastructure. |
 
 ---
