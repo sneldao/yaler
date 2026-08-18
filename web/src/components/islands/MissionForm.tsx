@@ -69,6 +69,18 @@ export default function MissionForm() {
     }
   };
 
+  const typePreset = (text: string) => {
+    setGoal('');
+    let index = 0;
+    const interval = setInterval(() => {
+      setGoal((prev) => prev + text.charAt(index));
+      index++;
+      if (index >= text.length) {
+        clearInterval(interval);
+      }
+    }, 12);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!goal.trim()) return;
@@ -122,7 +134,7 @@ export default function MissionForm() {
             onChange={(e) => setGoal(e.target.value)}
             placeholder="e.g. My commercial fridge is down, need repair before lunch, budget £500, we're in N1."
             rows={4}
-            className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-500/80 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all text-sm sm:text-base leading-relaxed"
+            className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-500/80 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all text-sm sm:text-base leading-relaxed font-sans"
             disabled={loading}
           />
           {goal.length > 0 && (
@@ -131,6 +143,17 @@ export default function MissionForm() {
             </span>
           )}
         </div>
+
+        {loading && (
+          <div className="p-3 bg-slate-950 border border-cyan-500/30 rounded-xl font-mono text-xs space-y-1 text-cyan-300">
+            <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold uppercase">
+              <span>Agentic Mission Pipeline</span>
+              <span className="text-emerald-400 animate-pulse">Running</span>
+            </div>
+            <p>⚡ GEMINI 2.5: Parsing intent & extracting budget ceiling...</p>
+            <p className="text-slate-400">🛡️ GO POLICY ENGINE: Validating mandate boundaries (≤ £1,000)...</p>
+          </div>
+        )}
 
         {error && (
           <div className="p-3.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-xs sm:text-sm flex items-center gap-2">
@@ -143,7 +166,7 @@ export default function MissionForm() {
         <div className="space-y-2.5">
           <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
             <span>Sample Operational Scenarios</span>
-            <span className="text-[10px] font-normal text-slate-400">Click to fill</span>
+            <span className="text-[10px] font-normal text-slate-400">Click to auto-fill</span>
           </p>
 
           <div className="grid grid-cols-1 gap-2">
@@ -151,7 +174,7 @@ export default function MissionForm() {
               <button
                 key={idx}
                 type="button"
-                onClick={() => setGoal(p.text)}
+                onClick={() => typePreset(p.text)}
                 className="group text-left bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/40 rounded-xl p-3 transition-all flex items-center justify-between gap-3 cursor-pointer"
               >
                 <div className="space-y-0.5">

@@ -1,6 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import MissionForm from '../components/islands/MissionForm';
+import DemoTourController from '../components/islands/DemoTourController';
+import TacticalRadar from '../components/islands/TacticalRadar';
+import ProofVaultShowcase from '../components/islands/ProofVaultShowcase';
 import { listMissions } from '../lib/api';
 
 let missions = [];
@@ -28,6 +31,11 @@ try {
         A buyer's agent finds, negotiates with, and supervises local service providers until real-world jobs are completed or safely escalated.
       </p>
 
+      <!-- 60s Guided Demo Tour Controller -->
+      <div class="pt-2">
+        <DemoTourController client:load />
+      </div>
+
       <!-- Key Agentic Value Pillars -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 text-left">
         <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3.5 space-y-1">
@@ -47,6 +55,16 @@ try {
 
     <!-- Mission Creation Form Island -->
     <MissionForm client:load />
+
+    <!-- A2A Tactical Discovery Radar Section -->
+    <div class="max-w-3xl mx-auto pt-4">
+      <TacticalRadar client:load activeDistrict="N1" />
+    </div>
+
+    <!-- Zero-Knowledge Verification Proof Vault Section -->
+    <div class="max-w-3xl mx-auto pt-4">
+      <ProofVaultShowcase client:load />
+    </div>
 
     <!-- Active Missions Feed -->
     {missions.length > 0 && (
