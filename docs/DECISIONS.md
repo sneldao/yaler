@@ -164,6 +164,12 @@
 
 **Reason:** Mixing the hashed Cloud Run URL, the pretty URL, and a remembered `gcloud` incantation made deploys feel like a URL change. They are not. Revisions change; the service does not.
 
+### D028 — Talk-to-the-paper is a sidecar, not the operator UI
+
+**Decision:** The ElevenLabs Hosted MCP agent (“Last Tuesday’s fridge”) ingests `docs/elevenagent/` only. It answers about the rehearsal mandate and receipt. It cannot book. It is not embedded on `/` or `/rehearsal`.
+
+**Reason:** Landlords and EHOs need to interrogate the paper. Kitchen managers need a receipt, not a second chatbot on the home screen.
+
 ---
 
 ## Open questions

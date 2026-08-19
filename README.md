@@ -80,6 +80,7 @@ For complete technical specifications, architecture diagrams, and product guides
 - 📖 [Product Brief & Problem Statement](docs/PRODUCT.md) — Problem, user personas, and product loop.
 - 🏗️ [Architecture & System Design](docs/ARCHITECTURE.md) — Go, Astro, Gemini, Firestore, and Cloud Run architecture.
 - 🚢 [Deploy](docs/DEPLOY.md) — Netlify on `main` for the app; `make deploy-backend` for Cloud Run.
+- 🎙️ [Talk to last Tuesday’s fridge](docs/ELEVENAGENT.md) — ElevenLabs Hosted MCP sidecar (not on the kitchen UI).
 - 🤝 [Agent-to-Agent (A2A) Protocol Specification](docs/A2A-PROTOCOL.md) — JSON-RPC 2.0 schema and RSA signatures.
 - 🛡️ [Agent Operating Model & Safety Guardrails](docs/AGENT-OPERATING-MODEL.md) — Policy boundaries and human escalations.
 - 🗺️ [Market Strategy & Adjacent Whitespace](docs/STRATEGY.md) — London market analysis and pilot roadmap.
