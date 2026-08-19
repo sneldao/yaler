@@ -72,7 +72,7 @@ func (h *Handler) HandleTTS(w http.ResponseWriter, r *http.Request) {
 
 	ttsReq := ElevenLabsTTSRequest{
 		Text:    req.Text,
-		ModelID: "eleven_monolingual_v1",
+		ModelID: "eleven_turbo_v2_5",
 		VoiceSettings: &ElevenLabsVoiceSettings{
 			Stability:       0.5,
 			SimilarityBoost: 0.75,

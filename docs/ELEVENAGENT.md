@@ -68,4 +68,7 @@ Paste the public agent URL into this file under **Live agent** and commit. Until
 
 ## Live agent
 
-_Not created in-repo. Add the share link here after Path A._
+- **Agent ID:** `agent_4401m0daf8e1ehe9czb9xbw1y5a0`
+- **Shareable Voice Link:** [https://elevenlabs.io/app/talk-to?agent_id=agent_4401m0daf8e1ehe9czb9xbw1y5a0](https://elevenlabs.io/app/talk-to?agent_id=agent_4401m0daf8e1ehe9czb9xbw1y5a0)
+- **Knowledge Base Document:** `u9pEVanZwd8XSsZtIzwd` (`docs/elevenagent/source.md`)
+- **System Prompt:** `docs/elevenagent/system-prompt.md`
