@@ -39,6 +39,7 @@ export default function RehearsalPlaythrough() {
   const [mission, setMission] = useState<Mission>(rehearsalMission('DRAFT'));
   const [booked, setBooked] = useState<Offer | null>(null);
   const [saved, setSaved] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [bookedCred, setBookedCred] = useState<CredentialCheck | null>(null);
 
   useEffect(() => {
@@ -76,6 +77,8 @@ export default function RehearsalPlaythrough() {
     };
     saveMandate(payload);
     setSaved(true);
+    setToast(`Rules pinned. Next time you say "fridge down", these are the ones we use.`);
+    window.setTimeout(() => setToast(null), 5000);
   };
 
   const lookingMission: Mission = { ...mission, status: 'SOURCING' };
@@ -89,6 +92,25 @@ export default function RehearsalPlaythrough() {
 
   return (
     <div className="space-y-5">
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-sm w-[calc(100%-2rem)]">
+          <div className="paper-card rounded-2xl px-5 py-4 flex items-start gap-3 animate-receipt-slice-in shadow-paper">
+            <span className="text-mandate mt-0.5 shrink-0">✓</span>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-ink">Rules pinned</p>
+              <p className="text-xs text-ink-muted leading-relaxed">{toast}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="ml-auto text-ink-muted hover:text-ink text-xs shrink-0"
+            >
+              dismiss
+            </button>
+          </div>
+        </div>
+      )}
       <RehearsalBanner />
 
       <ol className="flex items-center justify-between gap-2 text-[11px] uppercase tracking-wider text-ink-muted">

@@ -92,6 +92,7 @@ export default function OfferComparison({
   const selected = offers.find((offer) => offer.id === selectedId) || offers[0];
 
   const blocked = selected?.status === 'BLOCKED';
+  const isRehearsalQuotes = rehearsal;
 
   const handleConfirm = async () => {
     if (!selected || blocked) return;
@@ -134,18 +135,20 @@ export default function OfferComparison({
       <div className="space-y-2">
         {offers.map((offer, idx) => {
           const isSelected = offer.id === selected.id;
+          const isBlocked = offer.status === 'BLOCKED';
           return (
             <button
               key={offer.id}
               type="button"
               onClick={() => setSelectedId(offer.id)}
               className={`w-full text-left paper-card rounded-2xl p-4 transition-colors ${
-                isSelected && offer.status === 'BLOCKED'
-                  ? 'border-escalate'
+                isSelected && isBlocked
+                  ? 'border-escalate animate-shake-slow animate-pulse-border'
                   : isSelected
                     ? 'border-mandate'
                     : 'hover:border-ink/20'
               }`}
+              disabled={isBlocked}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>

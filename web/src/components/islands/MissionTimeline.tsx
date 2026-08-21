@@ -119,6 +119,7 @@ export default function MissionTimeline({
             Up to {formatMoney(mission.mandate.budget.maxAmount)} · {mission.mandate.serviceArea.postalDistrict}
           </p>
 
+          {/* Progress bar — always visible, not hidden behind toggle */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-ink-muted overflow-x-auto pb-1">
               {stages.map((st, idx) => {
@@ -138,7 +139,9 @@ export default function MissionTimeline({
             </div>
             <div className="w-full bg-paper-inset h-1 rounded-full overflow-hidden">
               <div
-                className="bg-mandate h-full transition-[width] duration-500 ease-yaler"
+                className={`bg-mandate h-full transition-[width] duration-500 ease-yaler ${
+                  isWorking ? 'animate-pulse' : ''
+                }`}
                 style={{ width: `${Math.min(100, ((activeStageIdx + 1) / stages.length) * 100)}%` }}
               />
             </div>
@@ -146,13 +149,23 @@ export default function MissionTimeline({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setShowWork((open) => !open)}
-        className="text-sm text-ink-muted hover:text-ink transition-colors"
-      >
-        {showWork ? 'Hide what we’re doing' : 'Show what we’re doing'}
-      </button>
+      {/* Working indicator when agent is active — pulls the toggle open naturally */}
+      {isWorking && (
+        <div className="flex items-center gap-2 text-sm text-mandate animate-pulse">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" strokeOpacity="0.3" />
+            <circle cx="12" cy="12" r="4" />
+          </svg>
+          <span>Working through the job…</span>
+          <button
+            type="button"
+            onClick={() => setShowWork((open) => !open)}
+            className="ml-auto text-xs text-ink-muted hover:text-ink transition-colors underline"
+          >
+            {showWork ? 'hide what we are doing' : 'show what we are doing'}
+          </button>
+        </div>
+      )}
 
       {showWork && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-pop-in">
