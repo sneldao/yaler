@@ -323,6 +323,17 @@ func (h *Handler) HandleApproveException(w http.ResponseWriter, r *http.Request)
 
 	switch req.Action {
 	case "APPROVE":
+		// Idempotent: in DELEGATE mode the worker may have already committed
+		// the best in-budget offer (COMMITTED → IN_PROGRESS → EVIDENCE_PENDING).
+		// Re-approving a mission that is already at or past COMMITTED is a
+		// no-op success, not a 400 — the state machine has no self-transition
+		// from those states back to COMMITTED.
+		switch m.Status {
+		case domain.StatusCommitted, domain.StatusInProgress,
+			domain.StatusEvidencePending, domain.StatusVerifying, domain.StatusCompleted:
+			writeJSON(w, http.StatusOK, m)
+			return
+		}
 		if req.NewMaxBudget > 0 {
 			m.Mandate.Budget.MaxAmount = req.NewMaxBudget
 		}

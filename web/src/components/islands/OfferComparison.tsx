@@ -12,6 +12,7 @@ import { formatMoney, supplierLabel } from '../../lib/copy';
 
 interface Props {
   missionId?: string;
+  missionStatus?: string;
   offers?: Offer[];
   rehearsal?: boolean;
   onBooked?: (offer: Offer) => void;
@@ -19,8 +20,21 @@ interface Props {
   category?: string;
 }
 
+// States where the mission is past the booking decision and the confirm
+// button must not fire. In DELEGATE mode the worker auto-commits the best
+// in-budget offer, so by the time the user sees quotes the mission may
+// already be COMMITTED or further along.
+const BOOKED_STATES = new Set([
+  'COMMITTED',
+  'IN_PROGRESS',
+  'EVIDENCE_PENDING',
+  'VERIFYING',
+  'COMPLETED',
+]);
+
 export default function OfferComparison({
   missionId,
+  missionStatus,
   offers: offersProp,
   rehearsal = false,
   onBooked,
@@ -92,6 +106,7 @@ export default function OfferComparison({
   const selected = offers.find((offer) => offer.id === selectedId) || offers[0];
 
   const blocked = selected?.status === 'BLOCKED';
+  const isAlreadyBooked = !rehearsal && !!missionStatus && BOOKED_STATES.has(missionStatus);
   const isRehearsalQuotes = rehearsal;
 
   const handleConfirm = async () => {
@@ -204,18 +219,35 @@ export default function OfferComparison({
       <div className="paper-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-ink">
-            {blocked
-              ? `We will not book ${supplierLabel(selected.supplierAgentId)}`
-              : `Book ${supplierLabel(selected.supplierAgentId)}?`}
+            {isAlreadyBooked
+              ? 'Already booked'
+              : blocked
+                ? `We will not book ${supplierLabel(selected.supplierAgentId)}`
+                : `Book ${supplierLabel(selected.supplierAgentId)}?`}
           </p>
           <p className="text-xs text-ink-muted">
-            {blocked
-              ? `${formatMoney(selected.price, selected.currency)} sits over the ceiling you set.`
-              : `${formatMoney(selected.price, selected.currency)} · ${selected.availability}`}
+            {isAlreadyBooked
+              ? 'The agent booked the best in-budget quote for you.'
+              : blocked
+                ? `${formatMoney(selected.price, selected.currency)} sits over the ceiling you set.`
+                : `${formatMoney(selected.price, selected.currency)} · ${selected.availability}`}
           </p>
         </div>
-        <button type="button" onClick={handleConfirm} disabled={submitting || blocked} className="btn-primary text-sm py-2.5">
-          {blocked ? 'Blocked by your rules' : submitting ? 'Booking…' : rehearsal ? 'Yes — in the rehearsal' : 'Yes, book them'}
+        <button
+          type="button"
+          onClick={handleConfirm}
+          disabled={submitting || blocked || isAlreadyBooked}
+          className="btn-primary text-sm py-2.5"
+        >
+          {isAlreadyBooked
+            ? 'Booked'
+            : blocked
+              ? 'Blocked by your rules'
+              : submitting
+                ? 'Booking…'
+                : rehearsal
+                  ? 'Yes — in the rehearsal'
+                  : 'Yes, book them'}
         </button>
       </div>
 

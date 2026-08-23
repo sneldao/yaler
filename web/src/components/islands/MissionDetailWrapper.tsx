@@ -9,41 +9,60 @@ interface Props {
 }
 
 export default function MissionDetailWrapper({ initialMissionId }: Props) {
+  const [id, setId] = useState(initialMissionId || 'demo');
   const [mission, setMission] = useState<Mission | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getEffectiveId = () => {
-    if (initialMissionId && initialMissionId !== 'demo') return initialMissionId;
-    if (typeof window !== 'undefined') {
-      const parts = window.location.pathname.split('/').filter(Boolean);
-      const idx = parts.indexOf('missions');
-      if (idx !== -1 && parts[idx + 1]) {
-        return parts[idx + 1];
-      }
+  // Resolve the real mission ID from the URL after hydration, not during
+  // render. Reading window.location during render causes a hydration
+  // mismatch because the server (SSG) always renders with initialMissionId
+  // (typically 'demo' via _redirects) while the client sees the real ID.
+  useEffect(() => {
+    if (initialMissionId && initialMissionId !== 'demo') return;
+    if (typeof window === 'undefined') return;
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    const idx = parts.indexOf('missions');
+    if (idx !== -1 && parts[idx + 1] && parts[idx + 1] !== id) {
+      setId(parts[idx + 1]);
     }
-    return initialMissionId || 'demo';
-  };
-
-  const id = getEffectiveId();
+  }, []);
 
   useEffect(() => {
     let active = true;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
     async function load() {
-      setLoading(true);
-      setError(null);
+      if (active) {
+        setLoading(true);
+        setError(null);
+      }
       try {
         const data = await getMission(id);
-        if (active) setMission(data);
+        if (active) {
+          setMission(data);
+          // Stop polling once the mission reaches a terminal state.
+          if (data.status === 'COMPLETED' || data.status === 'CANCELLED') {
+            if (interval) clearInterval(interval);
+            interval = null;
+          }
+        }
       } catch (err: any) {
         if (active) setError(err.message || 'Job not found');
       } finally {
         if (active) setLoading(false);
       }
     }
+
     load();
+
+    // Poll so the UI reflects worker-driven state changes (auto-commit in
+    // DELEGATE mode, evidence transitions, etc.) without a manual refresh.
+    interval = setInterval(load, 3000);
+
     return () => {
       active = false;
+      if (interval) clearInterval(interval);
     };
   }, [id]);
 
@@ -76,7 +95,7 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
       ) : (
         <>
           <MissionTimeline missionId={mission.id} />
-          <OfferComparison missionId={mission.id} />
+          <OfferComparison missionId={mission.id} missionStatus={mission.status} />
         </>
       )}
     </div>
