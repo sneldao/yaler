@@ -1,63 +1,40 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import MissionForm from '../../components/islands/MissionForm';
+import DiscoveryBadge from '../../components/islands/DiscoveryBadge';
 ---
 
 <Layout title="New job — Yaler">
   <div class="py-4 space-y-6">
-    <div>
+    <div class="space-y-2">
       <p class="text-xs uppercase tracking-[0.16em] text-mandate">Real job</p>
       <h1 class="font-display text-3xl text-ink mt-1">What's broken?</h1>
       <p class="text-sm text-ink-muted mt-2 max-w-xl">
         This one is live. If you only wanted to feel the flow, use the <a href="/rehearsal" class="text-mandate hover:text-ink transition-colors">rehearsal</a> instead.
+        <a href="/story" class="text-ink-muted hover:text-mandate transition-colors ml-2">How it works →</a>
       </p>
     </div>
 
-    <!-- How it works -->
-    <div class="paper-card rounded-2xl p-5 sm:p-6 space-y-4">
-      <h2 class="text-sm font-medium text-ink">How it works</h2>
-      <ol class="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <li class="space-y-1.5">
-          <span class="flex items-center justify-center w-7 h-7 rounded-full bg-mandate/10 text-mandate text-xs font-bold">1</span>
-          <p class="text-sm text-ink font-medium">Say what's broken</p>
-          <p class="text-xs text-ink-muted leading-relaxed">Speak or type. Gemini turns it into a structured mandate with budget, area, and deadline.</p>
-        </li>
-        <li class="space-y-1.5">
-          <span class="flex items-center justify-center w-7 h-7 rounded-full bg-mandate/10 text-mandate text-xs font-bold">2</span>
-          <p class="text-sm text-ink font-medium">Agent finds engineers</p>
-          <p class="text-xs text-ink-muted leading-relaxed">Searches the local roster, collects quotes, and ranks them against your rules.</p>
-        </li>
-        <li class="space-y-1.5">
-          <span class="flex items-center justify-center w-7 h-7 rounded-full bg-mandate/10 text-mandate text-xs font-bold">3</span>
-          <p class="text-sm text-ink font-medium">Policy guardrails</p>
-          <p class="text-xs text-ink-muted leading-relaxed">If a quote exceeds your budget or area, the agent stops and asks. Nothing goes over without your say.</p>
-        </li>
-        <li class="space-y-1.5">
-          <span class="flex items-center justify-center w-7 h-7 rounded-full bg-mandate/10 text-mandate text-xs font-bold">4</span>
-          <p class="text-sm text-ink font-medium">Photo proof + receipt</p>
-          <p class="text-xs text-ink-muted leading-relaxed">Engineer submits evidence. Gemini verifies it. You get a privacy-redacted receipt.</p>
-        </li>
-      </ol>
-    </div>
+    <!-- Live discovery signal -->
+    <DiscoveryBadge client:load district="N1" />
 
-    <!-- The problem this solves -->
-    <div class="paper-card rounded-2xl p-5 sm:p-6 space-y-3">
-      <h2 class="text-sm font-medium text-ink">Why this exists</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-ink-muted leading-relaxed">
-        <div class="space-y-2">
-          <p class="text-ink font-medium">The problem</p>
-          <p>A commercial fridge fails at 7am. You lose stock, lose service, and spend two hours calling around instead of running the kitchen.</p>
-          <p>Finding, vetting, negotiating, and chasing a local engineer during a busy shift costs independent operators an average of 3-4 hours and hundreds of pounds in lost revenue.</p>
-        </div>
-        <div class="space-y-2">
-          <p class="text-ink font-medium">What Yaler does differently</p>
-          <p>You state the outcome once. The agent handles discovery, quotes, budget enforcement, and evidence collection autonomously within your rules.</p>
-          <p>Gemini proposes actions. Deterministic Go code enforces them. Nothing is booked that violates your mandate.</p>
-        </div>
+    <!-- The form (includes confirmation gate + smart pre-fill) -->
+    <MissionForm client:load />
+
+    <!-- Trust signals -->
+    <div class="grid grid-cols-3 gap-3 text-center">
+      <div class="paper-card rounded-xl p-3 space-y-1">
+        <p class="text-mandate text-lg font-display">£0</p>
+        <p class="text-[11px] text-ink-muted">Until someone is booked</p>
+      </div>
+      <div class="paper-card rounded-xl p-3 space-y-1">
+        <p class="text-mandate text-lg font-display">N1</p>
+        <p class="text-[11px] text-ink-muted">Local engineers only</p>
+      </div>
+      <div class="paper-card rounded-xl p-3 space-y-1">
+        <p class="text-mandate text-lg font-display">✓</p>
+        <p class="text-[11px] text-ink-muted">Photos verified</p>
       </div>
     </div>
-
-    <!-- The actual form -->
-    <MissionForm client:load />
   </div>
 </Layout>

@@ -1,10 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import MissionForm from '../components/islands/MissionForm';
 import SavedMandateCard from '../components/islands/SavedMandateCard';
-import TacticalRadar from '../components/islands/TacticalRadar';
-import ProofVaultShowcase from '../components/islands/ProofVaultShowcase';
-import HomeStory from '../components/islands/HomeStory';
 import ActivityPulse from '../components/islands/ActivityPulse';
 import DiscoveryBadge from '../components/islands/DiscoveryBadge';
 import MissionStoryPreview from '../components/islands/MissionStoryPreview';
@@ -42,50 +38,46 @@ function labelStatus(status) {
 ---
 
 <Layout title="Yaler — Get the fridge fixed">
-  <div class="space-y-10">
+  <div class="space-y-8">
+    <!-- Hero: hook + route -->
     <div class="space-y-4 pt-2">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">For London kitchens</p>
         <ActivityPulse client:load />
       </div>
-      <!-- Progressive hero: adapts greeting based on journey stage -->
+
       <ProgressiveHero client:load />
       <noscript>
         <h1 class="font-display text-4xl sm:text-5xl text-ink tracking-tight leading-[1.12]">Fridge down. Say it once.</h1>
         <p class="text-ink-muted text-base sm:text-lg leading-relaxed max-w-xl">We find a local engineer, stay inside your rules, and send a receipt when the job is done.</p>
       </noscript>
 
-      <!-- Discovery badge -->
       <DiscoveryBadge client:load district="N1" />
 
-      <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+      <!-- Primary CTAs -->
+      <div class="flex flex-col sm:flex-row gap-3 pt-2">
         <a href="/rehearsal" class="btn-primary text-sm py-3 px-5">Start here — try a rehearsal</a>
-        <div class="flex items-center gap-4">
-          <a href="/play" class="text-xs text-mandate font-medium hover:underline whitespace-nowrap">See it in 30 seconds →</a>
-          <a href="#story" class="text-xs text-ink-muted font-medium hover:underline whitespace-nowrap">Last Tuesday's fridge ↓</a>
-        </div>
+        <a href="/play" class="btn-secondary text-sm py-3 px-5">See it in 30 seconds</a>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="/story" class="text-xs text-ink-muted hover:text-mandate transition-colors">How it works →</a>
+        <a href="/suppliers" class="text-xs text-ink-muted hover:text-mandate transition-colors">Meet the engineers →</a>
       </div>
     </div>
 
-    <HomeStory client:visible />
-
-    <!-- Saved mandate as policy card -->
+    <!-- Saved mandate (returning users) -->
     <SavedMandateCard client:load />
 
-    {Array.isArray(missions) && missions.length === 0 ? (
-      <MissionStoryPreview client:visible />
-    ) : Array.isArray(missions) && missions.length > 0 ? (
+    <!-- Recent jobs (compact) or animated empty state -->
+    {Array.isArray(missions) && missions.length > 0 ? (
       <section class="space-y-3">
         <div class="flex items-end justify-between gap-3">
-          <h2 class="font-display text-2xl text-ink">Recent jobs</h2>
-          <span class="text-xs text-ink-muted">{missions.length} on the books</span>
+          <h2 class="font-display text-2xl text-ink">Your jobs</h2>
+          <a href="/missions" class="text-xs text-mandate hover:text-ink transition-colors">See all →</a>
         </div>
         <div class="space-y-2">
-          {missions.map((m) => (
-            <a
-              href={`/missions/${m.id}`}
-              class="paper-card paper-card-hover rounded-2xl p-4 block"
-            >
+          {missions.slice(0, 3).map((m) => (
+            <a href={`/missions/${m.id}`} class="paper-card paper-card-hover rounded-2xl p-4 block">
               <div class="flex items-center justify-between gap-3">
                 <span class="text-xs font-medium px-2.5 py-1 rounded-full border border-ink/10 bg-paper-inset text-ink">
                   {labelStatus(m.status)}
@@ -95,42 +87,15 @@ function labelStatus(status) {
                 </span>
               </div>
               <p class="text-ink font-medium mt-2.5 leading-snug">{m.goal}</p>
-              <p class="text-xs text-ink-muted mt-2">
-                Up to £{m.mandate?.budget?.maxAmount} · {m.mandate?.serviceArea?.postalDistrict}
-              </p>
             </a>
           ))}
         </div>
       </section>
-    ) : null}
+    ) : (
+      <MissionStoryPreview client:visible />
+    )}
 
-    <MissionForm client:visible />
-
-    <section class="space-y-3">
-      <div class="flex items-end justify-between gap-3">
-        <h2 class="font-display text-2xl text-ink">The rules, the search, the paper</h2>
-        <span class="text-xs text-ink-muted">For a closer look</span>
-      </div>
-      <ol class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-        <li class="paper-card rounded-xl p-4">
-          <p class="text-mandate font-medium text-xs uppercase tracking-wider mb-1">1. You say what's wrong</p>
-          <p class="text-ink-muted">Speak or type. We turn it into budget, area, and a deadline.</p>
-        </li>
-        <li class="paper-card rounded-xl p-4">
-          <p class="text-mandate font-medium text-xs uppercase tracking-wider mb-1">2. We stay in your rules</p>
-          <p class="text-ink-muted">Nobody is booked over budget, out of area, or without a yes if you asked for one.</p>
-        </li>
-        <li class="paper-card rounded-xl p-4">
-          <p class="text-mandate font-medium text-xs uppercase tracking-wider mb-1">3. You get a receipt</p>
-          <p class="text-ink-muted">Photos are checked. You get a shareable record of what was done.</p>
-        </li>
-      </ol>
-
-      <TacticalRadar client:load activeDistrict="N1" />
-      <ProofVaultShowcase client:load />
-    </section>
-
-    <!-- Waitlist capture -->
-    <WaitlistCapture client:load variant="operator" source="home" />
+    <!-- Waitlist -->
+    <WaitlistCapture client:load variant="general" source="home" />
   </div>
 </Layout>
