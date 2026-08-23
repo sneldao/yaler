@@ -405,6 +405,28 @@ export class KitchenScene extends Phaser.Scene {
     this.tweens.add({ targets: target, scaleX: { from: 1, to: 1.15 }, scaleY: { from: 1, to: 1.15 }, duration: 300, yoyo: true, repeat: -1 });
 
     this.interactHint.setText(`! ${evt.label} is down`).setVisible(true);
+
+    // Easter egg: AFK for 10s → Priya walks to the equipment
+    this.time.delayedCall(10000, () => {
+      if (this.phase !== 'alarm') return;
+      const priya = this.add.rectangle(this.player.x + 20, this.player.y, 10, 10, 0xcc88aa);
+      priya.setStrokeStyle(1, 0xffffff, 0.3).setDepth(5);
+      const hint = this.add.text(priya.x - 2, priya.y - 12, '?', {
+        fontSize: '10px', color: '#cc88aa', fontStyle: 'bold',
+      }).setDepth(6);
+      this.tweens.add({
+        targets: [priya, hint],
+        x: target.x - 16,
+        y: target.y + 8,
+        duration: 2500,
+        ease: 'Sine.easeInOut',
+        onComplete: () => {
+          hint.setText('!').setColor('#ffcc44');
+          this.interactHint.setText("Priya's heading there... walk over").setVisible(true);
+          this.time.delayedCall(4000, () => { priya.destroy(); hint.destroy(); });
+        },
+      });
+    });
   }
 
   private tryInteract() {

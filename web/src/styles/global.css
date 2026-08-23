@@ -219,3 +219,74 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+
+/* ─── Micro-celebrations ───────────────────────────────── */
+
+@keyframes confetti-fly {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: translate(var(--tx), var(--ty)) rotate(720deg) scale(0.4); }
+}
+
+.confetti-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.confetti-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--color);
+  --tx: calc(cos(var(--angle)) * var(--distance));
+  --ty: calc(sin(var(--angle)) * var(--distance) * -1);
+  animation: confetti-fly 600ms var(--ease) forwards;
+}
+
+@keyframes stamp-land {
+  0% { transform: scale(2) rotate(-10deg); opacity: 0; }
+  50% { transform: scale(1.1) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.stamp-verified {
+  animation: stamp-land 500ms var(--ease) both;
+}
+
+/* ─── Print receipt ────────────────────────────────────── */
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  header, footer, nav, .btn-primary, .btn-secondary,
+  [data-no-print], .paper-card:not(.receipt-sheet) {
+    display: none !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .receipt-sheet {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    animation: none !important;
+    page-break-inside: avoid;
+  }
+
+  .receipt-punch { display: none; }
+
+  a[href]::after {
+    content: none !important;
+  }
+}

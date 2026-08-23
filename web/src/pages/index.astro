@@ -9,6 +9,7 @@ import ActivityPulse from '../components/islands/ActivityPulse';
 import DiscoveryBadge from '../components/islands/DiscoveryBadge';
 import MissionStoryPreview from '../components/islands/MissionStoryPreview';
 import WaitlistCapture from '../components/islands/WaitlistCapture';
+import ProgressiveHero from '../components/islands/ProgressiveHero';
 import { listMissions } from '../lib/api';
 
 let missions = [];
@@ -47,12 +48,12 @@ function labelStatus(status) {
         <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">For London kitchens</p>
         <ActivityPulse client:load />
       </div>
-      <h1 class="font-display text-4xl sm:text-5xl text-ink tracking-tight leading-[1.12]">
-        Fridge down. Say it once. We'll handle the rest.
-      </h1>
-      <p class="text-ink-muted text-base sm:text-lg leading-relaxed max-w-xl">
-        Tell us what's broken, your budget, and your postcode. We find a local engineer, stay inside your rules, and send a receipt when the job is done.
-      </p>
+      <!-- Progressive hero: adapts greeting based on journey stage -->
+      <ProgressiveHero client:load />
+      <noscript>
+        <h1 class="font-display text-4xl sm:text-5xl text-ink tracking-tight leading-[1.12]">Fridge down. Say it once.</h1>
+        <p class="text-ink-muted text-base sm:text-lg leading-relaxed max-w-xl">We find a local engineer, stay inside your rules, and send a receipt when the job is done.</p>
+      </noscript>
 
       <!-- Discovery badge -->
       <DiscoveryBadge client:load district="N1" />
