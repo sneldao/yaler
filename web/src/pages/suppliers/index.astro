@@ -13,106 +13,97 @@ try {
 ---
 
 <Layout title="Engineers — Yaler">
-  <div class="space-y-6 py-2">
+  <div class="space-y-8 py-2">
+    <!-- Header (consistent rhythm: label → headline → subtext) -->
     <div class="space-y-2">
-      <p class="text-xs uppercase tracking-[0.16em] text-mandate">Nearby and checked</p>
-      <h1 class="font-display text-3xl text-ink">Engineers</h1>
+      <p class="text-xs uppercase tracking-[0.16em] text-mandate">The engineers Priya's agent found</p>
+      <h1 class="font-display text-3xl text-ink">Local. Checked. Ready.</h1>
       <p class="text-ink-muted text-sm max-w-xl">
-        Local people we've already spoken to. They get a clear job, not a fishing expedition.
+        These are the people who get clear, scoped jobs from Yaler — not fishing expeditions. They know what's broken, the budget, and the deadline before they respond.
       </p>
     </div>
 
-    <!-- How suppliers experience Yaler -->
-    <div class="paper-card rounded-2xl p-5 sm:p-6 space-y-4">
-      <h2 class="text-sm font-medium text-ink">How it works for engineers</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="space-y-1.5">
-          <p class="text-sm text-ink font-medium">Clear job scope</p>
-          <p class="text-xs text-ink-muted leading-relaxed">Every request arrives with a structured mandate: what's broken, the budget ceiling, the deadline, and the location. No guesswork, no vague calls.</p>
-        </div>
-        <div class="space-y-1.5">
-          <p class="text-sm text-ink font-medium">Fair competition</p>
-          <p class="text-xs text-ink-muted leading-relaxed">Offers are ranked on price, availability, and reliability score. Premium work gets premium rates. Budget-conscious operators see budget options first.</p>
-        </div>
-        <div class="space-y-1.5">
-          <p class="text-sm text-ink font-medium">Verified track record</p>
-          <p class="text-xs text-ink-muted leading-relaxed">Every completed job builds your reliability score. Photo evidence and Gemini verification mean your work speaks for itself.</p>
-        </div>
+    <!-- Coverage map (alive element) -->
+    <section class="space-y-2">
+      <p class="text-xs uppercase tracking-wider text-ink-muted">Coverage by district</p>
+      <TacticalRadar client:load activeDistrict="N1" />
+    </section>
+
+    <!-- How engineers experience Yaler -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="paper-card rounded-xl p-4 space-y-1.5">
+        <p class="text-mandate font-medium text-xs uppercase tracking-wider">Clear scope</p>
+        <p class="text-sm text-ink-muted leading-relaxed">Every request has a structured mandate: what's broken, the budget, the deadline, the district. No guesswork.</p>
+      </div>
+      <div class="paper-card rounded-xl p-4 space-y-1.5">
+        <p class="text-mandate font-medium text-xs uppercase tracking-wider">Fair ranking</p>
+        <p class="text-sm text-ink-muted leading-relaxed">Quotes ranked on price, availability, and reliability. Premium work gets premium rates.</p>
+      </div>
+      <div class="paper-card rounded-xl p-4 space-y-1.5">
+        <p class="text-mandate font-medium text-xs uppercase tracking-wider">Verified record</p>
+        <p class="text-sm text-ink-muted leading-relaxed">Every completed job builds your score. Photo evidence and AI verification mean your work speaks for itself.</p>
       </div>
     </div>
 
     <!-- Supplier cards -->
     {suppliers.length > 0 ? (
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {suppliers.map((s) => (
-          <div class="paper-card rounded-2xl p-5 space-y-3 paper-card-hover transition-all duration-200">
-            <div class="flex items-center justify-between gap-3">
-              <span class="text-xs text-ink-muted">
-                {s.priceTier === 'PREMIUM' ? 'Usually dearer' : s.priceTier === 'BUDGET' ? 'Keeps costs down' : 'Mid range'}
-              </span>
-              <span class="text-xs text-mandate font-medium">{Math.round(s.reliabilityScore * 100)}% on time</span>
-            </div>
-            <div>
-              <h3 class="font-display text-xl text-ink">{s.displayName}</h3>
-              <p class="text-xs text-ink-muted mt-0.5">District {s.serviceArea.postalDistrict} · {s.serviceArea.radiusKm} km radius</p>
-            </div>
-            <div class="flex flex-wrap gap-1.5">
-              {s.capabilities.map((c) => (
-                <span class="text-[11px] bg-mandate/5 text-ink-muted px-2 py-1 rounded-full border border-mandate/20">
-                  {c}
+      <section class="space-y-3">
+        <p class="text-xs uppercase tracking-wider text-ink-muted">On the roster</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {suppliers.map((s) => (
+            <div class="paper-card rounded-2xl p-4 space-y-2.5">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-[11px] text-ink-muted">
+                  {s.priceTier === 'PREMIUM' ? 'Premium' : s.priceTier === 'BUDGET' ? 'Budget' : 'Mid range'}
                 </span>
-              ))}
+                <span class="text-[11px] text-mandate font-medium">{Math.round(s.reliabilityScore * 100)}% on time</span>
+              </div>
+              <div>
+                <p class="font-medium text-ink">{s.displayName}</p>
+                <p class="text-xs text-ink-muted mt-0.5">{s.serviceArea.postalDistrict} · {s.serviceArea.radiusKm} km</p>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                {s.capabilities.map((c) => (
+                  <span class="text-[10px] bg-mandate/5 text-ink-muted px-2 py-0.5 rounded-full border border-mandate/15">
+                    {c}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </section>
     ) : (
-      <div class="paper-card rounded-2xl p-8 text-center space-y-3">
-        <p class="text-ink font-display text-xl">No engineers loaded</p>
-        <p class="text-sm text-ink-muted max-w-md mx-auto">
-          The supplier roster loads from the backend. Make sure the Go server is running, or try the <a href="/rehearsal" class="text-mandate hover:text-ink transition-colors">rehearsal</a> to see the full flow with synthetic data.
-        </p>
+      <div class="paper-card rounded-2xl p-6 text-center space-y-2">
+        <p class="text-ink font-medium">No engineers loaded</p>
+        <p class="text-xs text-ink-muted">Start the Go backend, or <a href="/rehearsal" class="text-mandate hover:text-ink">try the rehearsal</a> for synthetic data.</p>
       </div>
     )}
 
-    <!-- Market context -->
-    <div class="paper-card rounded-2xl p-5 sm:p-6 space-y-3">
-      <h2 class="text-sm font-medium text-ink">London commercial repair market</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div class="space-y-0.5">
-          <p class="font-display text-2xl text-ink">12,000+</p>
-          <p class="text-xs text-ink-muted">Independent food businesses in London</p>
-        </div>
-        <div class="space-y-0.5">
-          <p class="font-display text-2xl text-ink">3-4 hrs</p>
-          <p class="text-xs text-ink-muted">Average time to find and book a repair manually</p>
-        </div>
-        <div class="space-y-0.5">
-          <p class="font-display text-2xl text-mandate">15 min</p>
-          <p class="text-xs text-ink-muted">Target time with Yaler agent coordination</p>
-        </div>
-        <div class="space-y-0.5">
-          <p class="font-display text-2xl text-ink">85%</p>
-          <p class="text-xs text-ink-muted">Of repairs are urgent (same-day required)</p>
-        </div>
+    <!-- Market stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
+        <p class="font-display text-xl text-ink">12,000+</p>
+        <p class="text-[10px] text-ink-muted">London food businesses</p>
+      </div>
+      <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
+        <p class="font-display text-xl text-ink">3-4 hrs</p>
+        <p class="text-[10px] text-ink-muted">Manual repair sourcing</p>
+      </div>
+      <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
+        <p class="font-display text-xl text-mandate">15 min</p>
+        <p class="text-[10px] text-ink-muted">With Yaler</p>
+      </div>
+      <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
+        <p class="font-display text-xl text-ink">85%</p>
+        <p class="text-[10px] text-ink-muted">Same-day urgent</p>
       </div>
     </div>
 
-    <!-- Coverage map -->
-    <section class="space-y-3">
-      <h2 class="text-sm font-medium text-ink">Coverage by district</h2>
-      <p class="text-xs text-ink-muted">The agent only searches within your mandate area. These are the districts we cover.</p>
-      <TacticalRadar client:load activeDistrict="N1" />
-    </section>
-
-    <!-- CTA -->
+    <!-- Forward CTA -->
     <div class="flex flex-col sm:flex-row gap-3">
-      <a href="/missions/new" class="btn-primary text-sm text-center py-2.5 flex-1">
-        Start a job now
-      </a>
-      <a href="/rehearsal" class="btn-secondary text-sm text-center py-2.5 flex-1">
-        Try the rehearsal first
-      </a>
+      <a href="/missions/new" class="btn-primary text-sm text-center py-2.5 flex-1">Start a job</a>
+      <a href="/rehearsal" class="btn-secondary text-sm text-center py-2.5 flex-1">Try the rehearsal</a>
     </div>
 
     <!-- Supply-side waitlist -->

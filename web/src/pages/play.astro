@@ -5,44 +5,43 @@ import WaitlistCapture from '../components/islands/WaitlistCapture';
 ---
 
 <Layout title="Play — Cafe Noor's Tuesday Shift" description="Three breakdowns, one morning shift, zero phone calls. See how Yaler's agent handles a real kitchen crisis in under 2 minutes.">
-  <div class="space-y-6 py-2">
+  <div class="space-y-8 py-2">
+    <!-- Header -->
     <div class="space-y-2 text-center">
-      <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">Interactive demo</p>
-      <h1 class="font-display text-3xl text-ink">Cafe Noor's Tuesday shift</h1>
+      <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">Cafe Noor, Dalston</p>
+      <h1 class="font-display text-3xl text-ink">Tuesday shift</h1>
       <p class="text-sm text-ink-muted max-w-md mx-auto">
         Three things break. Walk to each one. The agent handles the rest.
-        <span class="block mt-1 text-xs text-ink/40">WASD or tap to move · Space or tap to interact</span>
       </p>
+      <p class="text-xs text-ink/40">WASD or tap to move · Space or tap to interact</p>
     </div>
 
+    <!-- Game (alive element) -->
     <KitchenGame client:only="react" />
 
-    <div class="paper-card rounded-2xl p-5 sm:p-6 space-y-4">
-      <h2 class="text-sm font-medium text-ink">What you just played</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-ink-muted">
-        <div class="space-y-1">
-          <p class="text-ink font-medium">Event 1: Fridge</p>
-          <p>In-budget quote. Agent auto-commits in Delegate mode. No human intervention needed.</p>
-        </div>
-        <div class="space-y-1">
-          <p class="text-ink font-medium">Event 2: Hood</p>
-          <p>Over-budget quote. Policy engine blocks. You choose: approve the overspend or reject and reroute to a cheaper option.</p>
-        </div>
-        <div class="space-y-1">
-          <p class="text-ink font-medium">Event 3: Gas line</p>
-          <p>Regulated category. Policy engine escalates automatically to Gas Safe registered engineers only.</p>
-        </div>
+    <!-- What each event demonstrates -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="paper-card rounded-xl p-4 space-y-1.5">
+        <p class="text-mandate font-medium text-xs uppercase tracking-wider">Fridge</p>
+        <p class="text-sm text-ink-muted leading-relaxed">In-budget quote. Agent auto-commits in Delegate mode. No human needed.</p>
       </div>
-      <p class="text-xs text-ink-muted border-t border-ink/10 pt-3">
-        Every game step maps to a real system: mission creation, supplier discovery, offer comparison, policy enforcement, approval gates, rerouting, escalation, evidence verification, and proof receipts.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-2 justify-center">
-        <a href="/rehearsal" class="btn-primary text-sm py-2.5 px-5">Try the real thing</a>
-        <a href="/" class="btn-secondary text-sm py-2.5 px-5">Back home</a>
+      <div class="paper-card rounded-xl p-4 space-y-1.5">
+        <p class="text-escalate font-medium text-xs uppercase tracking-wider">Hood</p>
+        <p class="text-sm text-ink-muted leading-relaxed">Over-budget. Policy blocks. You choose: approve or reroute to cheaper.</p>
+      </div>
+      <div class="paper-card rounded-xl p-4 space-y-1.5">
+        <p class="text-ink font-medium text-xs uppercase tracking-wider">Gas line</p>
+        <p class="text-sm text-ink-muted leading-relaxed">Regulated category. Policy escalates to Gas Safe registered only.</p>
       </div>
     </div>
 
-    <!-- Waitlist capture -->
+    <!-- Forward CTA -->
+    <div class="flex flex-col sm:flex-row gap-3">
+      <a href="/rehearsal" class="btn-primary text-sm py-2.5 px-5 flex-1 text-center">Try the real interface</a>
+      <a href="/story" class="btn-secondary text-sm py-2.5 px-5 flex-1 text-center">Read the full story</a>
+    </div>
+
+    <!-- Waitlist -->
     <WaitlistCapture client:load variant="game" source="play" />
   </div>
 </Layout>

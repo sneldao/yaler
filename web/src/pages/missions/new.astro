@@ -2,34 +2,113 @@
 import Layout from '../../layouts/Layout.astro';
 import MissionForm from '../../components/islands/MissionForm';
 import DiscoveryBadge from '../../components/islands/DiscoveryBadge';
+import { listMissions } from '../../lib/api';
+
+let missions = [];
+try {
+  const res = await listMissions();
+  if (Array.isArray(res)) missions = res;
+} catch (e) {
+  missions = [];
+}
+if (!Array.isArray(missions)) missions = [];
+
+const active = missions.filter(m => m.status !== 'COMPLETED' && m.status !== 'CANCELLED');
+const completed = missions.filter(m => m.status === 'COMPLETED');
+
+const STATUS_LABELS = {
+  DRAFT: 'Check the details',
+  MANDATE_CONFIRMED: 'Ready',
+  SOURCING: 'Looking',
+  OFFERS_RECEIVED: 'Quotes in',
+  NEGOTIATING: 'Comparing',
+  COMMITTED: 'Booked',
+  AWAITING_APPROVAL: 'Needs you',
+  IN_PROGRESS: 'In progress',
+  EVIDENCE_PENDING: 'Photos needed',
+  VERIFYING: 'Checking',
+  COMPLETED: 'Done',
+  ESCALATED: 'Needs you',
+};
+
+function labelStatus(status) {
+  return STATUS_LABELS[status] || status;
+}
 ---
 
-<Layout title="New job — Yaler">
-  <div class="py-4 space-y-6">
+<Layout title="Jobs — Yaler">
+  <div class="py-4 space-y-8">
+    <!-- Header -->
     <div class="space-y-2">
-      <p class="text-xs uppercase tracking-[0.16em] text-mandate">Real job</p>
-      <h1 class="font-display text-3xl text-ink mt-1">What's broken?</h1>
-      <p class="text-sm text-ink-muted mt-2 max-w-xl">
-        This one is live. If you only wanted to feel the flow, use the <a href="/rehearsal" class="text-mandate hover:text-ink transition-colors">rehearsal</a> instead.
-        <a href="/story" class="text-ink-muted hover:text-mandate transition-colors ml-2">How it works →</a>
+      <p class="text-xs uppercase tracking-[0.16em] text-mandate">Cafe Noor, N1</p>
+      <h1 class="font-display text-3xl text-ink">What's broken?</h1>
+      <p class="text-sm text-ink-muted max-w-xl">
+        This is live — someone may be booked. Want to feel the flow first?
+        <a href="/rehearsal" class="text-mandate hover:text-ink transition-colors ml-1">Try the rehearsal</a>
       </p>
     </div>
 
-    <!-- Live discovery signal -->
+    <!-- Discovery signal -->
     <DiscoveryBadge client:load district="N1" />
 
-    <!-- The form (includes confirmation gate + smart pre-fill) -->
+    <!-- The form -->
     <MissionForm client:load />
+
+    <!-- Active jobs -->
+    {active.length > 0 && (
+      <section class="space-y-3">
+        <div class="flex items-center gap-2">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-mandate opacity-75"></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-mandate"></span>
+          </span>
+          <h2 class="text-sm font-medium text-ink">Active jobs</h2>
+        </div>
+        <div class="space-y-2">
+          {active.map((m) => (
+            <a href={`/missions/${m.id}`} class="paper-card paper-card-hover rounded-2xl p-4 block">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full border border-ink/10 bg-paper-inset text-ink">
+                  {labelStatus(m.status)}
+                </span>
+                <span class="text-xs text-ink-muted">
+                  {new Date(m.updatedAt || m.createdAt).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' })}
+                </span>
+              </div>
+              <p class="text-ink font-medium mt-2 leading-snug">{m.goal}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Completed jobs -->
+    {completed.length > 0 && (
+      <section class="space-y-3">
+        <h2 class="text-sm font-medium text-ink-muted">Completed ({completed.length})</h2>
+        <div class="space-y-2">
+          {completed.slice(0, 5).map((m) => (
+            <a href={`/missions/${m.id}`} class="paper-card paper-card-hover rounded-2xl p-4 block opacity-75 hover:opacity-100 transition-opacity">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-xs text-mandate font-medium">Done</span>
+                <a href={`/missions/${m.id}/receipt`} class="text-xs text-mandate hover:underline">Receipt →</a>
+              </div>
+              <p class="text-ink font-medium mt-1.5 leading-snug text-sm">{m.goal}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
 
     <!-- Trust signals -->
     <div class="grid grid-cols-3 gap-3 text-center">
       <div class="paper-card rounded-xl p-3 space-y-1">
         <p class="text-mandate text-lg font-display">£0</p>
-        <p class="text-[11px] text-ink-muted">Until someone is booked</p>
+        <p class="text-[11px] text-ink-muted">Until booked</p>
       </div>
       <div class="paper-card rounded-xl p-3 space-y-1">
         <p class="text-mandate text-lg font-display">N1</p>
-        <p class="text-[11px] text-ink-muted">Local engineers only</p>
+        <p class="text-[11px] text-ink-muted">Local only</p>
       </div>
       <div class="paper-card rounded-xl p-3 space-y-1">
         <p class="text-mandate text-lg font-display">✓</p>

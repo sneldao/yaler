@@ -4,7 +4,6 @@ import { ViewTransitions } from 'astro:transitions';
 import SpotlightBackdrop from '../components/primitives/SpotlightBackdrop';
 import ActiveJobPill from '../components/islands/ActiveJobPill';
 import KitchenModeToggle from '../components/islands/KitchenModeToggle';
-import NavLinks from '../components/islands/NavLinks';
 
 interface Props {
   title?: string;
@@ -54,7 +53,9 @@ const {
         <nav class="flex items-center gap-3 text-sm">
           <ActiveJobPill client:load />
           <KitchenModeToggle client:load />
-          <NavLinks client:load />
+          <a href="/rehearsal" class="text-ink hover:text-mandate transition-colors font-medium">Try it</a>
+          <a href="/story" class="text-ink-muted hover:text-ink transition-colors">How it works</a>
+          <a href="/suppliers" class="text-ink-muted hover:text-ink transition-colors">Engineers</a>
         </nav>
       </div>
     </header>

@@ -3,15 +3,21 @@ import Layout from '../layouts/Layout.astro';
 import RehearsalPlaythrough from '../components/islands/RehearsalPlaythrough';
 ---
 
-<Layout title="Rehearsal — last Tuesday’s fridge in N1">
+<Layout title="Rehearsal — Cafe Noor's fridge, last Tuesday">
   <div class="space-y-5">
+    <!-- Header (consistent rhythm) -->
     <div class="space-y-2">
-      <p class="text-xs uppercase tracking-[0.16em] text-mandate">London · N1 · labelled practice</p>
-      <h1 class="font-display text-3xl sm:text-4xl text-ink tracking-tight">Last Tuesday’s fridge</h1>
+      <p class="text-xs uppercase tracking-[0.16em] text-mandate">Cafe Noor · N1 · practice</p>
+      <h1 class="font-display text-3xl sm:text-4xl text-ink tracking-tight">Last Tuesday's fridge</h1>
       <p class="text-ink-muted text-sm sm:text-base max-w-xl">
         Same screens as a live job. Nobody is called. One quote will sit over the ceiling so you can feel the stop.
       </p>
+      <p class="text-xs text-ink/40">
+        Or <a href="/play" class="text-mandate hover:text-ink transition-colors">play the 30-second game version</a>
+      </p>
     </div>
+
+    <!-- The playthrough (alive element — the entire island) -->
     <RehearsalPlaythrough client:load />
   </div>
 </Layout>

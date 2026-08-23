@@ -3,7 +3,6 @@ import Layout from '../layouts/Layout.astro';
 import SavedMandateCard from '../components/islands/SavedMandateCard';
 import ActivityPulse from '../components/islands/ActivityPulse';
 import DiscoveryBadge from '../components/islands/DiscoveryBadge';
-import MissionStoryPreview from '../components/islands/MissionStoryPreview';
 import WaitlistCapture from '../components/islands/WaitlistCapture';
 import ProgressiveHero from '../components/islands/ProgressiveHero';
 import { listMissions } from '../lib/api';
@@ -17,19 +16,18 @@ try {
 }
 if (!Array.isArray(missions)) missions = [];
 
+const active = missions.filter(m => m.status !== 'COMPLETED' && m.status !== 'CANCELLED');
+
 const STATUS_LABELS = {
   DRAFT: 'Check the details',
-  MANDATE_CONFIRMED: 'Ready',
-  SOURCING: 'Asking nearby engineers',
+  SOURCING: 'Looking',
   OFFERS_RECEIVED: 'Quotes in',
-  NEGOTIATING: 'Comparing quotes',
   COMMITTED: 'Booked',
   AWAITING_APPROVAL: 'Needs you',
   IN_PROGRESS: 'In progress',
-  EVIDENCE_PENDING: 'Waiting on photos',
-  VERIFYING: 'Checking the photos',
+  EVIDENCE_PENDING: 'Photos needed',
+  VERIFYING: 'Checking',
   COMPLETED: 'Done',
-  ESCALATED: 'Needs you',
 };
 
 function labelStatus(status) {
@@ -39,7 +37,7 @@ function labelStatus(status) {
 
 <Layout title="Yaler — Get the fridge fixed">
   <div class="space-y-8">
-    <!-- Hero: hook + route -->
+    <!-- Hero -->
     <div class="space-y-4 pt-2">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">For London kitchens</p>
@@ -54,29 +52,30 @@ function labelStatus(status) {
 
       <DiscoveryBadge client:load district="N1" />
 
-      <!-- Primary CTAs -->
       <div class="flex flex-col sm:flex-row gap-3 pt-2">
         <a href="/rehearsal" class="btn-primary text-sm py-3 px-5">Start here — try a rehearsal</a>
         <a href="/play" class="btn-secondary text-sm py-3 px-5">See it in 30 seconds</a>
-      </div>
-      <div class="flex items-center gap-4">
-        <a href="/story" class="text-xs text-ink-muted hover:text-mandate transition-colors">How it works →</a>
-        <a href="/suppliers" class="text-xs text-ink-muted hover:text-mandate transition-colors">Meet the engineers →</a>
       </div>
     </div>
 
     <!-- Saved mandate (returning users) -->
     <SavedMandateCard client:load />
 
-    <!-- Recent jobs (compact) or animated empty state -->
-    {Array.isArray(missions) && missions.length > 0 ? (
+    <!-- Active jobs (if any) -->
+    {active.length > 0 && (
       <section class="space-y-3">
         <div class="flex items-end justify-between gap-3">
-          <h2 class="font-display text-2xl text-ink">Your jobs</h2>
-          <a href="/missions" class="text-xs text-mandate hover:text-ink transition-colors">See all →</a>
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-mandate opacity-75"></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-mandate"></span>
+            </span>
+            <h2 class="text-sm font-medium text-ink">Active jobs</h2>
+          </div>
+          <a href="/missions/new" class="text-xs text-ink-muted hover:text-mandate transition-colors">All jobs →</a>
         </div>
         <div class="space-y-2">
-          {missions.slice(0, 3).map((m) => (
+          {active.slice(0, 2).map((m) => (
             <a href={`/missions/${m.id}`} class="paper-card paper-card-hover rounded-2xl p-4 block">
               <div class="flex items-center justify-between gap-3">
                 <span class="text-xs font-medium px-2.5 py-1 rounded-full border border-ink/10 bg-paper-inset text-ink">
@@ -86,14 +85,24 @@ function labelStatus(status) {
                   {new Date(m.createdAt).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' })}
                 </span>
               </div>
-              <p class="text-ink font-medium mt-2.5 leading-snug">{m.goal}</p>
+              <p class="text-ink font-medium mt-2 leading-snug">{m.goal}</p>
             </a>
           ))}
         </div>
       </section>
-    ) : (
-      <MissionStoryPreview client:visible />
     )}
+
+    <!-- How it works — compact story card -->
+    <a href="/story" class="paper-card paper-card-hover rounded-2xl p-5 sm:p-6 block space-y-3">
+      <div class="flex items-center justify-between">
+        <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">Cafe Noor, Dalston</p>
+        <span class="text-xs text-ink-muted">Read the story →</span>
+      </div>
+      <p class="font-display text-xl text-ink">Priya's fridge died at 6:47am. By 9:12 it was fixed.</p>
+      <p class="text-sm text-ink-muted leading-relaxed">
+        One voice note. Three quotes. A policy stop. A receipt on the wall. See how Yaler handled a real Tuesday morning.
+      </p>
+    </a>
 
     <!-- Waitlist -->
     <WaitlistCapture client:load variant="general" source="home" />
