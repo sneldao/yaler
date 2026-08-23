@@ -144,18 +144,26 @@ Mission updates use a transaction or version precondition. Events are append-onl
 
 ```text
 POST   /api/missions
+GET    /api/missions
+GET    /api/missions/:id
 PUT    /api/missions/:id/mandate
 POST   /api/missions/:id/start
-GET    /api/missions/:id
 GET    /api/missions/:id/events
 GET    /api/missions/:id/offers
 POST   /api/missions/:id/approve
 POST   /api/missions/:id/cancel
 POST   /api/missions/:id/evidence
 GET    /api/missions/:id/receipt
-GET    /api/agents
+GET    /api/receipts/share/:token
+GET    /api/suppliers
+POST   /api/a2a
+POST   /api/upload
+POST   /api/tts
+GET    /api/discovery
+GET    /api/credentials
 POST   /api/worker/step
 GET    /health
+GET    /uploads/*
 ```
 
 ## Frontend routes

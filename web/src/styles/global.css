@@ -107,6 +107,18 @@
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
 }
 
+.backdrop-ruled-lines {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 47px,
+      rgba(18, 33, 43, 0.35) 47px,
+      rgba(18, 33, 43, 0.35) 48px
+    );
+  background-size: 100% 48px;
+}
+
 .paper-card {
   background: var(--paper-raised);
   border: 1px solid var(--line);
