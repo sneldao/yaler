@@ -2,6 +2,15 @@
 
 Yaler should look like a receipt, not a chatbot. Dark ink, warm paper, one policy node.
 
+## Design language
+
+Yaler's look and feel is **Nordic functionalism with progressive disclosure** — Scandinavian-style warm minimalism where depth unfolds on demand rather than being shown all at once.
+
+- **Visual lineage.** Warm muted palette, a serif display face over system sans, functional restraint with a hint of warmth. The spiritual roots are Swedish *funktionalism* and *Vackrare vardagsvara* ("more beautiful everyday goods"): well-designed objects should be everyday, not luxury. Closer to Dieter Rams' "less, but better" than to flat SaaS dashboards.
+- **Progressive disclosure.** The surface stays quiet; the user asks for more. The real job form folds behind "This is a real job." The mandate editor tucks autonomy modes and evidence checklists behind text links. The receipt defaults to redacted names. Depth is always one opt-in away, never on by default.
+- **Restraint as a product principle.** The thread connecting the palette, the disclosures, the autonomy modes, and the over-budget stop is that the app consistently chooses to show less and let the user ask for more. Minimalism alone is quiet; disclosure makes the quietness feel decided.
+- **What this is not.** Not a chatbot, not an agent dashboard, not a glassmorphism gradient. Do not add aurora backdrops, pointer-tracking spotlights, decorative "AI network" orbs, or layers of nesting that shadow-stack on top of each other.
+
 ## Voice
 
 - Outcome over conversation.

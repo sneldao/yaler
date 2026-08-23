@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { navigate } from 'astro:transitions/client';
 import { createMission } from '../../lib/api';
 import { loadSavedMandate } from '../../lib/rehearsal';
@@ -16,6 +16,13 @@ export default function MissionForm() {
   const [showSamples, setShowSamples] = useState(false);
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const typingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (typingRef.current) clearInterval(typingRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const saved = loadSavedMandate();
@@ -44,13 +51,15 @@ export default function MissionForm() {
   ];
 
   const typePreset = (text: string) => {
+    if (typingRef.current) clearInterval(typingRef.current);
     setGoal('');
     let index = 0;
-    const interval = setInterval(() => {
-      setGoal((prev) => prev + text.charAt(index));
+    typingRef.current = setInterval(() => {
       index++;
-      if (index >= text.length) {
-        clearInterval(interval);
+      setGoal(text.slice(0, index));
+      if (index >= text.length && typingRef.current) {
+        clearInterval(typingRef.current);
+        typingRef.current = null;
       }
     }, 12);
   };
@@ -84,7 +93,6 @@ export default function MissionForm() {
         <span className="text-xs text-ink-muted">{open ? 'Close' : 'Open'}</span>
       </summary>
       <div className="px-5 pb-5 border-t border-ink/10 pt-5">
-    <div className="paper-card rounded-2xl p-5 sm:p-7">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
         <div>
           <h2 className="font-display text-2xl text-ink">What’s broken?</h2>
@@ -169,7 +177,6 @@ export default function MissionForm() {
           )}
         </button>
       </form>
-    </div>
       </div>
     </details>
   );
