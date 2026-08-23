@@ -6,6 +6,22 @@ import ToolChips, { type ToolChipCall } from '../primitives/ToolChips';
 import StatusBadge from '../primitives/StatusBadge';
 import { eventLabel, formatMoney, nextActionLabel } from '../../lib/copy';
 
+/** Map status to a human-readable description of what the agent is doing right now */
+function agentNarrative(status?: string): string {
+  switch (status) {
+    case 'SOURCING': return 'Searching the N1 roster for engineers who do this work and are free today';
+    case 'OFFERS_RECEIVED': return 'Comparing three quotes against your budget and distance rules';
+    case 'NEGOTIATING': return 'Checking if a counter-offer keeps us within mandate';
+    case 'COMMITTED': return 'Locking in the booking — engineer confirmed, dispatching now';
+    case 'AWAITING_APPROVAL': return 'One quote is over budget. Waiting for your call — approve, reject, or reroute';
+    case 'IN_PROGRESS': return 'Engineer is on site. Waiting for completion update';
+    case 'EVIDENCE_PENDING': return 'Asking for photo evidence before we close this off';
+    case 'VERIFYING': return 'Gemini is checking the photo against the mandate requirements';
+    case 'COMPLETED': return 'Verified and done. Receipt is ready';
+    default: return 'Preparing the mission';
+  }
+}
+
 interface Props {
   missionId?: string;
   mission?: Mission;
@@ -21,7 +37,7 @@ export default function MissionTimeline({
 }: Props) {
   const [mission, setMission] = useState<Mission | null>(missionProp ?? null);
   const [events, setEvents] = useState<Event[]>(eventsProp ?? []);
-  const [showWork, setShowWork] = useState(false);
+  const [hideWork, setHideWork] = useState(false);
 
   useEffect(() => {
     if (missionProp) setMission(missionProp);
@@ -66,6 +82,7 @@ export default function MissionTimeline({
 
   const activeStageIdx = getStageIndex(mission?.status);
   const isWorking = mission?.status !== 'COMPLETED' && mission?.status !== 'DRAFT';
+  const showWork = isWorking && !hideWork;
 
   const traceRows: TraceRow[] = events.map((evt) => ({
     primary: eventLabel(evt.type),
@@ -119,7 +136,7 @@ export default function MissionTimeline({
             Up to {formatMoney(mission.mandate.budget.maxAmount)} · {mission.mandate.serviceArea.postalDistrict}
           </p>
 
-          {/* Progress bar — always visible, not hidden behind toggle */}
+          {/* Progress bar */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-ink-muted overflow-x-auto pb-1">
               {stages.map((st, idx) => {
@@ -149,44 +166,62 @@ export default function MissionTimeline({
         </div>
       )}
 
-      {/* Working indicator when agent is active — pulls the toggle open naturally */}
+      {/* Agent thinking — VISIBLE BY DEFAULT when working */}
       {isWorking && (
-        <div className="flex items-center gap-2 text-sm text-mandate animate-pulse">
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" strokeOpacity="0.3" />
-            <circle cx="12" cy="12" r="4" />
-          </svg>
-          <span>Working through the job…</span>
-          <button
-            type="button"
-            onClick={() => setShowWork((open) => !open)}
-            className="ml-auto text-xs text-ink-muted hover:text-ink transition-colors underline"
-          >
-            {showWork ? 'hide what we are doing' : 'show what we are doing'}
-          </button>
+        <div className="paper-card rounded-2xl p-5 sm:p-6 space-y-4 animate-pop-in">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <LoadingStatus label="Agent working" />
+            </div>
+            <button
+              type="button"
+              onClick={() => setHideWork((h) => !h)}
+              className="text-[11px] text-ink-muted hover:text-ink transition-colors"
+            >
+              {hideWork ? 'show reasoning' : 'hide'}
+            </button>
+          </div>
+
+          {/* Narrative description of current step */}
+          <p className="text-sm text-ink leading-relaxed">
+            {agentNarrative(mission?.status)}
+          </p>
+
+          {showWork && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3 border-t border-ink/10">
+              <div className="space-y-3">
+                <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wider">Reasoning</h3>
+                <ThinkingTrace
+                  activeTitle="Working through the job"
+                  doneTitle={`${traceRows.length} steps completed`}
+                  working={isWorking}
+                  rows={traceRows}
+                  defaultExpanded={true}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wider">Policy checks</h3>
+                <ToolChips calls={toolCalls} />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {showWork && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-pop-in">
-          <div className="paper-card rounded-2xl p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-ink">What’s happening</h3>
-              {isWorking && <LoadingStatus label="Working" />}
-            </div>
-            <ThinkingTrace
-              activeTitle="Working through the job"
-              doneTitle={`${traceRows.length} updates`}
-              working={isWorking}
-              rows={traceRows}
-              defaultExpanded={false}
-            />
+      {/* Settled trace — shown when done, collapsed by default */}
+      {!isWorking && events.length > 0 && mission?.status === 'COMPLETED' && (
+        <div className="paper-card rounded-2xl p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-ink">What the agent did</h3>
+            <span className="text-[11px] text-ink-muted">{traceRows.length} steps</span>
           </div>
-
-          <div className="paper-card rounded-2xl p-5 space-y-3">
-            <h3 className="text-sm font-medium text-ink">Checks we ran</h3>
-            <ToolChips calls={toolCalls} />
-          </div>
+          <ThinkingTrace
+            doneTitle={`${traceRows.length} steps completed`}
+            working={false}
+            rows={traceRows}
+            defaultExpanded={false}
+          />
         </div>
       )}
     </div>

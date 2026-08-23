@@ -232,22 +232,39 @@ export default function RehearsalPlaythrough() {
             </div>
             <div className="receipt-perf" />
           </article>
-
           <div className="paper-card rounded-2xl p-5 sm:p-6 space-y-4">
             <h3 className="font-display text-2xl text-ink">That was a rehearsal</h3>
             <p className="text-sm text-ink-muted leading-relaxed">
               Nothing was booked. Next time it is real, these are the rules we will keep: stay under {formatMoney(mission.mandate.budget.maxAmount)}, district {mission.mandate.serviceArea.postalDistrict}, and only stop you if it goes over or nobody can come today.
             </p>
-            {saved ? (
-              <div className="space-y-2">
-                <p className="text-sm text-mandate">Rules saved on this phone. We’ll use them when you say the fridge is actually down.</p>
-                <a href="/" className="btn-secondary w-full">Back home</a>
-              </div>
-            ) : (
-              <button type="button" onClick={persistRules} className="btn-primary w-full">
-                Save these rules
+            {!saved && (
+              <button type="button" onClick={persistRules} className="btn-secondary w-full">
+                Save these rules for next time
               </button>
             )}
+            {saved && (
+              <p className="text-sm text-mandate">Rules saved on this phone.</p>
+            )}
+
+            {/* Always-visible next steps */}
+            <div className="border-t border-ink/10 pt-4 space-y-3">
+              <p className="text-xs uppercase tracking-wider text-ink-muted">What next?</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <a href="/missions/new" className="btn-primary text-sm text-center py-2.5">
+                  Start a real job
+                </a>
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="btn-secondary text-sm py-2.5"
+                >
+                  Try again
+                </button>
+                <a href="/" className="btn-secondary text-sm text-center py-2.5">
+                  Back home
+                </a>
+              </div>
+            </div>
           </div>
         </>
       )}
