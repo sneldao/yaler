@@ -13,9 +13,11 @@ import { playAlarm, playDing, playFix, playPaper, playStep } from '../audio';
  * discovery → offers → budget check → approval → reroute → escalation → receipt
  */
 
-const T = 16;
+const T = 24;
 const COLS = 20;
-const ROWS = 12;
+const ROWS = 11;
+const W = 480;
+const H = 270;
 
 const C = {
   floor: 0x2d2d3a,
@@ -104,7 +106,9 @@ export class KitchenScene extends Phaser.Scene {
   // Core objects
   private player!: Phaser.GameObjects.Rectangle;
   private playerBody!: Phaser.Physics.Arcade.Body;
+  private playerSprite!: Phaser.GameObjects.Image;
   private engineer!: Phaser.GameObjects.Rectangle;
+  private engineerSprite!: Phaser.GameObjects.Image;
   private walls!: Phaser.Physics.Arcade.StaticGroup;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -175,6 +179,9 @@ export class KitchenScene extends Phaser.Scene {
 
     this.playerBody.setVelocity(vx, vy);
 
+    // Sync sprite to physics body
+    this.playerSprite.setPosition(this.player.x, this.player.y - 4);
+
     // Footsteps
     if (vx !== 0 || vy !== 0) {
       this.stepTimer += delta;
@@ -198,14 +205,31 @@ export class KitchenScene extends Phaser.Scene {
   // ─── Setup ───────────────────────────────────────────────
 
   private createPlayer() {
-    this.player = this.add.rectangle(5 * T + 8, 7 * T + 8, 12, 12, C.player);
-    this.player.setStrokeStyle(1, 0xffffff, 0.5);
-    this.player.setDepth(5);
+    // Nouns-inspired character: round head, square glasses, coloured body
+    const g = this.add.graphics();
+    g.fillStyle(C.player, 1);
+    g.fillRoundedRect(-8, -8, 16, 20, 3); // body
+    g.fillStyle(0xffddaa, 1);
+    g.fillCircle(0, -12, 7); // head
+    g.fillStyle(0xff4444, 1);
+    g.fillRect(-6, -14, 12, 4); // nouns glasses
+    g.fillStyle(0xffffff, 1);
+    g.fillRect(-5, -14, 4, 3); // left lens
+    g.fillRect(1, -14, 4, 3); // right lens
+    g.generateTexture('player_sprite', 20, 32);
+    g.destroy();
+
+    this.player = this.add.rectangle(5 * T + 12, 6 * T + 12, 16, 20, C.player);
+    this.player.setVisible(false); // collision body only
     this.physics.add.existing(this.player);
     this.playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     this.playerBody.setCollideWorldBounds(true);
-    this.playerBody.setSize(12, 12);
+    this.playerBody.setSize(16, 20);
     this.physics.add.collider(this.player, this.walls);
+
+    // Visual sprite follows the physics body
+    this.playerSprite = this.add.image(this.player.x, this.player.y, 'player_sprite');
+    this.playerSprite.setDepth(5);
   }
 
   private createEquipment() {
@@ -224,30 +248,45 @@ export class KitchenScene extends Phaser.Scene {
 
       // Alarm icon (hidden)
       const icon = this.add.text(x - 4, y - 12, '!', {
-        fontSize: '11px', color: '#ff4444', fontStyle: 'bold',
+        fontSize: '18px', color: '#ff4444', fontStyle: 'bold',
       }).setVisible(false).setDepth(6);
       this.alarmIcons.push(icon);
     });
   }
 
   private createEngineer() {
-    this.engineer = this.add.rectangle(10 * T + 8, 11 * T, 12, 12, C.engineer);
-    this.engineer.setStrokeStyle(1, 0xffffff, 0.4);
-    this.engineer.setDepth(5);
+    // Engineer: blue overalls, nouns-style glasses
+    const g = this.add.graphics();
+    g.fillStyle(C.engineer, 1);
+    g.fillRoundedRect(-8, -8, 16, 20, 3);
+    g.fillStyle(0xffddaa, 1);
+    g.fillCircle(0, -12, 7);
+    g.fillStyle(0x4444ff, 1);
+    g.fillRect(-6, -14, 12, 4);
+    g.fillStyle(0xffffff, 1);
+    g.fillRect(-5, -14, 4, 3);
+    g.fillRect(1, -14, 4, 3);
+    g.generateTexture('engineer_sprite', 20, 32);
+    g.destroy();
+
+    this.engineer = this.add.rectangle(10 * T + 12, 10 * T, 16, 20, C.engineer);
     this.engineer.setVisible(false);
+    this.engineerSprite = this.add.image(this.engineer.x, this.engineer.y, 'engineer_sprite');
+    this.engineerSprite.setDepth(5);
+    this.engineerSprite.setVisible(false);
   }
 
   private createUI() {
-    this.interactHint = this.add.text(160, 186, '', {
-      fontSize: '9px', color: '#ffffff', backgroundColor: '#000000cc',
-      padding: { x: 6, y: 3 },
+    this.interactHint = this.add.text(W / 2, H - 14, '', {
+      fontSize: '18px', color: '#ffffff', backgroundColor: '#000000cc',
+      padding: { x: 8, y: 4 },
     }).setOrigin(0.5).setVisible(false).setDepth(15);
 
-    this.shiftLabel = this.add.text(4, 2, '', {
-      fontSize: '7px', color: '#ffffff88',
+    this.shiftLabel = this.add.text(6, 4, '', {
+      fontSize: '18px', color: '#ffffff88',
     }).setDepth(15);
 
-    this.overlayContainer = this.add.container(160, 96).setDepth(20).setVisible(false);
+    this.overlayContainer = this.add.container(W / 2, H / 2).setDepth(20).setVisible(false);
   }
 
   private setupInput() {
@@ -332,7 +371,7 @@ export class KitchenScene extends Phaser.Scene {
   // ─── Intro ───────────────────────────────────────────────
 
   private showIntro() {
-    const bg = this.add.rectangle(160, 96, 320, 192, 0x000000, 0.85).setDepth(30);
+    const bg = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.85).setDepth(30);
     const lines = [
       { text: 'CAFÉ NOOR — Dalston, N1', y: 50, size: '9px', color: '#2a6f6a', bold: true },
       { text: 'Tuesday, 6:47am', y: 68, size: '8px', color: '#ffffff', bold: false },
@@ -345,7 +384,7 @@ export class KitchenScene extends Phaser.Scene {
 
     const textObjs: Phaser.GameObjects.Text[] = [];
     lines.forEach((line, i) => {
-      const t = this.add.text(160, line.y, line.text, {
+      const t = this.add.text(W/2, line.y, line.text, {
         fontSize: line.size,
         color: line.color,
         fontStyle: line.bold ? 'bold' : 'normal',
@@ -412,7 +451,7 @@ export class KitchenScene extends Phaser.Scene {
       const priya = this.add.rectangle(this.player.x + 20, this.player.y, 10, 10, 0xcc88aa);
       priya.setStrokeStyle(1, 0xffffff, 0.3).setDepth(5);
       const hint = this.add.text(priya.x - 2, priya.y - 12, '?', {
-        fontSize: '10px', color: '#cc88aa', fontStyle: 'bold',
+        fontSize: '13px', color: '#cc88aa', fontStyle: 'bold',
       }).setDepth(6);
       this.tweens.add({
         targets: [priya, hint],
@@ -457,7 +496,7 @@ export class KitchenScene extends Phaser.Scene {
 
     // Title
     const titleColor = evt.type === 'escalation' ? '#c45c26' : '#2a6f6a';
-    const title = this.add.text(0, -46, 'YALER AGENT', { fontSize: '9px', color: titleColor, fontStyle: 'bold' }).setOrigin(0.5);
+    const title = this.add.text(0, -46, 'YALER AGENT', { fontSize: '18px', color: titleColor, fontStyle: 'bold' }).setOrigin(0.5);
     this.overlayContainer.add(title);
 
     // Animate steps
@@ -477,7 +516,7 @@ export class KitchenScene extends Phaser.Scene {
         const color = isError ? '#ff4444' : isSuccess ? '#44cc88' : '#ffffff';
         const prefix = isError ? '✗' : isSuccess ? '✓' : '●';
 
-        const stepText = this.add.text(-112, -26 + idx * 14, `${prefix} ${text}`, { fontSize: '8px', color });
+        const stepText = this.add.text(-112, -26 + idx * 14, `${prefix} ${text}`, { fontSize: '18px', color });
         this.overlayContainer.add(stepText);
 
         if (isSuccess) playDing();
@@ -517,24 +556,24 @@ export class KitchenScene extends Phaser.Scene {
     this.overlayContainer.add(bg);
     this.overlayContainer.setVisible(true);
 
-    const q = this.add.text(0, -32, 'OVER BUDGET', { fontSize: '10px', color: '#c45c26', fontStyle: 'bold' }).setOrigin(0.5);
+    const q = this.add.text(0, -32, 'OVER BUDGET', { fontSize: '13px', color: '#c45c26', fontStyle: 'bold' }).setOrigin(0.5);
     this.overlayContainer.add(q);
 
-    const desc = this.add.text(0, -16, `${evt.label}: £${evt.cost} (budget £${evt.budget})`, { fontSize: '8px', color: '#ffffff' }).setOrigin(0.5);
+    const desc = this.add.text(0, -16, `${evt.label}: £${evt.cost} (budget £${evt.budget})`, { fontSize: '18px', color: '#ffffff' }).setOrigin(0.5);
     this.overlayContainer.add(desc);
 
-    const prompt = this.add.text(0, 0, 'Approve the overspend or reject and reroute?', { fontSize: '8px', color: '#ffffffaa' }).setOrigin(0.5);
+    const prompt = this.add.text(0, 0, 'Approve the overspend or reject and reroute?', { fontSize: '18px', color: '#ffffffaa' }).setOrigin(0.5);
     this.overlayContainer.add(prompt);
 
     // Approve button — larger for mobile touch
     const approveBg = this.add.rectangle(-50, 26, 90, 28, C.escalate, 0.8).setInteractive({ useHandCursor: true });
-    const approveText = this.add.text(-50, 26, 'APPROVE £580', { fontSize: '8px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+    const approveText = this.add.text(-50, 26, 'APPROVE £580', { fontSize: '18px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
     this.overlayContainer.add(approveBg);
     this.overlayContainer.add(approveText);
 
     // Reject button — larger for mobile touch
     const rejectBg = this.add.rectangle(50, 26, 90, 28, C.mandate, 0.8).setInteractive({ useHandCursor: true });
-    const rejectText = this.add.text(50, 26, 'REROUTE', { fontSize: '8px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+    const rejectText = this.add.text(50, 26, 'REROUTE', { fontSize: '18px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
     this.overlayContainer.add(rejectBg);
     this.overlayContainer.add(rejectText);
 
@@ -571,7 +610,7 @@ export class KitchenScene extends Phaser.Scene {
     steps.forEach((text, idx) => {
       this.time.delayedCall(idx * 800, () => {
         const color = text.includes('✓') ? '#44cc88' : text.includes('→') ? '#44aaff' : '#ffffff';
-        const t = this.add.text(-100, -20 + idx * 14, text, { fontSize: '7px', color });
+        const t = this.add.text(-100, -20 + idx * 14, text, { fontSize: '13px', color });
         this.overlayContainer.add(t);
         if (text.includes('✓')) playDing();
       });
@@ -588,14 +627,16 @@ export class KitchenScene extends Phaser.Scene {
   private dispatchEngineer() {
     this.phase = 'arriving';
     const target = this.targets[this.eventIdx];
-    this.engineer.setVisible(true);
-    this.engineer.setPosition(10 * T + 8, 11 * T - 4);
-    this.engineer.setAlpha(1);
+    this.engineer.setPosition(10 * T + 12, 10 * T);
+    this.engineer.setVisible(false); // keep rect hidden, show sprite
+    this.engineerSprite.setPosition(this.engineer.x, this.engineer.y - 4);
+    this.engineerSprite.setVisible(true);
+    this.engineerSprite.setAlpha(1);
 
     this.interactHint.setText('Engineer arriving...').setVisible(true);
 
     this.tweens.add({
-      targets: this.engineer,
+      targets: [this.engineer, this.engineerSprite],
       x: target.x,
       y: target.y + T,
       duration: 1500,
@@ -613,7 +654,7 @@ export class KitchenScene extends Phaser.Scene {
     const icon = this.alarmIcons[this.eventIdx];
 
     this.tweens.add({
-      targets: this.engineer,
+      targets: this.engineerSprite,
       alpha: { from: 1, to: 0.4 },
       duration: 150,
       yoyo: true,
@@ -626,6 +667,7 @@ export class KitchenScene extends Phaser.Scene {
 
         playDing();
         this.engineer.setVisible(false);
+        this.engineerSprite.setVisible(false);
         this.interactHint.setVisible(false);
 
         this.eventTimes.push(Math.round((this.time.now - this.startTime) / 1000));
@@ -650,22 +692,22 @@ export class KitchenScene extends Phaser.Scene {
     const approved = this.decisions.includes('approved');
     const stars = rerouted ? 3 : (!approved ? 3 : 2); // Rerouting is good governance
 
-    const bg = this.add.rectangle(160, 96, 280, 170, 0xfafaf8, 0.97).setDepth(25);
+    const bg = this.add.rectangle(W/2, H/2, 360, 220, 0xfafaf8, 0.97).setDepth(25);
     bg.setStrokeStyle(1, C.mandate, 0.4);
 
     const els: Phaser.GameObjects.Text[] = [];
 
-    els.push(this.add.text(160, 24, 'SHIFT COMPLETE', { fontSize: '8px', color: '#2a6f6a', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
-    els.push(this.add.text(160, 38, 'Café Noor — Tuesday morning', { fontSize: '7px', color: '#555555' }).setOrigin(0.5).setDepth(26));
+    els.push(this.add.text(W/2, 24, 'SHIFT COMPLETE', { fontSize: '18px', color: '#2a6f6a', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
+    els.push(this.add.text(W/2, 38, 'Café Noor — Tuesday morning', { fontSize: '13px', color: '#555555' }).setOrigin(0.5).setDepth(26));
 
     // Stars
     const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
-    els.push(this.add.text(160, 54, starStr, { fontSize: '14px', color: '#2a6f6a' }).setOrigin(0.5).setDepth(26));
+    els.push(this.add.text(W/2, 54, starStr, { fontSize: '18px', color: '#2a6f6a' }).setOrigin(0.5).setDepth(26));
 
     // Stats
-    els.push(this.add.text(80, 74, `Time: ${totalTime}s`, { fontSize: '8px', color: '#12212b', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
-    els.push(this.add.text(240, 74, `Cost: £${this.totalCost}`, { fontSize: '8px', color: '#12212b', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
-    els.push(this.add.text(160, 90, `Manual estimate: ~12 hours, 40+ phone calls`, { fontSize: '6px', color: '#888888' }).setOrigin(0.5).setDepth(26));
+    els.push(this.add.text(80, 74, `Time: ${totalTime}s`, { fontSize: '18px', color: '#12212b', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
+    els.push(this.add.text(240, 74, `Cost: £${this.totalCost}`, { fontSize: '18px', color: '#12212b', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
+    els.push(this.add.text(W/2, 90, `Manual estimate: ~12 hours, 40+ phone calls`, { fontSize: '18px', color: '#888888' }).setOrigin(0.5).setDepth(26));
 
     // Event breakdown
     const breakdown = EVENTS.map((evt, i) => {
@@ -673,7 +715,7 @@ export class KitchenScene extends Phaser.Scene {
       const label = decision === 'rerouted' ? '↻ rerouted' : decision === 'approved' ? '⚠ approved over' : decision === 'escalated' ? '🛡 escalated' : '✓ auto';
       return `${evt.key}: ${label}`;
     }).join('   ');
-    els.push(this.add.text(160, 106, breakdown, { fontSize: '6px', color: '#555555' }).setOrigin(0.5).setDepth(26));
+    els.push(this.add.text(W/2, 106, breakdown, { fontSize: '18px', color: '#555555' }).setOrigin(0.5).setDepth(26));
 
     // Governance note
     const note = rerouted
@@ -681,14 +723,14 @@ export class KitchenScene extends Phaser.Scene {
       : approved
         ? 'You approved an overspend. Rerouting would have saved £120.'
         : 'All events resolved within budget automatically.';
-    els.push(this.add.text(160, 122, note, { fontSize: '6px', color: rerouted ? '#2a6f6a' : '#c45c26' }).setOrigin(0.5).setDepth(26));
+    els.push(this.add.text(W/2, 122, note, { fontSize: '18px', color: rerouted ? '#2a6f6a' : '#c45c26' }).setOrigin(0.5).setDepth(26));
 
-    els.push(this.add.text(160, 142, 'Every step mapped to a real system.', { fontSize: '7px', color: '#12212b' }).setOrigin(0.5).setDepth(26));
-    els.push(this.add.text(160, 158, '→ Try it with your real kitchen', { fontSize: '7px', color: '#2a6f6a', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
+    els.push(this.add.text(W/2, 142, 'Every step mapped to a real system.', { fontSize: '13px', color: '#12212b' }).setOrigin(0.5).setDepth(26));
+    els.push(this.add.text(W/2, 158, '→ Try it with your real kitchen', { fontSize: '13px', color: '#2a6f6a', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
 
     // Animate in
     bg.setAlpha(0).setPosition(160, 130);
-    this.tweens.add({ targets: bg, alpha: 0.97, y: 96, duration: 500, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: bg, alpha: 0.97, y: H/2, duration: 500, ease: 'Back.easeOut' });
     els.forEach((el, i) => {
       el.setAlpha(0);
       this.tweens.add({ targets: el, alpha: 1, duration: 300, delay: 400 + i * 80, ease: 'Power2' });
