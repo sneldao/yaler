@@ -290,3 +290,31 @@
     content: none !important;
   }
 }
+
+
+/* ─── Mobile: safe areas for notched devices ───────────── */
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ─── Touch targets: minimum 44px ──────────────────────── */
+
+.btn-primary,
+.btn-secondary {
+  min-height: 44px;
+}
+
+@media (max-width: 639px) {
+  /* Ensure nav links and small buttons meet 44px on mobile */
+  nav a,
+  nav button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}

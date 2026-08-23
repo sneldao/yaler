@@ -238,13 +238,13 @@ export class KitchenScene extends Phaser.Scene {
   }
 
   private createUI() {
-    this.interactHint = this.add.text(160, 188, '', {
-      fontSize: '7px', color: '#ffffff', backgroundColor: '#000000bb',
-      padding: { x: 4, y: 2 },
+    this.interactHint = this.add.text(160, 186, '', {
+      fontSize: '9px', color: '#ffffff', backgroundColor: '#000000cc',
+      padding: { x: 6, y: 3 },
     }).setOrigin(0.5).setVisible(false).setDepth(15);
 
     this.shiftLabel = this.add.text(4, 2, '', {
-      fontSize: '6px', color: '#ffffff88',
+      fontSize: '7px', color: '#ffffff88',
     }).setDepth(15);
 
     this.overlayContainer = this.add.container(160, 96).setDepth(20).setVisible(false);
@@ -448,7 +448,7 @@ export class KitchenScene extends Phaser.Scene {
   private runAgent() {
     const evt = EVENTS[this.eventIdx];
 
-    const bg = this.add.rectangle(0, 0, 240, 110, 0x12212b, 0.95);
+    const bg = this.add.rectangle(0, 0, 250, 120, 0x12212b, 0.95);
     bg.setStrokeStyle(1, evt.type === 'escalation' ? C.escalate : C.mandate, 0.6);
 
     this.overlayContainer.removeAll(true);
@@ -457,7 +457,7 @@ export class KitchenScene extends Phaser.Scene {
 
     // Title
     const titleColor = evt.type === 'escalation' ? '#c45c26' : '#2a6f6a';
-    const title = this.add.text(0, -42, 'YALER AGENT', { fontSize: '8px', color: titleColor, fontStyle: 'bold' }).setOrigin(0.5);
+    const title = this.add.text(0, -46, 'YALER AGENT', { fontSize: '9px', color: titleColor, fontStyle: 'bold' }).setOrigin(0.5);
     this.overlayContainer.add(title);
 
     // Animate steps
@@ -477,7 +477,7 @@ export class KitchenScene extends Phaser.Scene {
         const color = isError ? '#ff4444' : isSuccess ? '#44cc88' : '#ffffff';
         const prefix = isError ? '✗' : isSuccess ? '✓' : '●';
 
-        const stepText = this.add.text(-108, -24 + idx * 12, `${prefix} ${text}`, { fontSize: '7px', color });
+        const stepText = this.add.text(-112, -26 + idx * 14, `${prefix} ${text}`, { fontSize: '8px', color });
         this.overlayContainer.add(stepText);
 
         if (isSuccess) playDing();
@@ -517,24 +517,24 @@ export class KitchenScene extends Phaser.Scene {
     this.overlayContainer.add(bg);
     this.overlayContainer.setVisible(true);
 
-    const q = this.add.text(0, -32, 'OVER BUDGET', { fontSize: '9px', color: '#c45c26', fontStyle: 'bold' }).setOrigin(0.5);
+    const q = this.add.text(0, -32, 'OVER BUDGET', { fontSize: '10px', color: '#c45c26', fontStyle: 'bold' }).setOrigin(0.5);
     this.overlayContainer.add(q);
 
-    const desc = this.add.text(0, -16, `${evt.label}: £${evt.cost} (budget £${evt.budget})`, { fontSize: '7px', color: '#ffffff' }).setOrigin(0.5);
+    const desc = this.add.text(0, -16, `${evt.label}: £${evt.cost} (budget £${evt.budget})`, { fontSize: '8px', color: '#ffffff' }).setOrigin(0.5);
     this.overlayContainer.add(desc);
 
-    const prompt = this.add.text(0, 0, 'Approve the overspend or reject and reroute?', { fontSize: '7px', color: '#ffffffaa' }).setOrigin(0.5);
+    const prompt = this.add.text(0, 0, 'Approve the overspend or reject and reroute?', { fontSize: '8px', color: '#ffffffaa' }).setOrigin(0.5);
     this.overlayContainer.add(prompt);
 
-    // Approve button
-    const approveBg = this.add.rectangle(-45, 24, 80, 22, C.escalate, 0.8).setInteractive({ useHandCursor: true });
-    const approveText = this.add.text(-45, 24, 'APPROVE £580', { fontSize: '7px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+    // Approve button — larger for mobile touch
+    const approveBg = this.add.rectangle(-50, 26, 90, 28, C.escalate, 0.8).setInteractive({ useHandCursor: true });
+    const approveText = this.add.text(-50, 26, 'APPROVE £580', { fontSize: '8px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
     this.overlayContainer.add(approveBg);
     this.overlayContainer.add(approveText);
 
-    // Reject button
-    const rejectBg = this.add.rectangle(45, 24, 80, 22, C.mandate, 0.8).setInteractive({ useHandCursor: true });
-    const rejectText = this.add.text(45, 24, 'REROUTE', { fontSize: '7px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+    // Reject button — larger for mobile touch
+    const rejectBg = this.add.rectangle(50, 26, 90, 28, C.mandate, 0.8).setInteractive({ useHandCursor: true });
+    const rejectText = this.add.text(50, 26, 'REROUTE', { fontSize: '8px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
     this.overlayContainer.add(rejectBg);
     this.overlayContainer.add(rejectText);
 

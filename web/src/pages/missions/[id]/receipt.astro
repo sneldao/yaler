@@ -84,11 +84,11 @@ const ogDescription = receipt
 
             <HearReceipt client:load text={`${receipt.summary} ${receipt.agreedTerms}`} />
 
-            <!-- Print button -->
+            <!-- Print button (desktop only) -->
             <button
               type="button"
               onclick="window.print()"
-              class="text-xs text-ink-muted hover:text-ink transition-colors flex items-center gap-1.5"
+              class="hidden sm:flex text-xs text-ink-muted hover:text-ink transition-colors items-center gap-1.5"
               data-no-print
             >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

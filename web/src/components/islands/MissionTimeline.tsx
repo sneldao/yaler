@@ -174,23 +174,25 @@ export default function MissionTimeline({
 
           {/* Progress bar */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-ink-muted overflow-x-auto pb-1">
+            <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-ink-muted pb-1">
               {stages.map((st, idx) => {
                 const isPassed = idx <= activeStageIdx;
                 const isCurrent = idx === activeStageIdx;
                 return (
-                  <div key={st.label} className="flex items-center gap-1.5 shrink-0 px-1">
+                  <div key={st.label} className="flex items-center gap-1.5 shrink-0 px-0.5 sm:px-1">
                     <span className={`w-1.5 h-1.5 rounded-full ${
                       isCurrent ? 'bg-mandate' : isPassed ? 'bg-mandate/50' : 'bg-ink/15'
                     }`} />
-                    <span className={isCurrent ? 'text-ink font-medium' : isPassed ? 'text-ink-muted' : 'text-ink/30'}>
+                    <span className={`hidden sm:inline ${isCurrent ? 'text-ink font-medium' : isPassed ? 'text-ink-muted' : 'text-ink/30'}`}>
                       {st.label}
                     </span>
                   </div>
                 );
               })}
             </div>
-            <div className="w-full bg-paper-inset h-1 rounded-full overflow-hidden">
+            {/* Current stage label on mobile */}
+            <p className="text-xs text-ink font-medium sm:hidden">{stages[activeStageIdx]?.label}</p>
+            <div className="w-full bg-paper-inset h-1.5 sm:h-1 rounded-full overflow-hidden">
               <div
                 className={`bg-mandate h-full transition-[width] duration-500 ease-yaler ${
                   isWorking ? 'animate-pulse' : ''
