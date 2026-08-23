@@ -233,6 +233,14 @@ export default function RehearsalPlaythrough() {
             <div className="receipt-perf" />
           </article>
           <div className="paper-card rounded-2xl p-5 sm:p-6 space-y-4">
+            {/* Time-saved nudge */}
+            <div className="flex items-center gap-3 bg-mandate/5 rounded-xl px-4 py-3 border border-mandate/20">
+              <span className="text-mandate font-display text-2xl">~12 min</span>
+              <p className="text-sm text-ink-muted leading-snug">
+                In a real job, this takes about 12 minutes instead of the usual 3-4 hours of phone calls.
+              </p>
+            </div>
+
             <h3 className="font-display text-2xl text-ink">That was a rehearsal</h3>
             <p className="text-sm text-ink-muted leading-relaxed">
               Nothing was booked. Next time it is real, these are the rules we will keep: stay under {formatMoney(mission.mandate.budget.maxAmount)}, district {mission.mandate.serviceArea.postalDistrict}, and only stop you if it goes over or nobody can come today.

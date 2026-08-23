@@ -1,6 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import HearReceipt from '../../../components/primitives/HearReceipt';
+import ShareReceipt from '../../../components/islands/ShareReceipt';
 import { getProofReceipt } from '../../../lib/api';
 import { lastTuesdayReceipt } from '../../../lib/lastTuesday';
 
@@ -23,72 +24,88 @@ if (id === 'demo') {
     receipt = null;
   }
 }
+
+const ogTitle = receipt ? `Job done — ${receipt.summary?.slice(0, 60)}` : 'Receipt — Yaler';
+const ogDescription = receipt
+  ? `Verified repair receipt. ${receipt.agreedTerms?.slice(0, 100)}`
+  : 'A verified proof receipt from Yaler.';
 ---
 
-<Layout title={`Receipt ${id} — Yaler`}>
-  <div class="max-w-xl mx-auto py-4">
+<Layout title={ogTitle} description={ogDescription}>
+  <div class="max-w-xl mx-auto py-4 space-y-6">
     {receipt ? (
-      <article class="receipt-sheet rounded-sm relative overflow-hidden">
-        <div class="absolute -left-2 top-16 receipt-punch"></div>
-        <div class="absolute -right-2 top-16 receipt-punch"></div>
-        <div class="receipt-perf"></div>
-        <div class="px-7 py-8 space-y-6">
-          <header class="flex items-start justify-between gap-4">
-            <div>
-              <img src="/favicon.svg" alt="" width="32" height="32" class="w-8 h-8 rounded-lg mb-3" />
-              <p class="text-[11px] uppercase tracking-[0.18em] text-mandate">Verified receipt</p>
-              <h1 class="font-display text-3xl text-ink mt-1">Job done</h1>
+      <>
+        <article class="receipt-sheet rounded-sm relative overflow-hidden">
+          <div class="absolute -left-2 top-16 receipt-punch"></div>
+          <div class="absolute -right-2 top-16 receipt-punch"></div>
+          <div class="receipt-perf"></div>
+          <div class="px-7 py-8 space-y-6">
+            <header class="flex items-start justify-between gap-4">
+              <div>
+                <img src="/favicon.svg" alt="" width="32" height="32" class="w-8 h-8 rounded-lg mb-3" />
+                <p class="text-[11px] uppercase tracking-[0.18em] text-mandate">Verified receipt</p>
+                <h1 class="font-display text-3xl text-ink mt-1">Job done</h1>
+              </div>
+              <div class="text-right text-xs text-ink-muted">
+                <div>{new Date(receipt.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+              </div>
+            </header>
+
+            <p class="font-display text-xl leading-snug text-ink">{receipt.summary}</p>
+
+            <div class="space-y-1">
+              <p class="text-[11px] uppercase tracking-wider text-ink-muted">What was agreed</p>
+              <p class="text-sm text-ink leading-relaxed">{receipt.agreedTerms}</p>
             </div>
-            <div class="text-right text-xs text-ink-muted">
-              <div>{new Date(receipt.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+
+            <div class="space-y-2">
+              <p class="text-[11px] uppercase tracking-wider text-ink-muted">Checked</p>
+              <ul class="space-y-1.5">
+                {receipt.evidenceLabels.map((lbl) => (
+                  <li class="text-sm text-ink flex items-start gap-2">
+                    <span class="text-mandate mt-0.5">✓</span>
+                    <span>{lbl}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </header>
 
-          <p class="font-display text-xl leading-snug text-ink">{receipt.summary}</p>
+            <div class="space-y-2">
+              <p class="text-[11px] uppercase tracking-wider text-ink-muted">Public record</p>
+              <dl class="text-sm space-y-2">
+                {Object.entries(receipt.redactedEvidence).map(([k, v]) => (
+                  <div class="flex justify-between gap-4 border-b border-ink/10 pb-1.5">
+                    <dt class="text-ink-muted capitalize">{k}</dt>
+                    <dd class="text-ink text-right">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
 
-          <div class="space-y-1">
-            <p class="text-[11px] uppercase tracking-wider text-ink-muted">What was agreed</p>
-            <p class="text-sm text-ink leading-relaxed">{receipt.agreedTerms}</p>
+            <HearReceipt client:load text={`${receipt.summary} ${receipt.agreedTerms}`} />
           </div>
+          <div class="receipt-perf"></div>
+        </article>
 
-          <div class="space-y-2">
-            <p class="text-[11px] uppercase tracking-wider text-ink-muted">Checked</p>
-            <ul class="space-y-1.5">
-              {receipt.evidenceLabels.map((lbl) => (
-                <li class="text-sm text-ink flex items-start gap-2">
-                  <span class="text-mandate mt-0.5">✓</span>
-                  <span>{lbl}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <!-- Share + viral hooks -->
+        <ShareReceipt client:load receiptId={id} summary={receipt.summary} shareToken={receipt.shareToken} />
 
-          <div class="space-y-2">
-            <p class="text-[11px] uppercase tracking-wider text-ink-muted">Public record</p>
-            <dl class="text-sm space-y-2">
-              {Object.entries(receipt.redactedEvidence).map(([k, v]) => (
-                <div class="flex justify-between gap-4 border-b border-ink/10 pb-1.5">
-                  <dt class="text-ink-muted capitalize">{k}</dt>
-                  <dd class="text-ink text-right">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          <HearReceipt client:load text={`${receipt.summary} ${receipt.agreedTerms}`} />
-
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs text-ink-muted pt-2">
-            <p>Share code <span class="text-ink">{receipt.shareToken}</span></p>
-            <a
-              href={receipt.missionId && receipt.missionId !== 'demo' ? `/missions/${receipt.missionId}` : '/#story'}
-              class="text-mandate hover:text-ink transition-colors"
-            >
-              {receipt.missionId && receipt.missionId !== 'demo' ? 'Back to the job' : 'Back to last Tuesday'}
+        <!-- Post-completion loop: next job -->
+        <div class="paper-card rounded-2xl p-5 sm:p-6 space-y-4">
+          <h3 class="font-display text-xl text-ink">Something else broken?</h3>
+          <p class="text-sm text-ink-muted leading-relaxed">
+            Same rules, new job. We'll reuse your saved mandate — budget, area, and autonomy mode stay the same.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <a href="/missions/new" class="btn-primary text-sm text-center py-2.5">
+              Start another job
+            </a>
+            <a href="/" class="btn-secondary text-sm text-center py-2.5">
+              Back home
             </a>
           </div>
         </div>
-        <div class="receipt-perf"></div>
-      </article>
+      </>
     ) : (
       <div class="paper-card rounded-2xl p-8 text-center space-y-3">
         <h2 class="font-display text-2xl text-ink">Receipt not ready yet</h2>

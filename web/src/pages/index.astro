@@ -5,6 +5,9 @@ import SavedMandateCard from '../components/islands/SavedMandateCard';
 import TacticalRadar from '../components/islands/TacticalRadar';
 import ProofVaultShowcase from '../components/islands/ProofVaultShowcase';
 import HomeStory from '../components/islands/HomeStory';
+import ActivityPulse from '../components/islands/ActivityPulse';
+import DiscoveryBadge from '../components/islands/DiscoveryBadge';
+import MissionStoryPreview from '../components/islands/MissionStoryPreview';
 import { listMissions } from '../lib/api';
 
 let missions = [];
@@ -39,17 +42,24 @@ function labelStatus(status) {
 <Layout title="Yaler — Get the fridge fixed">
   <div class="space-y-10">
     <div class="space-y-4 pt-2">
-      <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">For London kitchens</p>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">For London kitchens</p>
+        <ActivityPulse client:load />
+      </div>
       <h1 class="font-display text-4xl sm:text-5xl text-ink tracking-tight leading-[1.12]">
-        Fridge down. Say it once. We’ll handle the rest.
+        Fridge down. Say it once. We'll handle the rest.
       </h1>
       <p class="text-ink-muted text-base sm:text-lg leading-relaxed max-w-xl">
-        Tell us what’s broken, your budget, and your postcode. We find a local engineer, stay inside your rules, and send a receipt when the job is done.
+        Tell us what's broken, your budget, and your postcode. We find a local engineer, stay inside your rules, and send a receipt when the job is done.
       </p>
+
+      <!-- Discovery badge -->
+      <DiscoveryBadge client:load district="N1" />
+
       <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
         <a href="/rehearsal" class="btn-primary text-sm py-3 px-5">Start here — try a rehearsal</a>
         <div class="flex items-center gap-4">
-          <p class="text-xs text-ink-muted max-w-sm">Nothing will be booked. This is last Tuesday’s fridge in N1.</p>
+          <p class="text-xs text-ink-muted max-w-sm">Nothing will be booked. This is last Tuesday's fridge in N1.</p>
           <a href="#story" class="text-xs text-mandate font-medium hover:underline whitespace-nowrap">See how it went ↓</a>
         </div>
       </div>
@@ -57,18 +67,11 @@ function labelStatus(status) {
 
     <HomeStory client:visible />
 
+    <!-- Saved mandate as policy card -->
     <SavedMandateCard client:load />
 
     {Array.isArray(missions) && missions.length === 0 ? (
-      <section class="paper-card rounded-2xl p-8 text-center space-y-3 animate-fade-up">
-        <p class="text-ink-muted text-sm">You don't have a job yet.</p>
-        <p class="text-ink text-base leading-relaxed max-w-sm mx-auto">
-          A broken fridge, a burst pipe, a hood that smells like last weekend.
-        </p>
-        <a href="/rehearsal" class="btn-primary text-sm py-2.5 inline-flex">
-          Try the rehearsal →
-        </a>
-      </section>
+      <MissionStoryPreview client:visible />
     ) : Array.isArray(missions) && missions.length > 0 ? (
       <section class="space-y-3">
         <div class="flex items-end justify-between gap-3">
@@ -108,7 +111,7 @@ function labelStatus(status) {
       </div>
       <ol class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
         <li class="paper-card rounded-xl p-4">
-          <p class="text-mandate font-medium text-xs uppercase tracking-wider mb-1">1. You say what’s wrong</p>
+          <p class="text-mandate font-medium text-xs uppercase tracking-wider mb-1">1. You say what's wrong</p>
           <p class="text-ink-muted">Speak or type. We turn it into budget, area, and a deadline.</p>
         </li>
         <li class="paper-card rounded-xl p-4">

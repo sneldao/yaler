@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import { ViewTransitions } from 'astro:transitions';
 import SpotlightBackdrop from '../components/primitives/SpotlightBackdrop';
+import ActiveJobPill from '../components/islands/ActiveJobPill';
 
 interface Props {
   title?: string;
@@ -10,7 +11,7 @@ interface Props {
 
 const {
   title = 'Yaler — Get the job done',
-  description = 'Tell us what’s broken. We find a local engineer, stay inside your budget, and give you a receipt when it’s done.'
+  description = 'Tell us what\'s broken. We find a local engineer, stay inside your budget, and give you a receipt when it\'s done.'
 } = Astro.props;
 ---
 
@@ -48,7 +49,8 @@ const {
           </div>
         </a>
 
-        <nav class="flex items-center gap-4 text-sm">
+        <nav class="flex items-center gap-3 text-sm">
+          <ActiveJobPill client:load />
           <a href="/rehearsal" class="text-ink hover:text-mandate transition-colors">Rehearsal</a>
           <a href="/missions/new" class="text-ink-muted hover:text-ink transition-colors">Real job</a>
           <a href="/suppliers" class="text-ink-muted hover:text-ink transition-colors">Engineers</a>
@@ -62,7 +64,7 @@ const {
 
     <footer class="border-t border-ink/10 py-6 text-xs text-ink-muted relative z-10">
       <div class="max-w-3xl mx-auto px-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <p>© 2026 Yaler. Built for independent kitchens.</p>
+        <p>&copy; 2026 Yaler. Built for independent kitchens.</p>
         <p class="text-ink-muted/80">Delegate the outcome. Keep the mandate.</p>
       </div>
     </footer>
