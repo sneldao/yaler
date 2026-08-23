@@ -1,4 +1,4 @@
-.PHONY: all build dev test lint seed web clean hooks assets deploy-backend
+.PHONY: all build dev test lint lint-all seed web clean hooks assets deploy-backend
 
 GCP_PROJECT ?= cognivern
 BACKEND_URL ?= https://yaler-backend-48617502162.europe-west2.run.app
@@ -17,8 +17,14 @@ test:
 
 lint:
 	go vet ./...
-	@if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run ./...; fi
-	@if command -v gitleaks >/dev/null 2>&1; then gitleaks detect --redact; fi
+	@if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run ./...; else echo "skip: golangci-lint not installed (brew install golangci-lint)"; fi
+	@if command -v editorconfig-checker >/dev/null 2>&1; then editorconfig-checker; else echo "skip: editorconfig-checker not installed (brew install editorconfig-checker)"; fi
+	@if command -v gitleaks >/dev/null 2>&1; then gitleaks detect --redact; else echo "skip: gitleaks not installed (brew install gitleaks)"; fi
+
+# Full-stack check for humans / CI. Runs the fast commit-time hooks plus the
+# heavier linters that are intentionally kept out of the pre-commit gate.
+#   (no target body; this exists so README can reference a single entrypoint)
+lint-all: lint
 
 hooks:
 	pre-commit install --hook-type pre-commit --hook-type pre-push

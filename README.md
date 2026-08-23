@@ -47,6 +47,22 @@ Open `http://localhost:4321` and tap **Start here — try a rehearsal** (nothing
 
 See [docs/DEPLOY.md](docs/DEPLOY.md) for full setup.
 
+### 🪝 Hooks & quality gates
+
+`pre-commit` runs lightweight checks on every commit — fast, offline, no
+toolchain downloads (a cold cache can't stall a commit):
+
+```bash
+make hooks          # install the git pre-commit + pre-push hooks
+make lint           # slower full lint: go vet + golangci-lint + editorconfig-checker + gitleaks
+```
+
+Install the commit-time system hooks once: `brew install gitleaks`.
+
+- **Commit time** (fast, offline): file checks (`pre-commit-hooks`), `gofmt`, `go vet`, `gitleaks`.
+- **Opt-in / CI** (`make lint`): `golangci-lint` and `editorconfig-checker` are deliberately kept **out** of the blocking pre-commit gate so a fresh checkout or air-gapped machine can always commit. Run `make lint` where network and warm caches exist.
+- One-off escape hatch: `SKIP=gitleaks git commit`.
+
 ---
 
 ## 🚀 Key Frontiers Built

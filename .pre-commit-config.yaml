@@ -1,6 +1,17 @@
 # Yaler pre-commit: secrets first, then format/lint.
 # Install: make hooks
 # Run:     pre-commit run --all-files
+#
+# Design note (cold-cache / offline safety):
+#   - The commit-time hooks here are pure file checks (pre-commit-hooks) plus
+#     gofmt / go vet / gitleaks as __system__ hooks. None of them download a
+#     toolchain, so a fresh checkout or an offline / air-gapped machine can
+#     still commit without wedging.
+#   - golangci-lint and editorconfig-checker are heavier, toolchain-provisioning
+#     linters. They deliberately live OUTSIDE the blocking pre-commit path — a
+#     cold cache would stall every commit while pre-commit downloads them. Run
+#     them via `make lint` (or CI) where network and warm caches are guaranteed.
+#   - One-off skip: SKIP=gitleaks git commit
 default_install_hook_types: [pre-commit, pre-push]
 default_stages: [pre-commit]
 fail_fast: false
@@ -23,25 +34,19 @@ repos:
         args: ['--fix=lf']
       - id: detect-private-key
 
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.30.1
-    hooks:
-      - id: gitleaks
-
-  - repo: https://github.com/golangci/golangci-lint
-    rev: v2.9.0
-    hooks:
-      - id: golangci-lint
-      - id: golangci-lint-config-verify
-
-  - repo: https://github.com/editorconfig-checker/editorconfig-checker
-    rev: v3.9.0
-    hooks:
-      - id: editorconfig-checker
-        alias: ec
-
   - repo: local
     hooks:
+      # gitleaks as a __system__ hook: runs the locally installed binary
+      # directly (brew install gitleaks), so there is no per-rev provisioning
+      # download and a cold cache can't stall commits. Upstream release used
+      # before: https://github.com/gitleaks/gitleaks  rev: v8.30.1
+      - id: gitleaks
+        name: gitleaks (secrets)
+        entry: gitleaks git --pre-commit --redact --staged
+        language: system
+        pass_filenames: false
+        verbose: true
+
       - id: no-dotenv
         name: block .env commits
         language: fail
