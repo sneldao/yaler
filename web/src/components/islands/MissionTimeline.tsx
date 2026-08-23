@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { type Event, type Mission, getEvents, getMission } from '../../lib/api';
 import ThinkingTrace, { type TraceRow } from '../primitives/ThinkingTrace';
 import { LoadingStatus } from '../primitives/LoaderGrid';
 import ToolChips, { type ToolChipCall } from '../primitives/ToolChips';
 import StatusBadge from '../primitives/StatusBadge';
 import { eventLabel, formatMoney, nextActionLabel } from '../../lib/copy';
+import { celebrate, shake, playUiSound, markJobCompleted } from '../../lib/delight';
 
 /** Map status to a human-readable description of what the agent is doing right now */
 function agentNarrative(status?: string): string {
@@ -38,11 +39,46 @@ export default function MissionTimeline({
   const [mission, setMission] = useState<Mission | null>(missionProp ?? null);
   const [events, setEvents] = useState<Event[]>(eventsProp ?? []);
   const [hideWork, setHideWork] = useState(false);
+  const prevStatusRef = useRef<string | undefined>(missionProp?.status);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (missionProp) setMission(missionProp);
     if (eventsProp) setEvents(eventsProp);
   }, [missionProp, eventsProp]);
+
+  // ─── Celebrations on status transitions ───────────────────
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const curr = mission?.status;
+    if (!curr || curr === prev) return;
+    prevStatusRef.current = curr;
+
+    // Don't fire on initial load
+    if (!prev) return;
+
+    switch (curr) {
+      case 'OFFERS_RECEIVED':
+        playUiSound('ding');
+        break;
+      case 'COMMITTED':
+        playUiSound('ding');
+        celebrate(cardRef.current);
+        break;
+      case 'AWAITING_APPROVAL':
+        playUiSound('stop');
+        shake(cardRef.current);
+        break;
+      case 'EVIDENCE_PENDING':
+        playUiSound('ping');
+        break;
+      case 'COMPLETED':
+        playUiSound('paper');
+        celebrate(cardRef.current);
+        markJobCompleted();
+        break;
+    }
+  }, [mission?.status]);
 
   const fetchLatest = async () => {
     if (!missionId || rehearsal) return;
@@ -108,7 +144,7 @@ export default function MissionTimeline({
   });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" ref={cardRef}>
       {mission && (
         <div className="paper-card rounded-2xl p-5 sm:p-7 space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
