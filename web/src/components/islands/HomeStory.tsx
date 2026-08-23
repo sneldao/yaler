@@ -15,34 +15,34 @@ interface Beat {
 
 const BEATS: Beat[] = [
   {
-    clock: '21:58',
-    tag: 'The problem',
-    title: 'The walk-in dies mid-service.',
-    body: 'Hood still humming, fridge gone warm. Tuesday’s biggest table hasn’t sat down yet, and the fish is counting down.',
+    clock: '06:47',
+    tag: 'Cafe Noor, Dalston',
+    title: 'The walk-in dies before breakfast.',
+    body: "Priya hears the compressor cut out. The fridge is warming, breakfast prep is half done, and the first covers are in 13 minutes.",
   },
   {
-    clock: '22:04',
+    clock: '06:49',
     tag: 'The ask',
     title: 'Say it once.',
-    body: 'One voice note. It comes back as rules — fix the walk-in, up to £240, N1, sorted before Friday service. Nobody has been called.',
+    body: "One voice note from the kitchen floor. It comes back as rules — fix the walk-in, up to £500, N1, sorted before lunch. Nobody has been called.",
   },
   {
-    clock: '22:06',
+    clock: '06:51',
     tag: 'The search',
     title: 'We knock on the right doors.',
     body: 'Three refrigeration engineers within a mile hear about the job. Anything out of area or over budget is never sent in the first place.',
   },
   {
-    clock: '23:51',
+    clock: '07:14',
     tag: 'The stop',
     title: 'Best quote is £80 over. We stop.',
-    body: 'Booking itself would be easy. Breaking your ceiling isn’t ours to do. The job holds at the line and waits for your yes.',
+    body: "Booking itself would be easy. Breaking Priya's ceiling isn't ours to do. The job holds at the line and waits for her yes.",
   },
   {
     clock: '09:12',
     tag: 'The receipt',
-    title: 'You raised the line. Done.',
-    body: 'We held at the £320 quote — £80 over — then you came to the shop floor and raised the ceiling. Compressor swapped, −18°C holding, done at £320 on a paper you’d be happy to show an EHO.',
+    title: 'She raised the line. Done.',
+    body: "Priya came to the floor and raised the ceiling. Compressor swapped, -18C holding, done at £420 on a paper she'd be happy to show an EHO.",
   },
 ];
 

@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { listSuppliers } from '../../lib/api';
+import WaitlistCapture from '../../components/islands/WaitlistCapture';
 
 let suppliers = [];
 try {
@@ -105,5 +106,8 @@ try {
         Try the rehearsal first
       </a>
     </div>
+
+    <!-- Supply-side waitlist -->
+    <WaitlistCapture client:load variant="engineer" source="suppliers" />
   </div>
 </Layout>

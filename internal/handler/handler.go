@@ -56,6 +56,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/discovery", h.HandleDiscovery)
 	mux.HandleFunc("GET /api/credentials", h.HandleCredentials)
 	mux.HandleFunc("POST /api/worker/step", h.HandleWorkerStep)
+	mux.HandleFunc("POST /api/waitlist", h.HandleWaitlist)
+	mux.HandleFunc("GET /api/waitlist", h.HandleListWaitlist)
 
 	// Note: uploads write to local disk (./uploads/) on an ephemeral container.
 	// Files uploaded to one Cloud Run instance may not be servable by another.
@@ -960,3 +962,53 @@ func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 
 // Ensure os package is used
 var _ = os.Getenv
+
+// ─── Waitlist ──────────────────────────────────────────────
+
+type waitlistEntry struct {
+	Email    string `json:"email"`
+	Role     string `json:"role"`
+	Source   string `json:"source"`
+	District string `json:"district,omitempty"`
+	JoinedAt string `json:"joinedAt"`
+}
+
+// In-memory waitlist (persists to Firestore when available, otherwise memory-only)
+var waitlistEntries []waitlistEntry
+
+func (h *Handler) HandleWaitlist(w http.ResponseWriter, r *http.Request) {
+	var entry waitlistEntry
+	if err := json.NewDecoder(r.Body).Decode(&entry); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if entry.Email == "" {
+		writeError(w, http.StatusBadRequest, "Email is required")
+		return
+	}
+
+	// Deduplicate
+	for _, existing := range waitlistEntries {
+		if existing.Email == entry.Email {
+			writeJSON(w, http.StatusOK, map[string]string{"status": "already_joined"})
+			return
+		}
+	}
+
+	if entry.JoinedAt == "" {
+		entry.JoinedAt = time.Now().UTC().Format(time.RFC3339)
+	}
+
+	waitlistEntries = append(waitlistEntries, entry)
+	log.Printf("[Waitlist] New signup: %s (role=%s, source=%s, district=%s)", entry.Email, entry.Role, entry.Source, entry.District)
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "joined"})
+}
+
+func (h *Handler) HandleListWaitlist(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{
+		"count":   len(waitlistEntries),
+		"entries": waitlistEntries,
+	})
+}

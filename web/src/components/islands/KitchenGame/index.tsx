@@ -126,6 +126,19 @@ export default function KitchenGame() {
                   : 'Clean shift. All events resolved within budget.'}
             </p>
 
+            {/* Mandate pill motifs */}
+            <div className="flex flex-wrap gap-1.5 justify-center">
+              <span className="text-[11px] bg-white/10 text-white/70 px-2.5 py-1 rounded-full border border-white/20 font-medium">
+                Budget: £500
+              </span>
+              <span className="text-[11px] bg-white/10 text-white/70 px-2.5 py-1 rounded-full border border-white/20 font-medium">
+                District: N1
+              </span>
+              <span className="text-[11px] bg-mandate/20 text-mandate px-2.5 py-1 rounded-full border border-mandate/30 font-medium">
+                Delegate mode
+              </span>
+            </div>
+
             <div className="flex flex-col gap-2 pt-1">
               <a href="/rehearsal" className="btn-primary text-sm py-2.5 w-full text-center">
                 Try it with your real kitchen

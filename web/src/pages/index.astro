@@ -8,6 +8,7 @@ import HomeStory from '../components/islands/HomeStory';
 import ActivityPulse from '../components/islands/ActivityPulse';
 import DiscoveryBadge from '../components/islands/DiscoveryBadge';
 import MissionStoryPreview from '../components/islands/MissionStoryPreview';
+import WaitlistCapture from '../components/islands/WaitlistCapture';
 import { listMissions } from '../lib/api';
 
 let missions = [];
@@ -127,5 +128,8 @@ function labelStatus(status) {
       <TacticalRadar client:load activeDistrict="N1" />
       <ProofVaultShowcase client:load />
     </section>
+
+    <!-- Waitlist capture -->
+    <WaitlistCapture client:load variant="operator" source="home" />
   </div>
 </Layout>

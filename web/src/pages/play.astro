@@ -1,13 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import KitchenGame from '../components/islands/KitchenGame';
+import WaitlistCapture from '../components/islands/WaitlistCapture';
 ---
 
-<Layout title="Play — Café Noor's Tuesday Shift" description="Three breakdowns, one morning shift, zero phone calls. See how Yaler's agent handles a real kitchen crisis in under 2 minutes.">
+<Layout title="Play — Cafe Noor's Tuesday Shift" description="Three breakdowns, one morning shift, zero phone calls. See how Yaler's agent handles a real kitchen crisis in under 2 minutes.">
   <div class="space-y-6 py-2">
     <div class="space-y-2 text-center">
       <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">Interactive demo</p>
-      <h1 class="font-display text-3xl text-ink">Café Noor's Tuesday shift</h1>
+      <h1 class="font-display text-3xl text-ink">Cafe Noor's Tuesday shift</h1>
       <p class="text-sm text-ink-muted max-w-md mx-auto">
         Three things break. Walk to each one. The agent handles the rest.
         <span class="block mt-1 text-xs text-ink/40">WASD or tap to move · Space or tap to interact</span>
@@ -40,5 +41,8 @@ import KitchenGame from '../components/islands/KitchenGame';
         <a href="/" class="btn-secondary text-sm py-2.5 px-5">Back home</a>
       </div>
     </div>
+
+    <!-- Waitlist capture -->
+    <WaitlistCapture client:load variant="game" source="play" />
   </div>
 </Layout>

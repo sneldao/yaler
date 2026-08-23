@@ -16,6 +16,7 @@ import OfferComparison from './OfferComparison';
 import RehearsalBanner from '../primitives/RehearsalBanner';
 import SpeakNote from '../primitives/SpeakNote';
 import HearReceipt from '../primitives/HearReceipt';
+import WaitlistCapture from './WaitlistCapture';
 import { formatMoney } from '../../lib/copy';
 
 type Phase = 'details' | 'looking' | 'quotes' | 'receipt';
@@ -274,6 +275,9 @@ export default function RehearsalPlaythrough() {
               </div>
             </div>
           </div>
+
+          {/* Waitlist capture */}
+          <WaitlistCapture variant="operator" source="rehearsal" />
         </>
       )}
     </div>
