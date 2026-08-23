@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 
 interface GameResult {
   elapsed: number;
-  equipment: string;
+  stars: number;
+  totalCost: number;
+  decisions: string[];
 }
 
 export default function KitchenGame() {
@@ -40,11 +42,10 @@ export default function KitchenGame() {
     };
   }, []);
 
-  const shareText = result
-    ? `I fixed a virtual ${result.equipment} in ${result.elapsed}s with an AI agent. Usually takes 4 hours of phone calls. Try it:`
-    : '';
-
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/play` : '/play';
+  const shareText = result
+    ? `Café Noor shift complete: 3 repairs in ${result.elapsed}s, £${result.totalCost} total. ${'★'.repeat(result.stars)}${'☆'.repeat(3 - result.stars)} Try the Yaler kitchen game:`
+    : '';
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -52,15 +53,18 @@ export default function KitchenGame() {
         await navigator.share({ title: 'Yaler Kitchen Game', text: shareText, url: shareUrl });
       } catch { /* cancelled */ }
     } else {
-      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      } catch { /* fallback */ }
     }
   };
 
   const handleReplay = () => {
     setStatus('loading');
     setResult(null);
+    setCopied(false);
     if (gameRef.current) {
       gameRef.current.destroy(true);
       gameRef.current = null;
@@ -79,7 +83,7 @@ export default function KitchenGame() {
     <div className="relative w-full max-w-2xl mx-auto">
       {status === 'loading' && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#1a1a2e] rounded-2xl z-10">
-          <p className="text-sm text-white/60 animate-pulse">Loading kitchen...</p>
+          <p className="text-sm text-white/60 animate-pulse">Loading Café Noor...</p>
         </div>
       )}
 
@@ -90,32 +94,44 @@ export default function KitchenGame() {
 
       {status === 'done' && result && (
         <div className="absolute inset-0 flex items-center justify-center bg-ink/85 rounded-2xl z-20 animate-pop-in backdrop-blur-sm">
-          <div className="text-center space-y-5 p-6 max-w-sm">
-            <p className="font-display text-3xl text-white">Job done.</p>
-            <div className="flex items-center justify-center gap-4">
+          <div className="text-center space-y-4 p-5 max-w-sm w-full">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-white/40">Café Noor — Tuesday shift</p>
+              <p className="font-display text-3xl text-white mt-1">Shift complete</p>
+              <p className="text-mandate text-lg mt-1">{'★'.repeat(result.stars)}{'☆'.repeat(3 - result.stars)}</p>
+            </div>
+
+            <div className="flex items-center justify-center gap-6">
               <div className="text-center">
                 <p className="font-display text-2xl text-mandate">{result.elapsed}s</p>
-                <p className="text-[11px] text-white/50 uppercase tracking-wider">Your time</p>
+                <p className="text-[10px] text-white/50 uppercase tracking-wider">Your shift</p>
               </div>
-              <span className="text-white/30 text-lg">vs</span>
+              <span className="text-white/20 text-sm">vs</span>
               <div className="text-center">
-                <p className="font-display text-2xl text-white/60">~4 hrs</p>
-                <p className="text-[11px] text-white/50 uppercase tracking-wider">Phone calls</p>
+                <p className="font-display text-2xl text-white/60">~12 hrs</p>
+                <p className="text-[10px] text-white/50 uppercase tracking-wider">Manual</p>
+              </div>
+              <span className="text-white/20 text-sm">|</span>
+              <div className="text-center">
+                <p className="font-display text-2xl text-white/80">£{result.totalCost}</p>
+                <p className="text-[10px] text-white/50 uppercase tracking-wider">Total cost</p>
               </div>
             </div>
-            <p className="text-white/60 text-sm">
-              Every step mapped to a real system: discovery, quotes, budget check, booking, evidence, receipt.
+
+            <p className="text-white/50 text-xs leading-relaxed">
+              {result.decisions.includes('rerouted')
+                ? 'Good governance — you rejected the overspend and the agent found a cheaper option.'
+                : result.decisions.includes('approved')
+                  ? 'You approved an over-budget spend. Rejecting would have triggered a reroute.'
+                  : 'Clean shift. All events resolved within budget.'}
             </p>
-            <div className="flex flex-col gap-2">
+
+            <div className="flex flex-col gap-2 pt-1">
               <a href="/rehearsal" className="btn-primary text-sm py-2.5 w-full text-center">
                 Try it with your real kitchen
               </a>
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleReplay}
-                  className="btn-secondary text-sm py-2 flex-1"
-                >
+                <button type="button" onClick={handleReplay} className="btn-secondary text-sm py-2 flex-1">
                   Play again
                 </button>
                 <button
@@ -123,7 +139,18 @@ export default function KitchenGame() {
                   onClick={handleShare}
                   className="btn-secondary text-sm py-2 flex-1 flex items-center justify-center gap-1.5"
                 >
-                  {copied ? '✓ Copied' : 'Share time'}
+                  {copied ? (
+                    <><span className="text-mandate">✓</span> Copied</>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" strokeLinecap="round" strokeLinejoin="round" />
+                        <polyline points="16,6 12,2 8,6" strokeLinecap="round" strokeLinejoin="round" />
+                        <line x1="12" y1="2" x2="12" y2="15" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      Share score
+                    </>
+                  )}
                 </button>
               </div>
             </div>
