@@ -36,6 +36,7 @@ var validTransitions = map[MissionStatus]map[MissionStatus]bool{
 	StatusAwaitingApproval: {
 		StatusCommitted:   true,
 		StatusNegotiating: true,
+		StatusRerouted:    true,
 		StatusCancelled:   true,
 		StatusEscalated:   true,
 	},

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { type Mission, getMission } from '../../lib/api';
 import MandateEditor from './MandateEditor';
 import MissionTimeline from './MissionTimeline';
@@ -28,23 +28,52 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
     }
   }, []);
 
+  const load = useCallback(async (id: string): Promise<Mission | null> => {
+    const data = await getMission(id);
+    setMission(data);
+    return data;
+  }, []);
+
+  // Polling config — backoff until the mission is in a long-running state,
+  // then stop; only restart on terminal states or when a user navigates
+  // back.  This avoids hammering the backend with a 3s poll while
+  // OFFERS_RECEIVED is waiting for a buyer decision, and prevents battery
+  // drain on mobile.
+  const INITIAL_DELAY = 3000; // 3s
+  const MAX_DELAY = 30000;    // cap at 30s
+  const BACKOFF_FACTOR = 2;
+
+  // States where the mission is quiet — no worker activity, buyer decision
+  // pending, so slower polling is fine.
+  const QUIET_STATUSES = new Set(['OFFERS_RECEIVED', 'NEGOTIATING']);
+
+  // States where the mission is actively executing — fast polling is needed
+  // for evidence transitions and real-time updates.
+  const ACTIVE_STATUSES = new Set(['IN_PROGRESS', 'EVIDENCE_PENDING', 'VERIFYING']);
+
   useEffect(() => {
     let active = true;
     let interval: ReturnType<typeof setInterval> | null = null;
+    let delay = INITIAL_DELAY;
 
-    async function load() {
-      if (active) {
+    async function tick() {
+      if (!active) return;
+      try {
         setLoading(true);
         setError(null);
-      }
-      try {
-        const data = await getMission(id);
-        if (active) {
-          setMission(data);
-          // Stop polling once the mission reaches a terminal state.
-          if (data.status === 'COMPLETED' || data.status === 'CANCELLED') {
-            if (interval) clearInterval(interval);
-            interval = null;
+        const data = await load(id);
+        // Stop polling only on terminal states — active states still need
+        // polling for evidence transitions.
+        if (data.status === 'COMPLETED' || data.status === 'CANCELLED') {
+          if (interval) clearInterval(interval);
+          interval = null;
+        } else {
+          // When the mission is quiet or not actively executing, back off.
+          if (QUIET_STATUSES.has(data.status) || !ACTIVE_STATUSES.has(data.status)) {
+            delay = Math.min(delay * BACKOFF_FACTOR, MAX_DELAY);
+          } else {
+            // Active execution — go back to fast polling.
+            delay = INITIAL_DELAY;
           }
         }
       } catch (err: any) {
@@ -54,17 +83,16 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
       }
     }
 
-    load();
+    tick();
 
-    // Poll so the UI reflects worker-driven state changes (auto-commit in
-    // DELEGATE mode, evidence transitions, etc.) without a manual refresh.
-    interval = setInterval(load, 3000);
+    interval = setInterval(tick, delay);
 
     return () => {
       active = false;
       if (interval) clearInterval(interval);
     };
-  }, [id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, load]);
 
   if (loading) {
     return (

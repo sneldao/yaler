@@ -57,7 +57,9 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/credentials", h.HandleCredentials)
 	mux.HandleFunc("POST /api/worker/step", h.HandleWorkerStep)
 
-	// Ensure uploads directory exists and serve uploaded media files
+	// Note: uploads write to local disk (./uploads/) on an ephemeral container.
+	// Files uploaded to one Cloud Run instance may not be servable by another.
+	// For production, move uploads to GCS or R2.
 	_ = os.MkdirAll("./uploads", 0755)
 	fileServer := http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads")))
 	mux.Handle("GET /uploads/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -364,7 +366,7 @@ func (h *Handler) HandleApproveException(w http.ResponseWriter, r *http.Request)
 		h.recordEvent(ctx, id, "HUMAN_REJECTED", "BUYER", req, "ALLOW", "")
 	}
 
-	if err := h.store.UpdateMission(ctx, m); err != nil {
+	if err := h.updateMissionWithRetry(ctx, m); err != nil {
 		writeError(w, http.StatusConflict, "Update conflict")
 		return
 	}
@@ -489,6 +491,45 @@ func (h *Handler) HandleListSuppliers(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, suppliers)
 }
 
+// updateMissionWithRetry attempts to persist a mission with optimistic-concurrency
+// retry (up to 3 total attempts). On a version conflict the mission is re-read
+// from the store and the write is replayed before returning.
+func (h *Handler) updateMissionWithRetry(ctx context.Context, m *domain.Mission) error {
+	var err error
+	const maxRetries = 3
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		err = h.store.UpdateMission(ctx, m)
+		if err == nil {
+			return nil
+		}
+		if err != store.ErrConflict {
+			return err // non-concurrency errors are not retried
+		}
+		// Re-read the latest version and re-apply (the mission object is
+		// already mutated, so this just bumps its version to avoid a
+		// second conflict on the next attempt).
+		if attempt == maxRetries-1 {
+			return err
+		}
+		log.Printf("[Worker] Version conflict for mission %s, retrying (attempt %d/%d)", m.ID, attempt+1, maxRetries)
+		if fresh, reErr := h.store.GetMission(ctx, m.ID); reErr == nil {
+			m.Version = fresh.Version + 1
+		} else {
+			return reErr
+		}
+	}
+	return err
+}
+
+// recordWorkerFailed logs a WORKER_FAILED event for a mission when a step
+// fails so the pipeline is observable and not a black box.
+func (h *Handler) recordWorkerFailed(ctx context.Context, missionID, stepID, errStr string) {
+	h.recordEvent(ctx, missionID, "WORKER_FAILED", "DEMAND_AGENT", map[string]string{
+		"stepId": stepID,
+		"error":  errStr,
+	}, "BLOCK", "")
+}
+
 // 14. Worker Step Handler (Executes state-specific step)
 func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 	var payload domain.TaskPayload
@@ -512,6 +553,8 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[Worker] Executing step for Mission %s in status %s", m.ID, m.Status)
 
+	errMsg := ""
+
 	switch m.Status {
 	case domain.StatusMandateConfirmed, domain.StatusRerouted:
 		// Exa finds stay off the bookable roster. They are listed separately via GET /api/discovery.
@@ -522,8 +565,14 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 			suppliers, _ = h.store.ListSuppliers(ctx)
 		}
 
-		_ = domain.Transition(m, domain.StatusSourcing)
-		_ = h.store.UpdateMission(ctx, m)
+		if err := domain.Transition(m, domain.StatusSourcing); err != nil {
+			errMsg = err.Error()
+			break
+		}
+		if err := h.updateMissionWithRetry(ctx, m); err != nil {
+			errMsg = err.Error()
+			break
+		}
 		h.recordEvent(ctx, m.ID, "SUPPLIERS_SOURCED", "DEMAND_AGENT", fmt.Sprintf("Found %d matching suppliers", len(suppliers)), "ALLOW", payload.IdempotencyKey)
 
 		// Next Step: Request Offers
@@ -544,12 +593,20 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 				Status:          "SUBMITTED",
 				CreatedAt:       time.Now().UTC(),
 			}
-			_ = h.store.SaveOffer(ctx, off)
+			if saveErr := h.store.SaveOffer(ctx, off); saveErr != nil {
+				log.Printf("[Worker] Failed to save offer for mission %s: %v", m.ID, saveErr)
+			}
 			h.recordEvent(ctx, m.ID, "OFFER_RECEIVED", sup.ID, off, "ALLOW", "")
 		}
 
-		_ = domain.Transition(m, domain.StatusOffersReceived)
-		_ = h.store.UpdateMission(ctx, m)
+		if err := domain.Transition(m, domain.StatusOffersReceived); err != nil {
+			errMsg = err.Error()
+			break
+		}
+		if err := h.updateMissionWithRetry(ctx, m); err != nil {
+			errMsg = err.Error()
+			break
+		}
 
 		// Schedule next worker step: Evaluate Offers
 		h.enqueueNext(ctx, m)
@@ -585,31 +642,68 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 
 				if policyRes.Allowed {
 					m.SelectedSupplierID = selectedOffer.SupplierAgentID
-					_ = domain.Transition(m, domain.StatusCommitted)
-					_ = h.store.UpdateMission(ctx, m)
+					if err := domain.Transition(m, domain.StatusCommitted); err != nil {
+						errMsg = err.Error()
+						break
+					}
+					if err := h.updateMissionWithRetry(ctx, m); err != nil {
+						errMsg = err.Error()
+						break
+					}
 
 					h.recordEvent(ctx, m.ID, "OFFER_ACCEPTED", "DEMAND_AGENT", selectedOffer, "ALLOW", payload.IdempotencyKey)
 					h.scheduleMilestone(ctx, m)
 				} else if policyRes.Disposition == domain.DispositionEscalate {
-					_ = domain.Transition(m, domain.StatusAwaitingApproval)
-					_ = h.store.UpdateMission(ctx, m)
+					if err := domain.Transition(m, domain.StatusAwaitingApproval); err != nil {
+						errMsg = err.Error()
+						break
+					}
+					if err := h.updateMissionWithRetry(ctx, m); err != nil {
+						errMsg = err.Error()
+						break
+					}
 					h.recordEvent(ctx, m.ID, "POLICY_ESCALATION", "POLICY_ENGINE", policyRes.Reason, "ESCALATE", payload.IdempotencyKey)
 				} else {
-					_ = domain.Transition(m, domain.StatusEscalated)
-					_ = h.store.UpdateMission(ctx, m)
+					if err := domain.Transition(m, domain.StatusEscalated); err != nil {
+						errMsg = err.Error()
+						break
+					}
+					if err := h.updateMissionWithRetry(ctx, m); err != nil {
+						errMsg = err.Error()
+						break
+					}
 					h.recordEvent(ctx, m.ID, "POLICY_BLOCKED", "POLICY_ENGINE", policyRes.Reason, "BLOCK", payload.IdempotencyKey)
 				}
 			}
 		}
 
 	case domain.StatusCommitted:
-		_ = domain.Transition(m, domain.StatusInProgress)
-		_ = h.store.UpdateMission(ctx, m)
+		if err := domain.Transition(m, domain.StatusInProgress); err != nil {
+			errMsg = err.Error()
+			break
+		}
+		if err := h.updateMissionWithRetry(ctx, m); err != nil {
+			errMsg = err.Error()
+			break
+		}
 		h.recordEvent(ctx, m.ID, "WORK_DISPATCHED", "SUPPLIER_AGENT", "Technician dispatched to location", "ALLOW", payload.IdempotencyKey)
 
-		_ = domain.Transition(m, domain.StatusEvidencePending)
-		_ = h.store.UpdateMission(ctx, m)
+		if err := domain.Transition(m, domain.StatusEvidencePending); err != nil {
+			errMsg = err.Error()
+			break
+		}
+		if err := h.updateMissionWithRetry(ctx, m); err != nil {
+			errMsg = err.Error()
+			break
+		}
 		h.recordEvent(ctx, m.ID, "EVIDENCE_REQUESTED", "DEMAND_AGENT", "Waiting for completion report and photo evidence", "ALLOW", "")
+	}
+
+	if errMsg != "" {
+		h.recordWorkerFailed(ctx, m.ID, payload.StepID, errMsg)
+		log.Printf("[Worker] FAILED for mission %s in status %s: %s", m.ID, m.Status, errMsg)
+		writeError(w, http.StatusInternalServerError, "Worker step failed: "+errMsg)
+		return
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "success", "missionId": m.ID})
