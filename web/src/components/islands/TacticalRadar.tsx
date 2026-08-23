@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LAST_TUESDAY } from '../../lib/lastTuesday';
 
 interface SupplierPing {
   id: string;
@@ -11,7 +12,7 @@ interface SupplierPing {
   active: boolean;
 }
 
-export default function TacticalRadar({ activeDistrict = 'N1' }: { activeDistrict?: string }) {
+export default function TacticalRadar({ activeDistrict = LAST_TUESDAY.district }: { activeDistrict?: string }) {
   const [pings] = useState<SupplierPing[]>([
     { id: 'sup_1', name: 'London Rapid ColdCare', district: 'N1', tier: 'Usually dearer', score: 0.96, x: -25, y: -20, active: true },
     { id: 'sup_2', name: 'Capital Kitchen Services', district: 'N1', tier: 'Mid range', score: 0.92, x: 30, y: -15, active: true },
@@ -23,9 +24,12 @@ export default function TacticalRadar({ activeDistrict = 'N1' }: { activeDistric
     <div className="paper-card rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-xs uppercase tracking-wider text-ink-muted">Who’s nearby</p>
-          <h3 className="font-display text-xl text-ink">Engineers around {activeDistrict}</h3>
+          <p className="text-xs uppercase tracking-wider text-ink-muted">22:06 · beat three</p>
+          <h3 className="font-display text-xl text-ink">Who heard about the job</h3>
         </div>
+        <span className="text-xs text-ink-muted text-right max-w-[12rem]">
+          Three engineers in {activeDistrict} — anything over budget or out of area never gets a call.
+        </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">

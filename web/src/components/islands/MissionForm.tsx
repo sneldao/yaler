@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { navigate } from 'astro:transitions/client';
 import { createMission } from '../../lib/api';
 import { loadSavedMandate } from '../../lib/rehearsal';
 import { LoaderGrid } from '../primitives/LoaderGrid';
-import SpeakNote from '../primitives/SpeakNote';
+
+// Lazy: SpeakNote pulls in @vapi-ai/web (~305KB). Only ever resolve that
+// module once a visitor opens the "real job" form, not when this island
+// hydrates on scroll. The `open &&` guard keeps it unmounted until then.
+const SpeakNote = lazy(() => import('../primitives/SpeakNote'));
 
 export default function MissionForm() {
   const [goal, setGoal] = useState('');
@@ -11,6 +15,7 @@ export default function MissionForm() {
   const [error, setError] = useState<string | null>(null);
   const [showSamples, setShowSamples] = useState(false);
   const [savedHint, setSavedHint] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const saved = loadSavedMandate();
@@ -66,6 +71,19 @@ export default function MissionForm() {
   };
 
   return (
+    <details
+      open={open}
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+      className="paper-card rounded-2xl"
+    >
+      <summary className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-ink">This is a real job</p>
+          <p className="text-xs text-ink-muted mt-0.5">Only if the fridge is actually down. Someone may be booked.</p>
+        </div>
+        <span className="text-xs text-ink-muted">{open ? 'Close' : 'Open'}</span>
+      </summary>
+      <div className="px-5 pb-5 border-t border-ink/10 pt-5">
     <div className="paper-card rounded-2xl p-5 sm:p-7">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
         <div>
@@ -75,10 +93,14 @@ export default function MissionForm() {
           </p>
           {savedHint && <p className="text-xs text-mandate mt-2">{savedHint}</p>}
         </div>
-        <SpeakNote
-          className="self-start"
-          onTranscript={(text) => setGoal((prev) => (prev ? `${prev} ${text}` : text))}
-        />
+        <Suspense fallback={null}>
+          {open && (
+            <SpeakNote
+              className="self-start"
+              onTranscript={(text) => setGoal((prev) => (prev ? `${prev} ${text}` : text))}
+            />
+          )}
+        </Suspense>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -148,5 +170,7 @@ export default function MissionForm() {
         </button>
       </form>
     </div>
+      </div>
+    </details>
   );
 }

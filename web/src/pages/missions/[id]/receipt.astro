@@ -2,6 +2,7 @@
 import Layout from '../../../layouts/Layout.astro';
 import HearReceipt from '../../../components/primitives/HearReceipt';
 import { getProofReceipt } from '../../../lib/api';
+import { lastTuesdayReceipt } from '../../../lib/lastTuesday';
 
 export function getStaticPaths() {
   return [
@@ -13,12 +14,14 @@ export function getStaticPaths() {
 const { id } = Astro.params;
 
 let receipt = null;
-try {
-  if (id && id !== 'demo') {
+if (id === 'demo') {
+  receipt = lastTuesdayReceipt();
+} else {
+  try {
     receipt = await getProofReceipt(id);
+  } catch (e) {
+    receipt = null;
   }
-} catch (e) {
-  receipt = null;
 }
 ---
 
@@ -76,8 +79,11 @@ try {
 
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs text-ink-muted pt-2">
             <p>Share code <span class="text-ink">{receipt.shareToken}</span></p>
-            <a href={`/missions/${receipt.missionId}`} class="text-mandate hover:text-ink transition-colors">
-              Back to the job
+            <a
+              href={receipt.missionId && receipt.missionId !== 'demo' ? `/missions/${receipt.missionId}` : '/#story'}
+              class="text-mandate hover:text-ink transition-colors"
+            >
+              {receipt.missionId && receipt.missionId !== 'demo' ? 'Back to the job' : 'Back to last Tuesday'}
             </a>
           </div>
         </div>
