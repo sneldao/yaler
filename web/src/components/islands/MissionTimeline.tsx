@@ -205,6 +205,9 @@ export default function MissionTimeline({
         </div>
       )}
 
+      {/* Perf-edge separator — the receipt motif, same as the /ops desk */}
+      {mission && <div className="receipt-perf" />}
+
       {/* Agent thinking — VISIBLE BY DEFAULT when working */}
       {isWorking && (
         <div className="paper-card rounded-2xl p-5 sm:p-6 space-y-4 animate-pop-in">
@@ -246,9 +249,19 @@ export default function MissionTimeline({
             </div>
           )}
         </div>
-      )}      {/* Rate the engineer — closes the reliability loop in the UI buyers see */}
+      )}
+
+      {/* Perf-edge separator — the receipt motif, same as the /ops desk */}
+      {mission && <div className="receipt-perf" />}
+
+      {/* Rate the engineer — closes the reliability loop in the UI buyers see */}
       {mission?.status === 'COMPLETED' && !rehearsal && (
         <FeedbackCard missionId={mission.id} />
+      )}
+
+      {/* Perf-edge separator — only when a settled card follows */}
+      {mission?.status === 'COMPLETED' && !rehearsal && (
+        <div className="receipt-perf" />
       )}
 
       {/* Settled trace — shown when done, collapsed by default */}
