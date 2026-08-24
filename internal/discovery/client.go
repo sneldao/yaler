@@ -202,18 +202,38 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 
 	var rows []map[string]any
 
-	switch {
-	case resp.StatusCode == http.StatusOK:
-		if derr := json.NewDecoder(resp.Body).Decode(&rows); derr != nil {
-			out.Detail = "apify response decode failed: " + derr.Error()
+	switch resp.StatusCode {
+	case http.StatusOK, http.StatusCreated, http.StatusAccepted:
+		// run-sync-get-dataset-items returns the items array straight out
+		// (200), and when the scrape finishes just past the sync window it
+		// still returns the items array — but with 201. On rare slow runs it
+		// returns the run object to poll instead. Peek the first byte to
+		// tell the two shapes apart.
+		buf, rerr := io.ReadAll(resp.Body)
+		if rerr != nil {
+			out.Detail = "apify response read failed: " + rerr.Error()
 			return out
 		}
-
-	case resp.StatusCode == http.StatusCreated, resp.StatusCode == http.StatusAccepted:
-		// The run started but did not finish inside the sync window. Poll it
-		// until SUCCEEDED, then read the dataset items.
-		rows, out.Detail = d.apifyPollRun(ctx, resp.Body)
-		if out.Detail != "" {
+		trimmed := bytes.TrimSpace(buf)
+		if len(trimmed) == 0 {
+			out.Detail = "apify returned an empty body"
+			return out
+		}
+		switch trimmed[0] {
+		case '[':
+			if derr := json.Unmarshal(trimmed, &rows); derr != nil {
+				out.Detail = "apify response decode failed: " + derr.Error()
+				return out
+			}
+		case '{':
+			// Run object — the sync run is still going. Poll it to
+			// SUCCEEDED, then read the dataset items.
+			rows, out.Detail = d.apifyPollRun(ctx, bytes.NewReader(trimmed))
+			if out.Detail != "" {
+				return out
+			}
+		default:
+			out.Detail = "apify returned an unexpected response body"
 			return out
 		}
 
@@ -273,25 +293,45 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 	return out
 }
 
-// apifyPollRun handles the 201/202 case of run-sync-get-dataset-items: the
-// run started but did not finish inside the sync window, so Apify returns the
-// run object to poll. Waits for SUCCEEDED (up to ~75s), then reads the
-// dataset items. Returns the rows and an empty detail on success.
+// apifyPollRun handles the 201/202 case of the run-sync endpoint: the run
+// started but did not finish inside the sync window, so Apify returns its run
+// object instead of the items. Waits for SUCCEEDED (up to ~75s), then reads
+// the dataset items. Returns the rows and an empty detail on success.
 func (d *DiscoveryService) apifyPollRun(ctx context.Context, body io.Reader) ([]map[string]any, string) {
-	var runResp struct {
+	raw, err := io.ReadAll(body)
+	if err != nil {
+		return nil, "apify run response read failed: " + err.Error()
+	}
+
+	var doc struct {
 		Data struct {
 			ID               string `json:"id"`
 			DefaultDatasetID string `json:"defaultDatasetId"`
+			Status           string `json:"status"`
 		} `json:"data"`
+		Error *struct {
+			Type    string `json:"type"`
+			Message string `json:"message"`
+		} `json:"error"`
 	}
-	if err := json.NewDecoder(body).Decode(&runResp); err != nil {
+	if err := json.Unmarshal(raw, &doc); err != nil {
 		return nil, "apify run response decode failed: " + err.Error()
 	}
-	runID := runResp.Data.ID
-	if runID == "" {
-		return nil, "apify returned 201 without a run id"
+	if doc.Error != nil && doc.Error.Message != "" {
+		return nil, "apify: " + doc.Error.Type + ": " + doc.Error.Message
 	}
-	datasetID := runResp.Data.DefaultDatasetID
+	runID := doc.Data.ID
+	if runID == "" {
+		return nil, "apify returned a run response without a run id"
+	}
+	datasetID := doc.Data.DefaultDatasetID
+	if doc.Data.Status == "SUCCEEDED" {
+		items, ierr := d.apifyDatasetItems(ctx, datasetID)
+		if ierr != nil {
+			return nil, ierr.Error()
+		}
+		return items, ""
+	}
 
 	deadline := time.Now().Add(75 * time.Second)
 	for time.Now().Before(deadline) {
