@@ -1,6 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import RehearsalPlaythrough from '../components/islands/RehearsalPlaythrough';
+
+const autoplay = Astro.url.searchParams.has('autoplay');
 ---
 
 <Layout title="Rehearsal — Cafe Noor's fridge, last Tuesday">
@@ -18,6 +20,6 @@ import RehearsalPlaythrough from '../components/islands/RehearsalPlaythrough';
     </div>
 
     <!-- The playthrough (alive element — the entire island) -->
-    <RehearsalPlaythrough client:load />
+    <RehearsalPlaythrough client:load autoplay={autoplay} />
   </div>
 </Layout>

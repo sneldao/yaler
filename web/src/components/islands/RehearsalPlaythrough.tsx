@@ -29,6 +29,11 @@ const PHASES: { id: Phase; label: string }[] = [
   { id: 'receipt', label: 'Receipt' },
 ];
 
+interface Props {
+  /** Auto-advance through all phases — for the 30-second demo surface. */
+  autoplay?: boolean;
+}
+
 const GUIDE: Record<Phase, string> = {
   details: 'Check the number. Then we look. Nobody is called.',
   looking: 'Asking the three N1 engineers on the practice roster…',
@@ -36,13 +41,45 @@ const GUIDE: Record<Phase, string> = {
   receipt: 'This is the paper you’d pin up. Save the rules if they look right.',
 };
 
-export default function RehearsalPlaythrough() {
+export default function RehearsalPlaythrough({ autoplay }: Props) {
   const [phase, setPhase] = useState<Phase>('details');
   const [mission, setMission] = useState<Mission>(rehearsalMission('DRAFT'));
   const [booked, setBooked] = useState<Offer | null>(null);
   const [saved, setSaved] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [bookedCred, setBookedCred] = useState<CredentialCheck | null>(null);
+
+  // Auto-play: advance through the phases on a timer, ending on the receipt.
+  useEffect(() => {
+    if (!autoplay) return;
+    const timers: number[] = [];
+    const advance = (delay: number, fn: () => void) => {
+      timers.push(window.setTimeout(fn, delay));
+    };
+
+    // details 1s → looking, looking 2s → quotes (auto-picks the in-budget offer), quotes 2.5s → receipt
+    setPhase('details');
+    setMission(rehearsalMission('DRAFT'));
+    setBooked(null);
+    advance(1200, () => {
+      setPhase('looking');
+      setMission((prev) => ({ ...prev, status: 'SOURCING' }));
+    });
+    advance(4400, () => {
+      setPhase('quotes');
+      setMission((prev) => ({ ...prev, status: 'AWAITING_APPROVAL' }));
+    });
+    advance(7200, () => {
+      const chosen = REHEARSAL_OFFERS[1]; // in-budget pick
+      setBooked(chosen);
+      setMission((prev) => ({ ...prev, status: 'COMPLETED', selectedSupplierId: chosen.supplierAgentId }));
+      setPhase('receipt');
+      checkCredential(chosen.supplierAgentId).then(setBookedCred).catch(() => {
+        setBookedCred({ name: chosen.supplierAgentId, status: 'not_checked' });
+      });
+    });
+    return () => timers.forEach(clearTimeout);
+  }, [autoplay]);
 
   useEffect(() => {
     if (phase !== 'looking') return;

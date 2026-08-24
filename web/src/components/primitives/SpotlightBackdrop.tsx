@@ -37,7 +37,9 @@ export default function SpotlightBackdrop() {
       <div className="absolute bottom-[-12%] left-[-6%] w-[24rem] h-[24rem] rounded-full bg-escalate/[0.055]" />
 
       {/* Layer 4: scattered kitchen equipment silhouettes */}
-      <KitchenSilhouettes />
+      <div className="kitchen-backdrop">
+        <KitchenSilhouettes />
+      </div>
     </div>
   );
 }
@@ -58,10 +60,10 @@ function KitchenSilhouettes() {
 
   return (
     <>
-      {icons.map(({ id, x, y, rotate, path }) => (
+      {icons.map(({ id, x, y, rotate, path }, idx) => (
         <svg
           key={id}
-          className="absolute w-12 h-12 text-ink opacity-[0.03]"
+          className={`absolute w-12 h-12 text-ink opacity-[0.04] kitchen-cutout ${idx % 2 === 1 ? 'kitchen-cutout-slow' : ''}`}
           style={{ left: x, top: y, transform: `rotate(${rotate}deg)` }}
           viewBox="0 0 24 24"
           fill="none"

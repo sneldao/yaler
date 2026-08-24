@@ -142,10 +142,13 @@ export default function KitchenGame() {
             </div>
 
             <div className="flex flex-col gap-2 pt-1">
-              <a href="/rehearsal" className="btn-primary text-sm py-2.5 w-full text-center">
+              <a href="/missions/new" className="btn-primary text-sm py-2.5 w-full text-center">
                 Try it with your real kitchen
               </a>
               <div className="flex gap-2">
+                <a href="/rehearsal?autoplay" className="btn-secondary text-sm py-2 flex-1 text-center">
+                  Watch the flow
+                </a>
                 <button type="button" onClick={handleReplay} className="btn-secondary text-sm py-2 flex-1">
                   Play again
                 </button>
