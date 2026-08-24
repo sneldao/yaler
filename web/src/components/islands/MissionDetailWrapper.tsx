@@ -62,6 +62,7 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
         setLoading(true);
         setError(null);
         const data = await load(id);
+        if (!data) return;
         // Stop polling only on terminal states — active states still need
         // polling for evidence transitions.
         if (data.status === 'COMPLETED' || data.status === 'CANCELLED') {
