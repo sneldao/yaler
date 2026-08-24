@@ -1,4 +1,4 @@
-.PHONY: all build dev test lint lint-all seed web clean hooks assets deploy-backend
+.PHONY: all build dev test lint lint-all check check-web seed web clean hooks assets deploy-backend
 
 GCP_PROJECT ?= cognivern
 BACKEND_URL ?= https://yaler-backend-48617502162.europe-west2.run.app
@@ -25,6 +25,26 @@ lint:
 # heavier linters that are intentionally kept out of the pre-commit gate.
 #   (no target body; this exists so README can reference a single entrypoint)
 lint-all: lint
+
+# check — run the same gates as CI locally. Mirrors .github/workflows/ci.yml:
+#   1. go vet + go test
+#   2. tsc --noEmit (TypeScript type-check)
+#   3. astro build (with ERROR-marker grep — astro build can exit 0 on failure)
+# Use this before pushing to catch what the pre-commit hook can't.
+check: test
+	go vet ./...
+	$(MAKE) check-web
+
+check-web:
+	@cd web && npx tsc --noEmit
+	@cd web && npm run build 2>&1 | tee /tmp/yaler-astro-build.log
+	@if grep -q '\[ERROR\]' /tmp/yaler-astro-build.log; then \
+		echo "::error::Astro build failed"; \
+		rm -f /tmp/yaler-astro-build.log; \
+		exit 1; \
+	  fi
+	@rm -f /tmp/yaler-astro-build.log
+	@echo "check-web: tsc + astro build clean"
 
 hooks:
 	pre-commit install --hook-type pre-commit --hook-type pre-push
