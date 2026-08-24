@@ -399,6 +399,14 @@
   animation: stamp-land 500ms var(--ease) both;
 }
 
+/* Equalizer bounce — voice waveform stripe (used by SponsorFlowDemo's
+   Vapi step). ScaleY beats with a stagger, matching the pulse language
+   of the HearReceipt playing indicator. */
+@keyframes eq-bounce {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
 /* ─── Print receipt ────────────────────────────────────── */
 
 @media print {

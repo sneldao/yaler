@@ -78,6 +78,32 @@ const FLOW: Sponsor[] = [
 
 const CYCLE_MS = 2200;
 
+/**
+ * Waveform — a subtly animated equalizer stripe. Shown only during the
+ * Vapi step of the flow: the voice moment gets a visible voice signature.
+ * Heights are deterministic (fixed pattern) so it looks like a stable
+ * voice recording rather than random noise. Same visual language as the
+ * playing indicator in HearReceipt.
+ */
+function Waveform({ colorClass, bars = 10, height = 14 }: { colorClass: string; bars?: number; height?: number }) {
+  const pattern = [0.5, 1, 0.7, 0.9, 0.4, 1.1, 0.65, 0.85, 0.55, 1];
+  return (
+    <span className="flex items-center gap-[2px]" aria-hidden>
+      {Array.from({ length: bars }, (_, i) => (
+        <span
+          key={i}
+          className={`w-[2.5px] rounded-full bg-current ${colorClass}`}
+          style={{
+            height: height * pattern[i % pattern.length],
+            animation: `eq-bounce 900ms ease-in-out ${i * 65}ms infinite`,
+            transformOrigin: 'center',
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
 export default function SponsorFlowDemo() {
   const [idx, setIdx] = useState(0);
 
@@ -165,6 +191,13 @@ export default function SponsorFlowDemo() {
             </div>
             <p className="text-sm text-ink leading-snug">{current.detail}</p>
           </div>
+
+          {/* Waveform stripe — only during the Vapi (voice) step */}
+          {current.id === 'vapi' && (
+            <div className="shrink-0 self-center pt-0.5">
+              <Waveform colorClass="text-purple-600" />
+            </div>
+          )}
         </div>
 
         {/* Progress rail */}
