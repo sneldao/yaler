@@ -69,10 +69,10 @@ Install the commit-time system hooks once: `brew install gitleaks`.
 
 1. **🎬 N1 fridge rehearsal**: Speak last Tuesday’s job, feel the over-budget stop, hear the paper. Nothing is booked.
 2. **⚡ Gemini 2.5 Mandate Engine**: Converts messy speech/text into structured policy mandates with budget ceilings and SLAs.
-3. **🤝 Agent-to-Agent (A2A) Protocol**: Standardized JSON-RPC 2.0 endpoint (`/api/a2a`) with cryptographic payload signing (`RSA-2048`).
+3. **🤝 Agent-to-Agent (A2A) Protocol**: Standardized JSON-RPC 2.0 endpoint (`/api/a2a`) — protocol-ready, signature verification in progress (see `docs/A2A-PROTOCOL.md`).
 4. **🛡️ Go Policy Guardrails**: Enforces hard budget ceilings, geographic postal boundaries, and mandatory safety escalations.
-5. **☁️ Direct Cloud Storage Uploads**: Direct drag-and-drop photo evidence uploads to GCP Cloud Storage buckets.
-6. **🔒 Zero-Knowledge Proof Receipts**: Gemini-verified evidence with automated PII privacy redaction.
+5. **☁️ Real Cloud Tasks Queue**: Production durable queue with OIDC auth to Cloud Run; local dev uses a labelled direct call (`CLOUD_TASKS_EMULATOR` flag).
+6. **🔒 Zero-Knowledge Proof Receipts**: Gemini-verified evidence with automated PII privacy redaction, plus the buyer's rating on the receipt.
 
 ---
 

@@ -217,6 +217,8 @@ proofReceipts/{receiptId}
   summary
   redactedEvidence
   shareToken
+  rating        # buyer's 1-5 rating, joined at read time (not persisted)
+  ratingComment  # buyer's optional comment, joined at read time
   createdAt
 ```
 
@@ -246,12 +248,20 @@ The supply side runs as a human-in-the-loop concierge wedge (see
   all DECLINED/EXPIRED with no offers (FR-6). A Cloud Tasks cron is the
   production shape for the sweeper once the durable queue lands.
 
-Worker durability is still pending (see below) — the concierge loop is
-built, but the fire-and-forget goroutine remains the known weakness.
+Worker durability is now real: `internal/tasks/cloudtasks.go` is a
+production Cloud Tasks client with OIDC auth to the Cloud Run service.
+`CLOUD_TASKS_EMULATOR=false` switches `cmd/server` from the local
+direct-call client to the real queue. The sweeper
+(`SweepStalledSourcing`, 15s ticker in `cmd/server`) expires past-due
+callouts and escalates any SOURCING mission whose callouts are all
+DECLINED/EXPIRED with no offers (FR-6). The concierge can resume an
+escalated mission via `POST /api/missions/{id}/resume`, which flips it
+back to MANDATE_CONFIRMED for fresh sourcing.
 
 ## Asynchronous execution
 
-Use Cloud Tasks for mission work:
+Cloud Tasks drives mission work in production; a labelled direct HTTP
+call is used locally:
 
 ```text
 mission.created
@@ -338,7 +348,7 @@ For judges and contributors to run locally:
 
 - Go service runs with Firestore emulator (or a test GCP project).
 - Astro dev server proxies API calls to the Go service.
-- Cloud Tasks are a labelled direct HTTP call to the worker when `CLOUD_TASKS_EMULATOR=true`. Production enqueues real Cloud Tasks. Do not present the local path as a queue.
+- Cloud Tasks are a labelled direct HTTP call to the worker when `CLOUD_TASKS_EMULATOR=true` (the default). Production enqueues real Cloud Tasks with OIDC auth to the Cloud Run service when `CLOUD_TASKS_EMULATOR=false`. The worker is idempotent via `ExpectedVersion` + `IdempotencyKey` so tasks are safe to retry on both transports. Do not present the local path as a queue.
 - Gemini API calls use a Google AI Studio key (no GCP project required for the model).
 - `.env.example` documents all required configuration, including costs and rate-limit notes for judges.
 - A `Makefile` or equivalent should provide `make dev`, `make test`, and `make build` once Task 1 exists. Do not document those targets as working before they do.

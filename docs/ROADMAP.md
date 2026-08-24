@@ -85,7 +85,24 @@ The `.kiro/` directory must demonstrate meaningful spec-driven development:
 
 ### What extends from Horizon 1
 
-- Supplier registry becomes a real curated network (manually verified providers).
+- **Concierge wedge built (Horizon 1):** the supply side runs as a
+  human-in-the-loop concierge with real `Callout` entities, a
+  `POST /api/callouts/{id}/offer` quote intake, manual supplier
+  onboarding (`POST /api/suppliers/onboard`), lazy callout expiry, and
+  an `/ops` dispatch desk with the find-and-verify runbook surfaced
+  inline. Horizon 2 makes the roster real — 3-5 verified engineers.
+- **Cloud Tasks is real (Horizon 1):** `CLOUD_TASKS_EMULATOR=false`
+  switches to a production Cloud Tasks queue with OIDC auth. Horizon 2
+  adds a cron sweeper for past-due callouts (currently lazy + in-process).
+- **Reliability loop built (Horizon 1):** `ReliabilityScore` is computed
+  from buyer feedback (`POST /api/missions/{id}/feedback`), and the
+  rating appears on the proof receipt. Horizon 2 makes it compound
+  across many jobs.
+- Voice already covers speak-in and hear-the-receipt. Horizon 2 is outbound milestone calls / SMS, not first capture.
+- A2A-compatible external agent endpoints for third-party supplier agents.
+- Mobile-first supplier evidence submission.
+- Real-time notifications (SMS/email/voice) for milestone updates.
+- Multiple mission categories beyond refrigeration.
 - Voice already covers speak-in and hear-the-receipt. Horizon 2 is outbound milestone calls / SMS, not first capture.
 - A2A-compatible external agent endpoints for third-party supplier agents.
 - Mobile-first supplier evidence submission.

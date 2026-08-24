@@ -170,6 +170,30 @@
 
 **Reason:** Landlords and EHOs need to interrogate the paper. Kitchen managers need a receipt, not a second chatbot on the home screen.
 
+### D029 — Supply side is a concierge wedge, not an A2A network
+
+**Decision:** The supply side runs as a human-in-the-loop concierge wedge, not a multi-agent network. The worker creates `Callout` entities (one per matching ACTIVE supplier) with deterministic kitchen-English messages. Verified suppliers take real callouts that wait for the concierge to enter a quote via `POST /api/callouts/{id}/offer`. Unverified (synthetic seed) suppliers get auto-generated, clearly labelled simulated quotes so the demo stays runnable. The A2A endpoint stays protocol-ready but does not verify signatures yet — the README and docs say so explicitly.
+
+**Reason:** You cannot bootstrap a supplier network by building the protocol. You bootstrap it with a human doing outreach while the software does scoping, matching, scoring, risk, evidence, and receipt. The network is a consequence of real jobs, not a prerequisite. D016's synthetic suppliers are still labelled; the concierge wedge adds the real path on top.
+
+### D030 — ReliabilityScore is earned, not assumed
+
+**Decision:** `ReliabilityScore` is a computed value, not a static float. After a mission completes, the buyer rates the engineer (1-5 + optional comment) via `POST /api/missions/{id}/feedback`. The score blends the static seed with the running mean of ratings, ramping feedback weight from 30% (one job) to 80% (five+ jobs). The buyer's rating also appears on the proof receipt (joined at read time, not persisted on the receipt itself).
+
+**Reason:** The proof graph — real jobs producing real receipts producing real reliability data — is the differentiating asset. A static float undermines the trust product. One bad rating can't crash a long track record, but every completed job moves the score.
+
+### D031 — Cloud Tasks is real, not just documented
+
+**Decision:** `internal/tasks/cloudtasks.go` is a production Cloud Tasks client with OIDC auth to the Cloud Run service. `CLOUD_TASKS_EMULATOR=false` switches `cmd/server` from the local direct-call client to the real queue. The README's earlier claim that this existed (attributed to "Task 6") was aspirational; it is now real. D019's local-simulation stance is unchanged.
+
+**Reason:** Real supply means time — a quote lands 20 minutes later, not in the same HTTP request. The fire-and-forget goroutine was the known weakness; the durable queue with retry/backoff is the fix. The worker is idempotent via `ExpectedVersion` + `IdempotencyKey` so tasks are safe to retry on both transports.
+
+### D032 — Honesty in the UI: simulated quotes are labelled, not hidden
+
+**Decision:** Simulated offers carry a "Simulated — not a real offer" chip, greyed styling, and "Synthetic roster — auto-generated so the flow runs" footer. Real (verified) quotes show a "Verified engineer" badge. The two never look identical. Loading and empty states across all surfaces use the same paper-card + receipt-punch craft. The `/ops` console surfaces the find-and-verify runbook when the roster has only synthetic suppliers.
+
+**Reason:** The brand doc (D023) warns against undermining the trust product with conflation. Letting simulated and real quotes look identical, or leaving the cold-start state undocumented in the concierge's own tool, would do exactly that.
+
 ---
 
 ## Open questions
