@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/sneldao/yaler/internal/discovery"
@@ -44,6 +46,10 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/missions/{id}/start", h.HandleStartMission)
 	mux.HandleFunc("GET /api/missions/{id}/events", h.HandleListEvents)
 	mux.HandleFunc("GET /api/missions/{id}/offers", h.HandleListOffers)
+	mux.HandleFunc("GET /api/missions/{id}/callouts", h.HandleListCallouts)
+	mux.HandleFunc("POST /api/callouts/{id}/offer", h.HandleSubmitCalloutOffer)
+	mux.HandleFunc("POST /api/suppliers/onboard", h.HandleOnboardSupplier)
+	mux.HandleFunc("POST /api/missions/{id}/resume", h.HandleResumeMission)
 	mux.HandleFunc("POST /api/missions/{id}/approve", h.HandleApproveException)
 	mux.HandleFunc("POST /api/missions/{id}/cancel", h.HandleCancelMission)
 	mux.HandleFunc("POST /api/missions/{id}/evidence", h.HandleSubmitEvidence)
@@ -567,6 +573,14 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 			suppliers, _ = h.store.ListSuppliers(ctx)
 		}
 
+		// Only ACTIVE roster suppliers take callouts.
+		active := make([]*domain.Supplier, 0, len(suppliers))
+		for _, sup := range suppliers {
+			if sup.Status == "" || strings.EqualFold(sup.Status, "ACTIVE") {
+				active = append(active, sup)
+			}
+		}
+
 		if err := domain.Transition(m, domain.StatusSourcing); err != nil {
 			errMsg = err.Error()
 			break
@@ -575,43 +589,96 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 			errMsg = err.Error()
 			break
 		}
-		h.recordEvent(ctx, m.ID, "SUPPLIERS_SOURCED", "DEMAND_AGENT", fmt.Sprintf("Found %d matching suppliers", len(suppliers)), "ALLOW", payload.IdempotencyKey)
 
-		// Next Step: Request Offers
-		for i, sup := range suppliers {
-			offerID := fmt.Sprintf("off_%s_%d", sup.ID, time.Now().Unix())
-			price := 350.0 - float64(i)*40.0
+		now := time.Now().UTC()
+
+		if len(active) == 0 {
+			// FR-6: no matching supplier is an exception, not a silent stall.
+			if err := domain.Transition(m, domain.StatusEscalated); err != nil {
+				errMsg = err.Error()
+				break
+			}
+			if err := h.updateMissionWithRetry(ctx, m); err != nil {
+				errMsg = err.Error()
+				break
+			}
+			h.recordEvent(ctx, m.ID, "NO_SUPPLIERS", "DEMAND_AGENT", "No matching suppliers on the roster", "ESCALATE", payload.IdempotencyKey)
+			break
+		}
+
+		simulated := 0
+		for _, sup := range active {
+			co := &domain.Callout{
+				ID:         fmt.Sprintf("co_%s_%d", sup.ID, now.UnixNano()),
+				MissionID:  m.ID,
+				SupplierID: sup.ID,
+				Status:     domain.CalloutSent,
+				Message:    calloutMessage(m, sup),
+				SentAt:     now,
+				ExpiresAt:  now.Add(calloutTTL),
+			}
+
+			if sup.Verified {
+				// Real supplier: the callout waits for a quote entered via
+				// the concierge console (POST /api/callouts/{id}/offer).
+				if saveErr := h.store.SaveCallout(ctx, co); saveErr != nil {
+					log.Printf("[Worker] Failed to save callout for mission %s: %v", m.ID, saveErr)
+				}
+				h.recordEvent(ctx, m.ID, "CALLOUT_SENT", "DEMAND_AGENT", map[string]string{"supplier": sup.DisplayName, "calloutId": co.ID}, "ALLOW", payload.IdempotencyKey)
+				continue
+			}
+
+			// Unverified roster supplier (synthetic seed): auto-generate a
+			// clearly labelled simulated quote so the flow stays runnable
+			// without a real roster. Never presented as a real quote.
+			co.Simulated = true
+			co.Status = domain.CalloutOffered
+			co.RespondedAt = now
+			if saveErr := h.store.SaveCallout(ctx, co); saveErr != nil {
+				log.Printf("[Worker] Failed to save callout for mission %s: %v", m.ID, saveErr)
+			}
+
+			price := 350.0 - float64(simulated)*40.0
 			if sup.PriceTier == "PREMIUM" {
 				price = 420.0
 			}
 			off := &domain.Offer{
-				ID:              offerID,
+				ID:              fmt.Sprintf("off_%s_%d", sup.ID, now.Unix()),
 				MissionID:       m.ID,
 				SupplierAgentID: sup.ID,
+				CalloutID:       co.ID,
 				Price:           price,
 				Currency:        "GBP",
 				Availability:    sup.Availability,
-				Terms:           "Callout included, 90-day parts warranty",
+				Terms:           "Simulated quote - synthetic roster, not a real offer",
 				Status:          "SUBMITTED",
-				CreatedAt:       time.Now().UTC(),
+				Evidence:        []string{"synthetic_roster"},
+				CreatedAt:       now,
+				Simulated:       true,
 			}
 			if saveErr := h.store.SaveOffer(ctx, off); saveErr != nil {
 				log.Printf("[Worker] Failed to save offer for mission %s: %v", m.ID, saveErr)
 			}
 			h.recordEvent(ctx, m.ID, "OFFER_RECEIVED", sup.ID, off, "ALLOW", "")
+			simulated++
 		}
+		h.recordEvent(ctx, m.ID, "SUPPLIERS_SOURCED", "DEMAND_AGENT", fmt.Sprintf("Asked %d suppliers (%d simulated)", len(active), simulated), "ALLOW", payload.IdempotencyKey)
 
-		if err := domain.Transition(m, domain.StatusOffersReceived); err != nil {
-			errMsg = err.Error()
-			break
+		// Advance to evaluation only when at least one offer exists. Real
+		// (verified) callouts keep the mission in SOURCING until a quote is
+		// entered via the concierge console.
+		offers, _ := h.store.ListOffers(ctx, m.ID)
+		if len(offers) > 0 {
+			if err := domain.Transition(m, domain.StatusOffersReceived); err != nil {
+				errMsg = err.Error()
+				break
+			}
+			if err := h.updateMissionWithRetry(ctx, m); err != nil {
+				errMsg = err.Error()
+				break
+			}
+			h.enqueueNext(ctx, m)
 		}
-		if err := h.updateMissionWithRetry(ctx, m); err != nil {
-			errMsg = err.Error()
-			break
-		}
-
-		// Schedule next worker step: Evaluate Offers
-		h.enqueueNext(ctx, m)
 
 	case domain.StatusOffersReceived:
 		// Step: Evaluate Offers via Gemini & Policy Check
@@ -721,6 +788,374 @@ func (h *Handler) enqueueNext(ctx context.Context, m *domain.Mission) {
 		Deadline:        time.Now().Add(5 * time.Minute).Format(time.RFC3339),
 	}
 	_ = h.taskClient.EnqueueTask(ctx, taskPayload)
+}
+
+// calloutTTL is how long a real callout waits for a response before it is
+// considered expired. Expiry is applied lazily (when callouts are listed or
+// answered); the concierge loop does not need a background sweeper.
+const calloutTTL = 4 * time.Hour
+
+// calloutMessage drafts the scoped job request for a supplier in kitchen
+// English. Deterministic on purpose: the same mandate always produces the
+// same ask, which is what the concierge pastes into a call or message.
+func calloutMessage(m *domain.Mission, sup *domain.Supplier) string {
+	when := "today"
+	if !m.Mandate.LatestCompletionAt.IsZero() {
+		when = "by " + m.Mandate.LatestCompletionAt.Format("3:04pm, Mon 2 Jan")
+	}
+	return fmt.Sprintf("%s - kitchen job in %s: %s. Budget up to %s, need it done %s. Can you take it? Reply with your price and earliest arrival.",
+		sup.DisplayName,
+		m.Mandate.ServiceArea.PostalDistrict,
+		m.Goal,
+		formatGBP(m.Mandate.Budget.MaxAmount),
+		when,
+	)
+}
+
+func formatGBP(amount float64) string {
+	if amount == math.Trunc(amount) {
+		return fmt.Sprintf("£%.0f", amount)
+	}
+	return fmt.Sprintf("£%.2f", amount)
+}
+
+// opsAuthorized gates the mutating concierge endpoints. When OPS_TOKEN is
+// set, requests must carry a matching X-Ops-Token header. When it is not
+// set (local demo / judge runs) the endpoints stay open, consistent with
+// the no-auth demo stance (D020). Set OPS_TOKEN on any deployed instance.
+func (h *Handler) opsAuthorized(r *http.Request) bool {
+	token := os.Getenv("OPS_TOKEN")
+	if token == "" {
+		return true
+	}
+	return r.Header.Get("X-Ops-Token") == token
+}
+
+// expireCallouts lazily marks past-ExpiresAt callouts as EXPIRED. It saves
+// each flipped callout back to the store (store reads return copies) and
+// records one event per expiry.
+func (h *Handler) expireCallouts(ctx context.Context, callouts []*domain.Callout) {
+	now := time.Now().UTC()
+	for _, co := range callouts {
+		if co.Status == domain.CalloutSent && !co.ExpiresAt.IsZero() && now.After(co.ExpiresAt) {
+			co.Status = domain.CalloutExpired
+			co.RespondedAt = now
+			if err := h.store.SaveCallout(ctx, co); err != nil {
+				log.Printf("[Ops] Failed to expire callout %s: %v", co.ID, err)
+				continue
+			}
+			h.recordEvent(ctx, co.MissionID, "CALLOUT_EXPIRED", "DEMAND_AGENT", map[string]string{"supplierId": co.SupplierID, "calloutId": co.ID}, "ESCALATE", "")
+		}
+	}
+}
+
+// SweepStalledSourcing is the stall breaker for the concierge loop (FR-6:
+// a supplier timeout is an exception, not a silent stall). One pass over
+// all missions: for each mission sitting in SOURCING it lazily expires
+// past-due callouts, then escalates any mission whose callouts are all
+// terminal (DECLINED/EXPIRED) and that still has no offers. Missions with
+// an offer in flight, or with callouts still awaiting a reply, are left
+// alone. Safe to run on a ticker from the server process; a durable
+// Cloud Tasks cron is the production shape for this (see ARCHITECTURE.md).
+func (h *Handler) SweepStalledSourcing(ctx context.Context) {
+	missions, err := h.store.ListMissions(ctx)
+	if err != nil {
+		log.Printf("[Sweeper] Failed to list missions: %v", err)
+		return
+	}
+	for _, m := range missions {
+		if m.Status != domain.StatusSourcing {
+			continue
+		}
+
+		callouts, err := h.store.ListCallouts(ctx, m.ID)
+		if err != nil {
+			log.Printf("[Sweeper] Failed to list callouts for %s: %v", m.ID, err)
+			continue
+		}
+		// Expire first, then re-read so the terminal check sees fresh state.
+		h.expireCallouts(ctx, callouts)
+		callouts, err = h.store.ListCallouts(ctx, m.ID)
+		if err != nil {
+			log.Printf("[Sweeper] Failed to re-read callouts for %s: %v", m.ID, err)
+			continue
+		}
+
+		offers, _ := h.store.ListOffers(ctx, m.ID)
+		if len(offers) > 0 {
+			continue // a quote is in hand; the pipeline is progressing
+		}
+		if len(callouts) == 0 {
+			continue // worker has not sourced this mission yet
+		}
+
+		allTerminal := true
+		for _, co := range callouts {
+			if co.Status != domain.CalloutDeclined && co.Status != domain.CalloutExpired {
+				allTerminal = false
+				break
+			}
+		}
+		if !allTerminal {
+			continue
+		}
+
+		if err := domain.Transition(m, domain.StatusEscalated); err != nil {
+			log.Printf("[Sweeper] Failed to escalate %s: %v", m.ID, err)
+			continue
+		}
+		if err := h.updateMissionWithRetry(ctx, m); err != nil {
+			log.Printf("[Sweeper] Failed to save escalation for %s: %v", m.ID, err)
+			continue
+		}
+		h.recordEvent(ctx, m.ID, "NO_QUOTES", "DEMAND_AGENT", "Every supplier declined or timed out - no quotes received", "ESCALATE", "")
+		log.Printf("[Sweeper] Escalated stalled sourcing mission %s (all callouts terminal, no offers)", m.ID)
+	}
+}
+
+// 15. List Callouts
+func (h *Handler) HandleListCallouts(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	callouts, err := h.store.ListCallouts(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to list callouts")
+		return
+	}
+	h.expireCallouts(r.Context(), callouts)
+	writeJSON(w, http.StatusOK, callouts)
+}
+
+// 16. Concierge Quote Intake
+// Records a quote (or decline) for a callout. This is the concierge loop:
+// a human (or the supplier through their own channel) reports what the
+// engineer actually said. An over-budget quote is still recorded - the
+// policy stop fires at commitment, which is the point of it.
+func (h *Handler) HandleSubmitCalloutOffer(w http.ResponseWriter, r *http.Request) {
+	if !h.opsAuthorized(r) {
+		writeError(w, http.StatusUnauthorized, "Ops token required")
+		return
+	}
+
+	id := r.PathValue("id")
+	var req struct {
+		Price    float64 `json:"price"`
+		Currency string  `json:"currency"`
+		ETA      string  `json:"eta"`
+		Terms    string  `json:"terms"`
+		Decline  bool    `json:"decline"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	ctx := r.Context()
+	co, err := h.store.GetCallout(ctx, id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Callout not found")
+		return
+	}
+
+	// Lazy expiry before accepting a response.
+	now := time.Now().UTC()
+	if co.Status == domain.CalloutSent && !co.ExpiresAt.IsZero() && now.After(co.ExpiresAt) {
+		co.Status = domain.CalloutExpired
+		co.RespondedAt = now
+		_ = h.store.SaveCallout(ctx, co)
+		h.recordEvent(ctx, co.MissionID, "CALLOUT_EXPIRED", "DEMAND_AGENT", map[string]string{"supplierId": co.SupplierID, "calloutId": co.ID}, "ESCALATE", "")
+		writeError(w, http.StatusGone, "Callout expired")
+		return
+	}
+
+	if co.Status != domain.CalloutSent {
+		writeError(w, http.StatusConflict, fmt.Sprintf("Callout already %s", strings.ToLower(string(co.Status))))
+		return
+	}
+
+	co.RespondedAt = now
+
+	if req.Decline {
+		co.Status = domain.CalloutDeclined
+		if err := h.store.SaveCallout(ctx, co); err != nil {
+			writeError(w, http.StatusInternalServerError, "Failed to record decline")
+			return
+		}
+		h.recordEvent(ctx, co.MissionID, "CALLOUT_DECLINED", co.SupplierID, req.Terms, "ALLOW", "")
+		writeJSON(w, http.StatusOK, co)
+		return
+	}
+
+	if req.Price <= 0 {
+		writeError(w, http.StatusBadRequest, "Price must be greater than zero (or decline the callout)")
+		return
+	}
+	currency := req.Currency
+	if currency == "" {
+		currency = "GBP"
+	}
+	eta := req.ETA
+	if eta == "" {
+		eta = "TBC"
+	}
+
+	off := &domain.Offer{
+		ID:              fmt.Sprintf("off_%s_%d", co.SupplierID, now.Unix()),
+		MissionID:       co.MissionID,
+		SupplierAgentID: co.SupplierID,
+		CalloutID:       co.ID,
+		Price:           req.Price,
+		Currency:        currency,
+		Availability:    eta,
+		Terms:           req.Terms,
+		Status:          "SUBMITTED",
+		Evidence:        []string{"concierge_intake"},
+		CreatedAt:       now,
+	}
+	if err := h.store.SaveOffer(ctx, off); err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to save offer")
+		return
+	}
+
+	co.Status = domain.CalloutOffered
+	if err := h.store.SaveCallout(ctx, co); err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to update callout")
+		return
+	}
+	h.recordEvent(ctx, co.MissionID, "QUOTE_RECEIVED", co.SupplierID, off, "ALLOW", co.ID)
+
+	// A real quote can move the mission from SOURCING into evaluation.
+	// Later quotes (mission already OFFERS_RECEIVED or beyond) are recorded
+	// and will be considered if the mission is rerouted.
+	var m *domain.Mission
+	if fresh, err := h.store.GetMission(ctx, co.MissionID); err == nil {
+		m = fresh
+		if m.Status == domain.StatusSourcing {
+			if err := domain.Transition(m, domain.StatusOffersReceived); err == nil {
+				if uerr := h.updateMissionWithRetry(ctx, m); uerr == nil {
+					h.enqueueNext(ctx, m)
+				}
+			}
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"callout": co,
+		"offer":   off,
+		"mission": m,
+	})
+}
+
+// 17. Resume stalled mission (concierge "try again", FR-6)
+// A mission escalated by the sweeper (every callout declined or expired,
+// no quotes) comes back through MANDATE_CONFIRMED, which makes the worker
+// re-run sourcing and mint fresh callouts.
+func (h *Handler) HandleResumeMission(w http.ResponseWriter, r *http.Request) {
+	if !h.opsAuthorized(r) {
+		writeError(w, http.StatusUnauthorized, "Ops token required")
+		return
+	}
+
+	id := r.PathValue("id")
+	ctx := r.Context()
+	m, err := h.store.GetMission(ctx, id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Mission not found")
+		return
+	}
+	if m.Status != domain.StatusEscalated {
+		writeError(w, http.StatusConflict, fmt.Sprintf("Only escalated missions can be resumed, current status %s", m.Status))
+		return
+	}
+
+	if err := domain.Transition(m, domain.StatusMandateConfirmed); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := h.updateMissionWithRetry(ctx, m); err != nil {
+		writeError(w, http.StatusConflict, "Mission update conflict")
+		return
+	}
+	h.recordEvent(ctx, m.ID, "MISSION_RESUMED", "CONCIERGE", "Sourcing re-run after stall", "ALLOW", "")
+	h.enqueueNext(ctx, m)
+	writeJSON(w, http.StatusOK, m)
+}
+
+// 17. Concierge Supplier Onboarding
+// Registers a verified supplier into the bookable roster. A human has
+// already run the find-and-verify playbook (docs/SUPPLY-SIDE.md) and this
+// records the outcome: the supplier takes real callouts from here on.
+func (h *Handler) HandleOnboardSupplier(w http.ResponseWriter, r *http.Request) {
+	if !h.opsAuthorized(r) {
+		writeError(w, http.StatusUnauthorized, "Ops token required")
+		return
+	}
+
+	var req struct {
+		ID               string   `json:"id"`
+		DisplayName      string   `json:"displayName"`
+		Contact          string   `json:"contact"`
+		Capabilities     []string `json:"capabilities"`
+		PostalDistrict   string   `json:"postalDistrict"`
+		RadiusKM         float64  `json:"radiusKm"`
+		Availability     string   `json:"availability"`
+		ReliabilityScore float64  `json:"reliabilityScore"`
+		PriceTier        string   `json:"priceTier"`
+		Evidence         []string `json:"evidence"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	if strings.TrimSpace(req.DisplayName) == "" || strings.TrimSpace(req.PostalDistrict) == "" || strings.TrimSpace(req.Contact) == "" {
+		writeError(w, http.StatusBadRequest, "displayName, postalDistrict and contact are required")
+		return
+	}
+	if len(req.Capabilities) == 0 {
+		writeError(w, http.StatusBadRequest, "capabilities is required")
+		return
+	}
+
+	now := time.Now().UTC()
+	if req.ID == "" {
+		req.ID = fmt.Sprintf("sup_concierge_%d", now.UnixNano())
+	}
+	if req.Availability == "" {
+		req.Availability = "TBC"
+	}
+	if req.PriceTier == "" {
+		req.PriceTier = "STANDARD"
+	}
+	if req.RadiusKM == 0 {
+		req.RadiusKM = 10
+	}
+	if req.ReliabilityScore == 0 {
+		// New suppliers start modest; completed jobs move the score.
+		req.ReliabilityScore = 0.5
+	}
+
+	sup := &domain.Supplier{
+		ID:               req.ID,
+		PrincipalType:    "supplier_agent",
+		DisplayName:      strings.TrimSpace(req.DisplayName),
+		Capabilities:     req.Capabilities,
+		ServiceArea:      domain.ServiceArea{PostalDistrict: strings.TrimSpace(req.PostalDistrict), RadiusKM: req.RadiusKM},
+		Availability:     req.Availability,
+		ReliabilityScore: req.ReliabilityScore,
+		PriceTier:        req.PriceTier,
+		Evidence:         req.Evidence,
+		Status:           "ACTIVE",
+		Verified:         true,
+		Contact:          strings.TrimSpace(req.Contact),
+		Source:           "CONCIERGE",
+		OnboardedAt:      now,
+	}
+
+	if err := h.store.SaveSupplier(r.Context(), sup); err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to save supplier")
+		return
+	}
+	log.Printf("[Ops] Onboarded verified supplier %s (%s) in %s", sup.ID, sup.DisplayName, sup.ServiceArea.PostalDistrict)
+	writeJSON(w, http.StatusCreated, sup)
 }
 
 func (h *Handler) scheduleMilestone(ctx context.Context, m *domain.Mission) {

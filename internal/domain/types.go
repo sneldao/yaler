@@ -84,6 +84,40 @@ type Supplier struct {
 	PriceTier        string      `json:"priceTier" firestore:"priceTier"`
 	Evidence         []string    `json:"evidence" firestore:"evidence"`
 	Status           string      `json:"status" firestore:"status"`
+	// Verified is true only after a human has checked the supplier
+	// (register lookup + capability/capacity confirmation). Only verified
+	// suppliers take real callouts; unverified (synthetic) roster suppliers
+	// receive labelled simulated quotes so the demo stays runnable.
+	Verified    bool      `json:"verified" firestore:"verified"`
+	Contact     string    `json:"contact,omitempty" firestore:"contact"`
+	Source      string    `json:"source,omitempty" firestore:"source"` // SEED, CONCIERGE, PORTAL
+	OnboardedAt time.Time `json:"onboardedAt,omitempty" firestore:"onboardedAt"`
+}
+
+// CalloutStatus is the lifecycle of a supplier callout.
+type CalloutStatus string
+
+const (
+	CalloutSent     CalloutStatus = "SENT"     // sent to supplier (or concierge), awaiting response
+	CalloutOffered  CalloutStatus = "OFFERED"  // a quote was recorded
+	CalloutDeclined CalloutStatus = "DECLINED" // supplier cannot take the job
+	CalloutExpired  CalloutStatus = "EXPIRED"  // passed ExpiresAt without a response
+)
+
+// Callout is a scoped job request sent to a specific supplier for a mission.
+// It is the supply-side request that a real offer responds to.
+type Callout struct {
+	ID          string        `json:"id" firestore:"id"`
+	MissionID   string        `json:"missionId" firestore:"missionId"`
+	SupplierID  string        `json:"supplierId" firestore:"supplierId"`
+	Status      CalloutStatus `json:"status" firestore:"status"`
+	Message     string        `json:"message" firestore:"message"`
+	SentAt      time.Time     `json:"sentAt" firestore:"sentAt"`
+	ExpiresAt   time.Time     `json:"expiresAt" firestore:"expiresAt"`
+	RespondedAt time.Time     `json:"respondedAt,omitempty" firestore:"respondedAt"`
+	// Simulated is true when the roster supplier is synthetic and the system
+	// auto-generated a labelled quote instead of waiting for a real response.
+	Simulated bool `json:"simulated" firestore:"simulated"`
 }
 
 // Offer represents a proposal submitted by a supplier agent.
@@ -91,6 +125,7 @@ type Offer struct {
 	ID              string    `json:"id" firestore:"id"`
 	MissionID       string    `json:"missionId" firestore:"missionId"`
 	SupplierAgentID string    `json:"supplierAgentId" firestore:"supplierAgentId"`
+	CalloutID       string    `json:"calloutId,omitempty" firestore:"calloutId"`
 	Price           float64   `json:"price" firestore:"price"`
 	Currency        string    `json:"currency" firestore:"currency"`
 	Availability    string    `json:"availability" firestore:"availability"`
@@ -100,6 +135,9 @@ type Offer struct {
 	Evidence        []string  `json:"evidence" firestore:"evidence"`
 	Status          string    `json:"status" firestore:"status"` // SUBMITTED, ACCEPTED, REJECTED, COUNTERED
 	CreatedAt       time.Time `json:"createdAt" firestore:"createdAt"`
+	// Simulated is true for quotes generated against the synthetic roster.
+	// Simulated offers are clearly labelled and never presented as real quotes.
+	Simulated bool `json:"simulated" firestore:"simulated"`
 }
 
 // Milestone represents a required execution step and evidence requirement.

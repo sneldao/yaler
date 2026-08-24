@@ -73,6 +73,23 @@ func main() {
 	// 5. Initialize Handler
 	h := handler.NewHandler(st, pe, gc, tc)
 
+	// Concierge sweeper: periodically escalate sourcing missions whose
+	// callouts all declined or expired without a single quote (FR-6). An
+	// in-process ticker is honest for the current single-instance shape;
+	// swap for a Cloud Tasks cron when the durable queue lands.
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				h.SweepStalledSourcing(ctx)
+			}
+		}
+	}()
+
 	mux := http.NewServeMux()
 	h.RegisterRoutes(mux)
 

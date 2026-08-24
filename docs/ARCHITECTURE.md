@@ -158,6 +158,10 @@ agents/{agentId}
   availability
   evidence
   status
+  verified      # true only after human register + capability check
+  contact       # phone/WhatsApp for concierge outreach
+  source        # SEED | CONCIERGE | PORTAL
+  onboardedAt
 
 missions/{missionId}
   goal
@@ -171,11 +175,22 @@ missions/{missionId}
 
 missions/{missionId}/offers/{offerId}
   supplierAgentId
+  calloutId     # traceability: offer must map to a callout
   price
   availability
   terms
   evidence
   status
+  simulated     # true for synthetic-roster quotes (clearly labelled)
+
+missions/{missionId}/callouts/{calloutId}
+  supplierId
+  status        # SENT | OFFERED | DECLINED | EXPIRED
+  message       # deterministic scoped ask drafted for the concierge
+  sentAt
+  expiresAt
+  respondedAt
+  simulated     # true for synthetic-roster callouts
 
 missions/{missionId}/milestones/{milestoneId}
   description
@@ -200,6 +215,33 @@ proofReceipts/{receiptId}
 ```
 
 Firestore is preferred because mission state and event timelines are document-oriented and quick to evolve. Move to Cloud SQL only if search, reporting, or relational complexity becomes a demonstrated bottleneck.
+
+## Supply side (concierge wedge)
+
+The supply side runs as a human-in-the-loop concierge wedge (see
+`docs/SUPPLY-SIDE.md` for the full runbook):
+
+- The worker never fabricates offers. On SOURCING it creates one `Callout`
+  per matching ACTIVE supplier, each with a deterministic kitchen-English
+  message (scope, budget, deadline, district).
+- **Verified** suppliers (`agent.verified = true`, set only after a human
+  register lookup + capability/capacity check) take real callouts: the
+  mission waits in SOURCING until the concierge enters the supplier's quote
+  via `POST /api/callouts/{id}/offer` (or records a decline).
+- **Unverified** roster suppliers (the synthetic seed) get auto-generated
+  simulated quotes labelled `simulated: true` with terms
+  "Simulated quote - synthetic roster, not a real offer", so the demo stays
+  runnable with an empty real roster.
+- Concierge endpoints (`/api/callouts/{id}/offer`, `/api/suppliers/onboard`)
+  honour `OPS_TOKEN` (header `X-Ops-Token`) when set; open in local demo.
+- Callouts expire lazily after 4h (checked on list/answer). An in-process
+  sweeper (`SweepStalledSourcing`, 15s ticker in `cmd/server`) expires
+  past-due callouts and escalates any SOURCING mission whose callouts are
+  all DECLINED/EXPIRED with no offers (FR-6). A Cloud Tasks cron is the
+  production shape for the sweeper once the durable queue lands.
+
+Worker durability is still pending (see below) — the concierge loop is
+built, but the fire-and-forget goroutine remains the known weakness.
 
 ## Asynchronous execution
 

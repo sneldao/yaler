@@ -39,6 +39,11 @@ type Store interface {
 	ListMilestones(ctx context.Context, missionID string) ([]*domain.Milestone, error)
 	UpdateMilestone(ctx context.Context, ms *domain.Milestone) error
 
+	// Callouts
+	SaveCallout(ctx context.Context, c *domain.Callout) error
+	GetCallout(ctx context.Context, id string) (*domain.Callout, error)
+	ListCallouts(ctx context.Context, missionID string) ([]*domain.Callout, error)
+
 	// Proof Receipts
 	SaveProofReceipt(ctx context.Context, receipt *domain.ProofReceipt) error
 	GetProofReceipt(ctx context.Context, id string) (*domain.ProofReceipt, error)

@@ -252,6 +252,52 @@ func (s *FirestoreStore) UpdateMilestone(ctx context.Context, ms *domain.Milesto
 	return s.SaveMilestone(ctx, ms)
 }
 
+func (s *FirestoreStore) SaveCallout(ctx context.Context, c *domain.Callout) error {
+	docRef := s.client.Collection("missions").Doc(c.MissionID).Collection("callouts").Doc(c.ID)
+	_, err := docRef.Set(ctx, c)
+	return err
+}
+
+func (s *FirestoreStore) GetCallout(ctx context.Context, id string) (*domain.Callout, error) {
+	// Callouts live in per-mission subcollections and the interface only
+	// takes the callout ID, so resolve it with a collection-group query on
+	// the auto-indexed `id` field.
+	iter := s.client.CollectionGroup("callouts").Where("id", "==", id).Limit(1).Documents(ctx)
+	defer iter.Stop()
+	doc, err := iter.Next()
+	if err == iterator.Done {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	var c domain.Callout
+	if err := doc.DataTo(&c); err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+func (s *FirestoreStore) ListCallouts(ctx context.Context, missionID string) ([]*domain.Callout, error) {
+	iter := s.client.Collection("missions").Doc(missionID).Collection("callouts").Documents(ctx)
+	defer iter.Stop()
+	list := make([]*domain.Callout, 0)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		var c domain.Callout
+		if err := doc.DataTo(&c); err == nil {
+			list = append(list, &c)
+		}
+	}
+	return list, nil
+}
+
 func (s *FirestoreStore) SaveProofReceipt(ctx context.Context, receipt *domain.ProofReceipt) error {
 	docRef := s.client.Collection("proofReceipts").Doc(receipt.ID)
 	_, err := docRef.Set(ctx, receipt)

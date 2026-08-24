@@ -81,6 +81,73 @@ export interface Supplier {
   priceTier: string;
   evidence: string[];
   status: string;
+  verified?: boolean;
+  contact?: string;
+  source?: string;
+}
+
+export type CalloutStatus = 'SENT' | 'OFFERED' | 'DECLINED' | 'EXPIRED';
+
+export interface Callout {
+  id: string;
+  missionId: string;
+  supplierId: string;
+  status: CalloutStatus;
+  message: string;
+  sentAt: string;
+  expiresAt: string;
+  respondedAt?: string;
+  simulated: boolean;
+}
+
+export interface CalloutOfferResult {
+  callout: Callout;
+  offer: Offer;
+  mission: Mission | null;
+}
+
+export async function listCallouts(missionId: string): Promise<Callout[]> {
+  const res = await fetch(`${API_BASE}/api/missions/${missionId}/callouts`);
+  if (!res.ok) throw new Error('Failed to list callouts');
+  return res.json();
+}
+
+export async function submitCalloutOffer(calloutId: string, body: { price?: number; currency?: string; eta?: string; terms?: string; decline?: boolean }): Promise<CalloutOfferResult> {
+  const res = await fetch(`${API_BASE}/api/callouts/${calloutId}/offer`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(import.meta.env.PUBLIC_OPS_TOKEN ? { 'X-Ops-Token': import.meta.env.PUBLIC_OPS_TOKEN } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    throw new Error(`Failed to submit quote (${res.status})${err ? `: ${err}` : ''}`);
+  }
+  return res.json();
+}
+
+export async function onboardSupplier(input: {
+  displayName: string;
+  contact: string;
+  postalDistrict: string;
+  radiusKm?: number;
+  capabilities: string[];
+  priceTier?: string;
+  availability?: string;
+  evidence?: string[];
+}): Promise<Supplier> {
+  const res = await fetch(`${API_BASE}/api/suppliers/onboard`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(import.meta.env.PUBLIC_OPS_TOKEN ? { 'X-Ops-Token': import.meta.env.PUBLIC_OPS_TOKEN } : {}),
+    },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error('Failed to onboard supplier');
+  return res.json();
 }
 
 export async function createMission(goal: string, buyerId = 'buyer_london_cafe_1'): Promise<Mission> {

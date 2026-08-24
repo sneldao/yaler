@@ -16,6 +16,7 @@ type MemoryStore struct {
 	events        map[string][]*domain.Event
 	suppliers     map[string]*domain.Supplier
 	milestones    map[string][]*domain.Milestone
+	callouts      map[string]*domain.Callout
 	proofReceipts map[string]*domain.ProofReceipt
 }
 
@@ -27,6 +28,7 @@ func NewMemoryStore() *MemoryStore {
 		events:        make(map[string][]*domain.Event),
 		suppliers:     make(map[string]*domain.Supplier),
 		milestones:    make(map[string][]*domain.Milestone),
+		callouts:      make(map[string]*domain.Callout),
 		proofReceipts: make(map[string]*domain.ProofReceipt),
 	}
 }
@@ -209,6 +211,38 @@ func (s *MemoryStore) ListMilestones(ctx context.Context, missionID string) ([]*
 
 func (s *MemoryStore) UpdateMilestone(ctx context.Context, ms *domain.Milestone) error {
 	return s.SaveMilestone(ctx, ms)
+}
+
+func (s *MemoryStore) SaveCallout(ctx context.Context, c *domain.Callout) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	cp := *c
+	s.callouts[c.ID] = &cp
+	return nil
+}
+
+func (s *MemoryStore) GetCallout(ctx context.Context, id string) (*domain.Callout, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	c, exists := s.callouts[id]
+	if !exists {
+		return nil, ErrNotFound
+	}
+	cp := *c
+	return &cp, nil
+}
+
+func (s *MemoryStore) ListCallouts(ctx context.Context, missionID string) ([]*domain.Callout, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	res := make([]*domain.Callout, 0)
+	for _, c := range s.callouts {
+		if c.MissionID == missionID {
+			cp := *c
+			res = append(res, &cp)
+		}
+	}
+	return res, nil
 }
 
 func (s *MemoryStore) SaveProofReceipt(ctx context.Context, receipt *domain.ProofReceipt) error {
