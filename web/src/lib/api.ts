@@ -150,6 +150,24 @@ export async function onboardSupplier(input: {
   return res.json();
 }
 
+// Resume a stalled mission: an ESCALATED mission moves back to
+// MANDATE_CONFIRMED and re-runs sourcing with fresh callouts (FR-6).
+export async function resumeMission(missionId: string): Promise<Mission> {
+  const res = await fetch(`${API_BASE}/api/missions/${missionId}/resume`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(import.meta.env.PUBLIC_OPS_TOKEN ? { 'X-Ops-Token': import.meta.env.PUBLIC_OPS_TOKEN } : {}),
+    },
+    body: '{}',
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    throw new Error(`Failed to resume mission (${res.status})${err ? `: ${err}` : ''}`);
+  }
+  return res.json();
+}
+
 export async function createMission(goal: string, buyerId = 'buyer_london_cafe_1'): Promise<Mission> {
   const res = await fetch(`${API_BASE}/api/missions`, {
     method: 'POST',

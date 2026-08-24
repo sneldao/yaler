@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { listCallouts, listMissions, listSuppliers, onboardSupplier, submitCalloutOffer, type Callout, type Mission, type Supplier } from '../../lib/api';
+import { listCallouts, listMissions, listSuppliers, onboardSupplier, resumeMission, submitCalloutOffer, type Callout, type Mission, type Supplier } from '../../lib/api';
 
 /**
  * OpsConsole — the concierge's cockpit (internal tool, linked from docs/SUPPLY-SIDE.md).
@@ -14,10 +14,12 @@ import { listCallouts, listMissions, listSuppliers, onboardSupplier, submitCallo
  */
 
 const ACTIVE_STATUSES = new Set(['SOURCING', 'OFFERS_RECEIVED']);
+const ESCALATED_STATUS = 'ESCALATED';
 
 const STATUS_LABEL: Record<string, string> = {
   SOURCING: 'Sourcing — waiting for quotes',
   OFFERS_RECEIVED: 'Quotes in — evaluating',
+  ESCALATED: 'Escalated — needs action',
 };
 
 const CALLOUT_LABEL: Record<string, string> = {
@@ -191,6 +193,54 @@ function CalloutCard({ row, budget, onChanged }: { row: CalloutRow; budget: numb
   );
 }
 
+// An escalated mission is the sweeper's output: every callout declined or
+// expired, no quotes. The concierge's move is to re-run sourcing (fresh
+// callouts go out to the current roster) or onboard someone new first.
+function EscalatedCard({ mission, onChanged }: { mission: Mission; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const resume = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      await resumeMission(mission.id);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to resume mission');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="paper-card rounded-xl p-4 space-y-2 border-l-2 border-l-escalate">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-ink truncate">{mission.goal}</p>
+          <p className="text-[11px] text-ink-muted">
+            {mission.mandate.serviceArea.postalDistrict} · budget {formatGBP(mission.mandate.budget.maxAmount)} · {mission.id}
+          </p>
+        </div>
+        <span className="text-[10px] text-escalate font-medium whitespace-nowrap">{STATUS_LABEL[mission.status]}</span>
+      </div>
+      <p className="text-[11px] text-ink-muted leading-relaxed">
+        Every supplier declined or timed out with no quote. Re-run sourcing to send fresh callouts to the current roster, or onboard a new verified supplier first.
+      </p>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={resume}
+          disabled={busy}
+          className="btn-primary text-xs py-2 px-3 disabled:opacity-60"
+        >
+          {busy ? 'Re-running…' : 'Re-run sourcing'}
+        </button>
+        {error && <span className="text-[11px] text-escalate">{error}</span>}
+      </div>
+    </div>
+  );
+}
+
 function OnboardForm({ onChanged }: { onChanged: () => void }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -280,9 +330,9 @@ export default function OpsConsole() {
         setSuppliers(Object.fromEntries(sups.map((s) => [s.id, s])));
         setError('');
 
-        const active = ms.filter((m) => ACTIVE_STATUSES.has(m.status));
+        const actionable = ms.filter((m) => ACTIVE_STATUSES.has(m.status) || m.status === ESCALATED_STATUS);
         const perMission = await Promise.all(
-          active.map(async (m) => [m.id, await listCallouts(m.id)] as const)
+          actionable.map(async (m) => [m.id, await listCallouts(m.id)] as const)
         );
         if (cancelled) return;
         setCalloutsByMission(Object.fromEntries(perMission));
@@ -302,6 +352,7 @@ export default function OpsConsole() {
   }, [refreshKey]);
 
   const active = useMemo(() => missions.filter((m) => ACTIVE_STATUSES.has(m.status)), [missions]);
+  const escalated = useMemo(() => missions.filter((m) => m.status === ESCALATED_STATUS), [missions]);
 
   return (
     <div className="space-y-4">
@@ -311,11 +362,30 @@ export default function OpsConsole() {
 
       {loading && <p className="text-xs text-ink-muted">Loading the desk…</p>}
 
-      {!loading && active.length === 0 && (
+      {!loading && active.length === 0 && escalated.length === 0 && (
         <div className="paper-card rounded-2xl p-6 text-center space-y-2">
           <p className="text-ink font-medium">No jobs waiting on a quote right now</p>
           <p className="text-xs text-ink-muted">When a mission reaches sourcing, its callouts appear here. This page refreshes itself every 10s.</p>
           <a href="/missions/new" className="btn-secondary text-xs py-2 px-3 inline-block">Start a job</a>
+        </div>
+      )}
+
+      {escalated.length > 0 && (
+        <div className="space-y-2.5">
+          <p className="text-xs uppercase tracking-wider text-escalate font-medium">Escalated — needs action ({escalated.length})</p>
+          {escalated.map((m) => {
+            const callouts = calloutsByMission[m.id] ?? [];
+            return (
+              <div key={m.id} className="space-y-1.5">
+                <EscalatedCard mission={m} onChanged={refresh} />
+                {callouts.length > 0 && (
+                  <p className="text-[11px] text-ink-muted pl-2">
+                    {callouts.filter(c => c.status === 'DECLINED').length} declined · {callouts.filter(c => c.status === 'EXPIRED').length} expired
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
