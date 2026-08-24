@@ -1,11 +1,144 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { type Mission, getMission } from '../../lib/api';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { type Mission, getMission, listMissions } from '../../lib/api';
 import MandateEditor from './MandateEditor';
 import MissionTimeline from './MissionTimeline';
 import OfferComparison from './OfferComparison';
 
 interface Props {
   initialMissionId?: string;
+}
+
+/**
+ * LiveWatchBar — gives a mission page the identity of a *live job*.
+ * A pulsing LIVE chip (only while the mission is active), an elapsed
+ * clock since the mission was created, and a copy-able share link so
+ * anyone can watch the job unfold. Same paper/receipt craft as the
+ * rest of the surface.
+ */
+function LiveWatchBar({ mission }: { mission: Mission }) {
+  const [copied, setCopied] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const active = mission.status !== 'COMPLETED' && mission.status !== 'CANCELLED';
+
+  useEffect(() => {
+    if (!active) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [active]);
+
+  const elapsedMs = Math.max(0, new Date(mission.createdAt).getTime() - now);
+  const elapsedMin = Math.floor(elapsedMs / 60000);
+  const elapsedSec = Math.floor((elapsedMs % 60000) / 1000);
+  const elapsedLabel = elapsedMin > 0
+    ? `elapsed ${elapsedMin}m ${String(elapsedSec).padStart(2, '0')}s`
+    : `elapsed ${elapsedSec}s`;
+
+  const copyLink = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      /* fallback: ignore */
+    }
+  };
+
+  return (
+    <div className="paper-card rounded-2xl px-4 py-3 flex items-center justify-between gap-3 animate-pop-in">
+      <div className="flex items-center gap-2.5 min-w-0">
+        {active ? (
+          <>
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-escalate opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-escalate" />
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-escalate">LIVE</span>
+            <span className="text-xs text-ink-muted tabular-nums truncate">{elapsedLabel}</span>
+          </>
+        ) : (
+          <>
+            <span className="h-2 w-2 rounded-full bg-mandate shrink-0" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-mandate">DONE</span>
+            <span className="text-xs text-ink-muted">Job finished</span>
+          </>
+        )}
+      </div>
+
+      {active && (
+        <button
+          type="button"
+          onClick={copyLink}
+          className="text-[11px] text-ink-muted hover:text-ink transition-colors flex items-center gap-1.5 shrink-0"
+        >
+          {copied ? (
+            <>
+              <span className="text-mandate">✓</span> Link copied
+            </>
+          ) : (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Copy watch link
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * LiveStrip — honest social proof: shows other real jobs currently in
+ * flight on the roster (fetched from listMissions, not a synthetic
+ * ticker). Only renders when there is at least one other active job.
+ */
+function LiveStrip({ mission }: { mission: Mission }) {
+  const [others, setOthers] = useState<Mission[]>([]);
+  const fetched = useRef(false);
+
+  useEffect(() => {
+    if (fetched.current) return;
+    fetched.current = true;
+    listMissions()
+      .then((list) => {
+        const activeOthers = (Array.isArray(list) ? list : [])
+          .filter(m => m.id !== mission.id)
+          .filter(m => m.status !== 'COMPLETED' && m.status !== 'CANCELLED');
+        setOthers(activeOthers.slice(0, 3));
+      })
+      .catch(() => setOthers([]));
+  }, [mission.id]);
+
+  if (others.length === 0) return null;
+
+  return (
+    <div className="paper-card rounded-2xl px-4 py-3 space-y-2 animate-pop-in">
+      <p className="text-[10px] uppercase tracking-wider text-ink-muted">Other jobs in progress right now</p>
+      <div className="flex flex-col gap-1.5">
+        {others.map((m) => (
+          <a
+            key={m.id}
+            href={`/missions/${m.id}`}
+            className="flex items-center gap-2 group"
+          >
+            <span className="relative flex h-1.5 w-1.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mandate opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-mandate" />
+            </span>
+            <span className="text-xs text-ink group-hover:text-mandate transition-colors truncate">
+              {m.goal}
+            </span>
+            <span className="text-[10px] text-ink-muted shrink-0">
+              {m.status === 'SOURCING' ? 'sourcing' : m.status === 'OFFERS_RECEIVED' ? 'comparing quotes' : m.status === 'COMMITTED' ? 'booked' : 'active'}
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function MissionDetailWrapper({ initialMissionId }: Props) {
@@ -122,17 +255,21 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
 
   return (
     <div className="space-y-6 animate-fade-up">
-      {mission.status === 'DRAFT' ? (
+      {(mission.status === 'DRAFT' ? (
         <MandateEditor
           initialMission={mission}
           onStarted={(next) => setMission(next)}
         />
       ) : (
         <>
+          <LiveWatchBar mission={mission} />
           <MissionTimeline missionId={mission.id} />
           <OfferComparison missionId={mission.id} missionStatus={mission.status} />
         </>
-      )}
+      ))}
+      {(mission.status !== 'DRAFT' && (
+        <LiveStrip mission={mission} />
+      ))}
     </div>
   );
 }
