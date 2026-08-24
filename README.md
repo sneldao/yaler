@@ -70,11 +70,13 @@ Install the commit-time system hooks once: `brew install gitleaks`.
 ## 🚀 Key Frontiers Built
 
 1. **🎬 N1 fridge rehearsal**: Speak last Tuesday’s job, feel the over-budget stop, hear the paper. Nothing is booked.
-2. **⚡ Gemini 2.5 Mandate Engine**: Converts messy speech/text into structured policy mandates with budget ceilings and SLAs.
+2. **⚡ Gemini 2.5 Mandate Engine**: Converts messy speech/text into structured policy mandates with budget ceilings and SLAs. Surfaces as a branded callout when active.
 3. **🤝 Agent-to-Agent (A2A) Protocol**: Standardized JSON-RPC 2.0 endpoint (`/api/a2a`) — protocol-ready, signature verification in progress (see `docs/A2A-PROTOCOL.md`).
 4. **🛡️ Go Policy Guardrails**: Enforces hard budget ceilings, geographic postal boundaries, and mandatory safety escalations.
 5. **☁️ Real Cloud Tasks Queue**: Production durable queue with OIDC auth to Cloud Run; local dev uses a labelled direct call (`CLOUD_TASKS_EMULATOR` flag).
-6. **🔒 Zero-Knowledge Proof Receipts**: Gemini-verified evidence with automated PII privacy redaction, plus the buyer's rating on the receipt.
+6. **🔒 Animated Proof Receipts**: Gemini-verified evidence with automated PII privacy redaction, the buyer's rating, a thermal-print animation, a verified stamp, and fold lines — the thing people share.
+7. **🔮 Live Sponsor Callouts**: Every sponsor API (Gemini, Vapi, Exa, Apify, ElevenLabs) surfaces as a branded, color-coded callout when it fires — visible in the mission flow, in the timeline, and in the footer. The full stack is visible at a glance.
+8. **📍 District-Agnostic**: A district picker on the home page lets any UK postcode work. N1/Cafe Noor is the default rehearsal story, but the product isn't London-locked.
 
 ---
 

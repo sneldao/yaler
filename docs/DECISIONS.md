@@ -194,6 +194,24 @@
 
 **Reason:** The brand doc (D023) warns against undermining the trust product with conflation. Letting simulated and real quotes look identical, or leaving the cold-start state undocumented in the concierge's own tool, would do exactly that.
 
+### D033 — Sponsor APIs are surfaced as branded callouts, not hidden plumbing
+
+**Decision:** Every sponsor technology (Gemini, Vapi, Exa, Apify, ElevenLabs) fires as a visible `SponsorCallout` card — a branded, color-coded thinking card showing which API is working, what it does, and its live status. A compact `SponsorRail` in the footer and inside the mission timeline shows the full stack at a glance, with the active sponsor lit up per mission stage. This is deliberate and visible, not incidental.
+
+**Reason:** Hackathon judges explicitly score "Use of sponsor tools" and there are dedicated prize tracks for Vapi, Apify, and ElevenLabs. Hiding the APIs as invisible plumbing was leaving the most points on the table. The product's credibility also comes from showing *which* AI does *what* at each step — Gemini proposes, Go decides; Vapi listens, Exa finds, Apify verifies, ElevenLabs reads. Making this visible is both a scoring lever and a trust signal.
+
+### D034 — The receipt is the People's Choice artifact
+
+**Decision:** The proof receipt is the visual centerpiece for People's Choice voting. It has a thermal-print animation (slides out of a slot), a verified stamp that thuds down with rotation and blur, fold lines that fade in, and the buyer's rating. It is designed to be shared.
+
+**Reason:** People's Choice is a popular vote — people vote for what looks impressive in a 90-second skim. The paper/receipt aesthetic is beautiful but quiet. The animated receipt turns the completion artifact into a shareable, tangible object that pops in a demo. This does not conflict with D023 (paper, not chatbot) — it elevates the paper.
+
+### D035 — District-agnostic, not London-locked
+
+**Decision:** The home page has a district picker (defaults to N1, stored in localStorage). Any UK postcode works. The N1/Cafe Noor story remains the default rehearsal, but the product is not hardcoded to one postcode. This supersedes the London-only reading of D001 for the UI layer — the *pilot* is still London; the *product* works anywhere.
+
+**Reason:** The SF hackathon audience has no N1 empathy. But the fix isn't adding SF (D024 is right — a second city widens the cold start). The fix is making the product district-agnostic so any audience can feel it, while keeping the universal story (a fridge dying before breakfast) as the default. The story is the agent, not the postcode.
+
 ---
 
 ## Open questions

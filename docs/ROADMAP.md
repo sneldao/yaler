@@ -85,6 +85,15 @@ The `.kiro/` directory must demonstrate meaningful spec-driven development:
 
 ### What extends from Horizon 1
 
+- **Sponsor API surfacing built (Horizon 1):** every sponsor technology
+  (Gemini, Vapi, Exa, Apify, ElevenLabs) fires as a visible branded
+  callout when active, with a SponsorRail in the footer and timeline
+  showing the full stack at a glance.
+- **Animated receipt built (Horizon 1):** thermal-print animation,
+  verified stamp, fold lines, buyer rating — the People's Choice
+  artifact.
+- **District-agnostic built (Horizon 1):** district picker on the
+  home page, defaults to N1, any UK postcode works.
 - **Concierge wedge built (Horizon 1):** the supply side runs as a
   human-in-the-loop concierge with real `Callout` entities, a
   `POST /api/callouts/{id}/offer` quote intake, manual supplier
