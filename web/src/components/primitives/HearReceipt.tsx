@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { API_BASE } from '../../lib/api';
+import SponsorCallout from './SponsorCallout';
 
 interface Props {
   text: string;
@@ -40,8 +41,18 @@ export default function HearReceipt({ text, label = 'Hear the paper' }: Props) {
   };
 
   return (
-    <button type="button" onClick={play} disabled={loading || playing} className="btn-secondary text-xs py-2">
-      {loading ? 'Preparing…' : playing ? 'Playing…' : label}
-    </button>
+    <div className="space-y-2">
+      <button type="button" onClick={play} disabled={loading || playing} className="btn-secondary text-xs py-2">
+        {loading ? 'Preparing…' : playing ? 'Playing…' : label}
+      </button>
+      {loading && (
+        <SponsorCallout
+          sponsor="elevenlabs"
+          status="working"
+          label="Generating audio with ElevenLabs"
+          detail="ElevenLabs reads the receipt aloud — the paper, the evidence, the verdict."
+        />
+      )}
+    </div>
   );
 }

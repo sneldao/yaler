@@ -9,6 +9,7 @@ import {
   getOffers,
 } from '../../lib/api';
 import { LoaderGrid } from '../primitives/LoaderGrid';
+import SponsorCallout from '../primitives/SponsorCallout';
 import { formatMoney, supplierLabel } from '../../lib/copy';
 
 interface Props {
@@ -52,6 +53,7 @@ export default function OfferComparison({
   const [message, setMessage] = useState<string | null>(null);
   const [found, setFound] = useState<FoundEngineer[]>([]);
   const [credentials, setCredentials] = useState<Record<string, CredentialCheck>>({});
+  const [checkingCreds, setCheckingCreds] = useState(false);
 
   useEffect(() => {
     if (offersProp) {
@@ -79,6 +81,7 @@ export default function OfferComparison({
     const names = offers.map((o) => o.supplierAgentId).filter(Boolean);
     if (names.length === 0) return;
     let cancelled = false;
+    setCheckingCreds(true);
     Promise.all(names.map(async (name) => {
       const cred = await checkCredential(name);
       return [name, cred] as const;
@@ -87,6 +90,7 @@ export default function OfferComparison({
       const next: Record<string, CredentialCheck> = {};
       for (const [name, cred] of pairs) next[name] = cred;
       setCredentials(next);
+      setCheckingCreds(false);
     }).catch(() => undefined);
     return () => {
       cancelled = true;
@@ -138,6 +142,14 @@ export default function OfferComparison({
 
   return (
     <div className="space-y-4">
+      {checkingCreds && (
+        <SponsorCallout
+          sponsor="apify"
+          status="working"
+          label="Checking Companies House register"
+          detail="Apify scrapes the UK public register to verify each engineer is a real registered business. Fails closed to 'not checked' on any error."
+        />
+      )}
       <div className="flex items-end justify-between gap-3">
         <div>
           <h3 className="font-display text-2xl text-ink">Quotes</h3>

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Vapi from '@vapi-ai/web';
+import SponsorCallout from './SponsorCallout';
 
 const VAPI_PUBLIC_KEY = '374778cc-e3a0-4557-a9f2-3908ca8dbdbd';
 
@@ -100,19 +101,27 @@ export default function SpeakNote({ onTranscript, label = 'Speak it', className 
   const live = vapiActive || listening;
 
   return (
-    <div className={className}>
+    <div className={className + ' space-y-2'}>
       <button
         type="button"
         onClick={toggle}
         className={`px-3 py-2 rounded-xl border text-xs font-medium transition-colors ${
           live
-            ? 'bg-mandate-light text-mandate border-mandate/30'
+            ? 'bg-purple-50 text-purple-600 border-purple-200'
             : 'bg-paper text-ink border-ink/10 hover:border-ink/25'
         }`}
       >
         {live ? 'Listening… tap to stop' : label}
       </button>
-      {error && <p className="text-xs text-escalate mt-1">{error}</p>}
+      {live && (
+        <SponsorCallout
+          sponsor="vapi"
+          status="working"
+          label="Live voice call with Vapi"
+          detail="Vapi handles the real-time conversation. Ask what's broken, the district, the budget."
+        />
+      )}
+      {error && <p className="text-xs text-escalate">{error}</p>}
     </div>
   );
 }

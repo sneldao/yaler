@@ -3,6 +3,7 @@ import { navigate } from 'astro:transitions/client';
 import { createMission } from '../../lib/api';
 import { loadSavedMandate } from '../../lib/rehearsal';
 import { LoaderGrid } from '../primitives/LoaderGrid';
+import SponsorCallout from '../primitives/SponsorCallout';
 import OnboardingTooltip from '../primitives/OnboardingTooltip';
 import { getJourneyStage, playUiSound } from '../../lib/delight';
 
@@ -154,10 +155,12 @@ export default function MissionForm() {
         />
 
         {loading && (
-          <div className="flex items-center gap-2 text-sm text-ink-muted animate-pop-in">
-            <LoaderGrid />
-            <span>Reading your note and checking the budget...</span>
-          </div>
+          <SponsorCallout
+            sponsor="gemini"
+            status="working"
+            label="Extracting mandate from your note"
+            detail="Gemini reads your text and pulls out budget, area, deadline, and service category into a structured mandate you check before anything moves."
+          />
         )}
 
         {error && (
