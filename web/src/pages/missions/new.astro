@@ -100,6 +100,16 @@ function labelStatus(status) {
       </section>
     )}
 
+    {active.length === 0 && completed.length === 0 && (
+      <div class="paper-card rounded-2xl p-8 text-center space-y-3">
+        <div class="flex justify-center">
+          <span class="receipt-punch"></span>
+        </div>
+        <p class="font-display text-xl text-ink">No jobs yet</p>
+        <p class="text-xs text-ink-muted max-w-sm mx-auto leading-relaxed">Start one above — say what's broken and the agent handles the rest.</p>
+      </div>
+    )}
+
     <!-- Trust signals -->
     <div class="grid grid-cols-3 gap-3 text-center">
       <div class="paper-card rounded-xl p-3 space-y-1">

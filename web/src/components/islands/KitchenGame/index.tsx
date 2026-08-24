@@ -82,8 +82,10 @@ export default function KitchenGame() {
   return (
     <div className="relative w-full max-w-2xl mx-auto">
       {status === 'loading' && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#1a1a2e] rounded-2xl z-10">
-          <p className="text-sm text-white/60 animate-pulse">Loading Café Noor...</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#1a1a2e] rounded-2xl z-10">
+          <span className="receipt-punch" />
+          <p className="font-display text-lg text-white/80">Loading Café Noor…</p>
+          <p className="text-xs text-white/40">This should only take a moment.</p>
         </div>
       )}
 

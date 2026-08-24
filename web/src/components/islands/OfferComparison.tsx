@@ -8,6 +8,7 @@ import {
   findNearby,
   getOffers,
 } from '../../lib/api';
+import { LoaderGrid } from '../primitives/LoaderGrid';
 import { formatMoney, supplierLabel } from '../../lib/copy';
 
 interface Props {
@@ -94,11 +95,17 @@ export default function OfferComparison({
 
   if (offers.length === 0) {
     return (
-      <div className="paper-card rounded-2xl p-6 text-center space-y-2">
+      <div className="paper-card rounded-2xl p-8 text-center space-y-3 animate-pop-in">
+        <div className="flex justify-center">
+          <span className="receipt-punch" />
+        </div>
         <h3 className="font-display text-xl text-ink">Asking nearby engineers</h3>
-        <p className="text-sm text-ink-muted max-w-md mx-auto">
+        <p className="text-sm text-ink-muted max-w-md mx-auto leading-relaxed">
           We’ll bring back quotes as they come in. You don’t need to stay on this page.
         </p>
+        <div className="flex justify-center pt-1">
+          <LoaderGrid />
+        </div>
       </div>
     );
   }

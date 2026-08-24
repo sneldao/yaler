@@ -86,11 +86,14 @@ try {
         </div>
       </section>
     ) : (
-      <div class="paper-card rounded-2xl p-6 text-center space-y-2">
-        <p class="text-ink font-medium">No engineers loaded</p>
-        <p class="text-xs text-ink-muted">Start the Go backend, or <a href="/rehearsal" class="text-mandate hover:text-ink">try the rehearsal</a> for synthetic data.</p>
+      <div class="paper-card rounded-2xl p-8 text-center space-y-3">
+        <div class="flex justify-center">
+          <span class="receipt-punch"></span>
+        </div>
+        <p class="font-display text-xl text-ink">No engineers loaded</p>
+        <p class="text-xs text-ink-muted max-w-sm mx-auto leading-relaxed">Start the Go backend, or <a href="/rehearsal" class="text-mandate hover:text-ink">try the rehearsal</a> for synthetic data.</p>
       </div>
-    )}
+    )
 
     <!-- Market stats -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">

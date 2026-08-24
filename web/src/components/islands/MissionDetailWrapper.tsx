@@ -97,18 +97,24 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
 
   if (loading) {
     return (
-      <div className="paper-card rounded-2xl p-10 text-center space-y-2">
+      <div className="paper-card rounded-2xl p-8 text-center space-y-3 animate-pop-in">
+        <div className="flex justify-center">
+          <span className="receipt-punch" />
+        </div>
         <p className="font-display text-xl text-ink">Opening the job…</p>
-        <p className="text-sm text-ink-muted">This should only take a moment.</p>
+        <p className="text-xs text-ink-muted">This should only take a moment.</p>
       </div>
     );
   }
 
   if (error || !mission) {
     return (
-      <div className="paper-card rounded-2xl p-8 text-center space-y-4">
+      <div className="paper-card rounded-2xl p-8 text-center space-y-4 animate-pop-in">
+        <div className="flex justify-center">
+          <span className="receipt-punch" />
+        </div>
         <h2 className="font-display text-2xl text-ink">We couldn’t find that job</h2>
-        <p className="text-ink-muted text-sm">{error || 'It may have expired, or the link is wrong.'}</p>
+        <p className="text-ink-muted text-sm max-w-sm mx-auto">{error || 'It may have expired, or the link is wrong.'}</p>
         <a href="/" className="btn-primary inline-flex">Back home</a>
       </div>
     );
