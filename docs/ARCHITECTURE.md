@@ -206,6 +206,12 @@ missions/{missionId}/events/{eventId}
   createdAt
   idempotencyKey
 
+missions/{missionId}/feedback/{feedbackId}
+  supplierId
+  rating        # 1..5, from the buyer on mission completion
+  comment
+  createdAt
+
 proofReceipts/{receiptId}
   missionId
   summary

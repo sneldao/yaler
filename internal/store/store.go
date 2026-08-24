@@ -44,6 +44,11 @@ type Store interface {
 	GetCallout(ctx context.Context, id string) (*domain.Callout, error)
 	ListCallouts(ctx context.Context, missionID string) ([]*domain.Callout, error)
 
+	// Mission feedback (reliability loop)
+	SaveMissionFeedback(ctx context.Context, f *domain.MissionFeedback) error
+	GetMissionFeedback(ctx context.Context, missionID string) (*domain.MissionFeedback, error)
+	ListMissionFeedbackBySupplier(ctx context.Context, supplierID string) ([]*domain.MissionFeedback, error)
+
 	// Proof Receipts
 	SaveProofReceipt(ctx context.Context, receipt *domain.ProofReceipt) error
 	GetProofReceipt(ctx context.Context, id string) (*domain.ProofReceipt, error)

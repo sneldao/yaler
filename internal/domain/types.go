@@ -224,3 +224,64 @@ type ErrInvalidTransition struct {
 func (e *ErrInvalidTransition) Error() string {
 	return fmt.Sprintf("invalid state transition from %s to %s", e.From, e.To)
 }
+
+// MissionFeedback is the buyer's post-job rating of the supplier who won a
+// mission. It is the input to the reliability loop: ReliabilityScore becomes
+// a value computed from feedback history rather than a static float set at
+// onboarding. One feedback per mission.
+type MissionFeedback struct {
+	ID         string    `json:"id" firestore:"id"`
+	MissionID  string    `json:"missionId" firestore:"missionId"`
+	SupplierID string    `json:"supplierId" firestore:"supplierId"`
+	Rating     int       `json:"rating" firestore:"rating"` // 1..5
+	Comment    string    `json:"comment,omitempty" firestore:"comment,omitempty"`
+	CreatedAt  time.Time `json:"createdAt" firestore:"createdAt"`
+}
+
+// ReliabilityFromFeedback computes a 0..1 reliability score from a supplier's
+// feedback history. The formula blends the static seed (so a newly-onboarded
+// supplier with one job isn't wildly volatile) with the running average of
+// ratings, decaying toward the feedback mean as evidence accumulates:
+//
+//   - 0 jobs  => seed
+//   - 1 job   => 70% seed + 30% mean (one rating shouldn't dominate)
+//   - 5+ jobs => 20% seed + 80% mean (the track record now speaks)
+//
+// Between 1 and 5 jobs the weight ramps linearly. Ratings are 1..5 mapped
+// to 0..1 as (rating-1)/4 so a 5 is 1.0 and a 1 is 0.0.
+func ReliabilityFromFeedback(seed float64, feedback []*MissionFeedback) float64 {
+	if len(feedback) == 0 {
+		return seed
+	}
+	var sum float64
+	for _, f := range feedback {
+		if f.Rating < 1 {
+			f.Rating = 1
+		}
+		if f.Rating > 5 {
+			f.Rating = 5
+		}
+		sum += float64(f.Rating-1) / 4.0
+	}
+	mean := sum / float64(len(feedback))
+
+	// weight of the feedback mean ramps from 0.3 (1 job) to 0.8 (5+ jobs).
+	var w float64
+	switch n := len(feedback); {
+	case n >= 5:
+		w = 0.8
+	case n == 1:
+		w = 0.3
+	default:
+		w = 0.3 + 0.5*float64(n-1)/4.0
+	}
+	score := seed*(1-w) + mean*w
+	// clamp
+	if score < 0 {
+		return 0
+	}
+	if score > 1 {
+		return 1
+	}
+	return score
+}

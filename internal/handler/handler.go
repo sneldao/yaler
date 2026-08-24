@@ -53,6 +53,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/missions/{id}/approve", h.HandleApproveException)
 	mux.HandleFunc("POST /api/missions/{id}/cancel", h.HandleCancelMission)
 	mux.HandleFunc("POST /api/missions/{id}/evidence", h.HandleSubmitEvidence)
+	mux.HandleFunc("POST /api/missions/{id}/feedback", h.HandleSubmitFeedback)
 	mux.HandleFunc("GET /api/missions/{id}/receipt", h.HandleGetReceipt)
 	mux.HandleFunc("GET /api/receipts/share/{token}", h.HandleGetReceiptByToken)
 	mux.HandleFunc("GET /api/suppliers", h.HandleListSuppliers)
@@ -464,6 +465,78 @@ func (h *Handler) HandleSubmitEvidence(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"mission":  m,
 		"evidence": eval,
+	})
+}
+
+// 11a. Submit Post-Job Feedback (reliability loop)
+// Records the buyer's rating of the supplier who won a COMPLETED mission.
+// Recomputes ReliabilityScore from the supplier's full feedback history so
+// the score becomes a value earned on the job, not a static float set at
+// onboarding. One feedback per mission; re-submitting overwrites.
+func (h *Handler) HandleSubmitFeedback(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var req struct {
+		Rating  int    `json:"rating"`
+		Comment string `json:"comment"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid feedback payload")
+		return
+	}
+	if req.Rating < 1 || req.Rating > 5 {
+		writeError(w, http.StatusBadRequest, "rating must be between 1 and 5")
+		return
+	}
+
+	ctx := r.Context()
+	m, err := h.store.GetMission(ctx, id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Mission not found")
+		return
+	}
+	if m.Status != domain.StatusCompleted {
+		writeError(w, http.StatusConflict, fmt.Sprintf("Feedback only for COMPLETED missions (current: %s)", m.Status))
+		return
+	}
+	if m.SelectedSupplierID == "" {
+		writeError(w, http.StatusConflict, "No supplier was selected for this mission")
+		return
+	}
+
+	now := time.Now().UTC()
+	fb := &domain.MissionFeedback{
+		ID:         fmt.Sprintf("fb_%s", m.ID),
+		MissionID:  m.ID,
+		SupplierID: m.SelectedSupplierID,
+		Rating:     req.Rating,
+		Comment:    strings.TrimSpace(req.Comment),
+		CreatedAt:  now,
+	}
+	if err := h.store.SaveMissionFeedback(ctx, fb); err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to save feedback")
+		return
+	}
+
+	// Recompute the supplier's reliability from their full feedback history.
+	history, _ := h.store.ListMissionFeedbackBySupplier(ctx, m.SelectedSupplierID)
+	sup, err := h.store.GetSupplier(ctx, m.SelectedSupplierID)
+	if err == nil {
+		seed := sup.ReliabilityScore
+		if seed == 0 {
+			seed = 0.5 // onboarding default before any feedback
+		}
+		sup.ReliabilityScore = domain.ReliabilityFromFeedback(seed, history)
+		if err := h.store.SaveSupplier(ctx, sup); err != nil {
+			log.Printf("[Feedback] Failed to recompute reliability for %s: %v", sup.ID, err)
+		}
+	} else {
+		log.Printf("[Feedback] Selected supplier %s not found on roster: %v", m.SelectedSupplierID, err)
+	}
+
+	h.recordEvent(ctx, m.ID, "FEEDBACK_RECORDED", "BUYER", fb, "ALLOW", "")
+	writeJSON(w, http.StatusOK, map[string]any{
+		"feedback": fb,
+		"supplier": sup,
 	})
 }
 

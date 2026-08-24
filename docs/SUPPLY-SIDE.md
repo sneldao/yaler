@@ -86,6 +86,7 @@ One internal page. Not in the public nav. It:
 | POST | `/api/callouts/{id}/offer` | Record quote or decline (intake) |
 | POST | `/api/suppliers/onboard` | Register a verified ACTIVE supplier |
 | POST | `/api/missions/{id}/resume` | Re-run sourcing for an ESCALATED mission |
+| POST | `/api/missions/{id}/feedback` | Buyer rates a completed job (1..5) — recomputes the supplier's ReliabilityScore |
 
 Both mutating endpoints honor the ops guard: if `OPS_TOKEN` is set (server
 env), they require header `X-Ops-Token: <token>`; requests without it get 401.
@@ -119,3 +120,15 @@ and set `PUBLIC_OPS_TOKEN` on the frontend deploy so `/ops` keeps working.
 4. **Agent-to-agent (later)** — per-supplier auth + signature verification in
    the A2A endpoint, rate limiting. Only once real liquidity + real data
    exist. Reset until then: A2A endpoint is demo-grade, not verification.
+
+## Reliability loop (built)
+
+`ReliabilityScore` is a value **earned on the job**, not a static float set at
+onboarding. When a buyer rates a `COMPLETED` mission via
+`POST /api/missions/{id}/feedback` `{rating: 1..5, comment}`, the supplier's
+full feedback history is fetched and `ReliabilityFromFeedback` recomputes
+the score: it blends the static seed (so a newly-onboarded supplier with one
+job isn't wildly volatile) with the running mean of ratings, ramping the
+feedback weight from 30% (one job) to 80% (five+ jobs). Ratings map 1..5 to
+0..1 as `(rating-1)/4` so a 5 is 1.0 and a 1 is 0.0. The score is clamped to
+[0,1] and one bad rating can't crash a long track record.

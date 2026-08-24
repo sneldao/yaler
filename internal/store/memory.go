@@ -17,6 +17,7 @@ type MemoryStore struct {
 	suppliers     map[string]*domain.Supplier
 	milestones    map[string][]*domain.Milestone
 	callouts      map[string]*domain.Callout
+	feedback      map[string]*domain.MissionFeedback
 	proofReceipts map[string]*domain.ProofReceipt
 }
 
@@ -29,6 +30,7 @@ func NewMemoryStore() *MemoryStore {
 		suppliers:     make(map[string]*domain.Supplier),
 		milestones:    make(map[string][]*domain.Milestone),
 		callouts:      make(map[string]*domain.Callout),
+		feedback:      make(map[string]*domain.MissionFeedback),
 		proofReceipts: make(map[string]*domain.ProofReceipt),
 	}
 }
@@ -239,6 +241,38 @@ func (s *MemoryStore) ListCallouts(ctx context.Context, missionID string) ([]*do
 	for _, c := range s.callouts {
 		if c.MissionID == missionID {
 			cp := *c
+			res = append(res, &cp)
+		}
+	}
+	return res, nil
+}
+
+func (s *MemoryStore) SaveMissionFeedback(ctx context.Context, f *domain.MissionFeedback) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	cp := *f
+	s.feedback[f.MissionID] = &cp
+	return nil
+}
+
+func (s *MemoryStore) GetMissionFeedback(ctx context.Context, missionID string) (*domain.MissionFeedback, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	f, exists := s.feedback[missionID]
+	if !exists {
+		return nil, ErrNotFound
+	}
+	cp := *f
+	return &cp, nil
+}
+
+func (s *MemoryStore) ListMissionFeedbackBySupplier(ctx context.Context, supplierID string) ([]*domain.MissionFeedback, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	res := make([]*domain.MissionFeedback, 0)
+	for _, f := range s.feedback {
+		if f.SupplierID == supplierID {
+			cp := *f
 			res = append(res, &cp)
 		}
 	}

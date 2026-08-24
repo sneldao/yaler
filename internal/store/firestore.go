@@ -298,6 +298,46 @@ func (s *FirestoreStore) ListCallouts(ctx context.Context, missionID string) ([]
 	return list, nil
 }
 
+func (s *FirestoreStore) SaveMissionFeedback(ctx context.Context, f *domain.MissionFeedback) error {
+	docRef := s.client.Collection("missions").Doc(f.MissionID).Collection("feedback").Doc(f.ID)
+	_, err := docRef.Set(ctx, f)
+	return err
+}
+
+func (s *FirestoreStore) GetMissionFeedback(ctx context.Context, missionID string) (*domain.MissionFeedback, error) {
+	doc, err := s.client.Collection("missions").Doc(missionID).Collection("feedback").Doc("primary").Get(ctx)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	var f domain.MissionFeedback
+	if err := doc.DataTo(&f); err != nil {
+		return nil, err
+	}
+	return &f, nil
+}
+
+func (s *FirestoreStore) ListMissionFeedbackBySupplier(ctx context.Context, supplierID string) ([]*domain.MissionFeedback, error) {
+	// Feedback lives in per-mission subcollections, so a supplier's history
+	// is a collection-group query on the auto-indexed supplierId field.
+	iter := s.client.CollectionGroup("feedback").Where("supplierId", "==", supplierID).Documents(ctx)
+	defer iter.Stop()
+	list := make([]*domain.MissionFeedback, 0)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		var f domain.MissionFeedback
+		if err := doc.DataTo(&f); err == nil {
+			list = append(list, &f)
+		}
+	}
+	return list, nil
+}
+
 func (s *FirestoreStore) SaveProofReceipt(ctx context.Context, receipt *domain.ProofReceipt) error {
 	docRef := s.client.Collection("proofReceipts").Doc(receipt.ID)
 	_, err := docRef.Set(ctx, receipt)
