@@ -64,7 +64,7 @@ export function getGreeting(): { headline: string; subtext: string } {
       }
       return {
         headline: 'Fridge down. Say it once.',
-        subtext: 'We find a local engineer, stay inside your rules, and send a receipt when the job is done.',
+        subtext: 'An autonomous agent finds a local engineer, stays inside your budget, and sends a receipt when the job is done. 3 hours of phone calls become 15 minutes.',
       };
   }
 }

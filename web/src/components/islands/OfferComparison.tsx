@@ -209,12 +209,17 @@ export default function OfferComparison({
               {isSelected && offer.explanation && (
                 <p className="text-xs text-ink-muted mt-2">{offer.explanation}</p>
               )}
-              <p className="text-[11px] text-ink-muted mt-2">
+              <p className="text-[11px] text-ink-muted mt-2 flex items-center gap-1.5">
                 {isSimulated
                   ? 'Synthetic roster — auto-generated so the flow runs. No real engineer was asked.'
-                  : credentials[offer.supplierAgentId]?.status === 'listed'
-                    ? `${credentials[offer.supplierAgentId].register} listed · ${credentials[offer.supplierAgentId].asOf}`
-                    : 'Public register: not checked'}
+                  : (
+                    <>
+                      <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full border border-orange-200 bg-orange-50 text-orange-600 font-medium">Apify</span>
+                      {credentials[offer.supplierAgentId]?.status === 'listed'
+                        ? `${credentials[offer.supplierAgentId].register} listed · ${credentials[offer.supplierAgentId].asOf}`
+                        : 'Public register: not checked'}
+                    </>
+                  )}
               </p>
             </button>
           );
