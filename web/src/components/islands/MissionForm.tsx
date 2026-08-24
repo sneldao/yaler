@@ -127,21 +127,20 @@ export default function MissionForm() {
 
   return (
     <div className="paper-card rounded-2xl p-5 sm:p-6 space-y-5 animate-pop-in">
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div>
-          <h2 className="font-display text-2xl text-ink">What's broken?</h2>
-          <p className="text-sm text-ink-muted mt-1">
-            Speak or type it. We'll pull out the budget, area, and deadline for you to check.
-          </p>
-          {savedHint && <p className="text-xs text-mandate mt-2">{savedHint}</p>}
-        </div>
-        <Suspense fallback={null}>
-          <SpeakNote
-            className="self-start"
-            onTranscript={(text) => setGoal((prev) => (prev ? `${prev} ${text}` : text))}
-          />
-        </Suspense>
+      <div className="space-y-2">
+        <h2 className="font-display text-2xl text-ink">What's broken?</h2>
+        <p className="text-sm text-ink-muted">
+          Speak it — that's the fastest way. Or type if you prefer.
+        </p>
+        {savedHint && <p className="text-xs text-mandate mt-2">{savedHint}</p>}
       </div>
+
+      {/* Voice-first entry — Vapi is the primary input method */}
+      <Suspense fallback={null}>
+        <SpeakNote
+          onTranscript={(text) => setGoal((prev) => (prev ? `${prev} ${text}` : text))}
+        />
+      </Suspense>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <textarea
