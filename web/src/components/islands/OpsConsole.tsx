@@ -1,8 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import StatusBadge from '../primitives/StatusBadge';
 import { listCallouts, listMissions, listSuppliers, onboardSupplier, resumeMission, submitCalloutOffer, type Callout, type Mission, type Supplier } from '../../lib/api';
+import { formatMoney } from '../../lib/copy';
 
 /**
  * OpsConsole — the concierge's cockpit (internal tool, linked from docs/SUPPLY-SIDE.md).
+ *
+ * Styled to match the buyer-facing paper/receipt craft: StatusBadge for
+ * mission state, a perf-edge separator on callout cards, a live "desk open"
+ * pulse, and the same uppercase-tracked section labels + font-display rhythm
+ * as the mission timeline.
  *
  * Lists missions that are actively sourcing (SOURCING / OFFERS_RECEIVED) with
  * their callouts, lets the concierge copy a drafted callout message for
@@ -16,22 +23,12 @@ import { listCallouts, listMissions, listSuppliers, onboardSupplier, resumeMissi
 const ACTIVE_STATUSES = new Set(['SOURCING', 'OFFERS_RECEIVED']);
 const ESCALATED_STATUS = 'ESCALATED';
 
-const STATUS_LABEL: Record<string, string> = {
-  SOURCING: 'Sourcing — waiting for quotes',
-  OFFERS_RECEIVED: 'Quotes in — evaluating',
-  ESCALATED: 'Escalated — needs action',
-};
-
 const CALLOUT_LABEL: Record<string, string> = {
   SENT: 'Asked — awaiting reply',
   OFFERED: 'Quote in',
   DECLINED: 'Declined',
   EXPIRED: 'Expired',
 };
-
-function formatGBP(amount: number): string {
-  return Number.isInteger(amount) ? `£${amount}` : `£${amount.toFixed(2)}`;
-}
 
 function timeLeft(expiresAt: string): string {
   const ms = new Date(expiresAt).getTime() - Date.now();
@@ -97,25 +94,34 @@ function CalloutCard({ row, budget, onChanged }: { row: CalloutRow; budget: numb
 
   const priceNum = parseFloat(price);
   const overBudget = priceNum > 0 && priceNum > budget;
+  const isSent = callout.status === 'SENT';
 
   return (
-    <div className="paper-card rounded-xl p-3.5 space-y-2.5">
+    <div className="paper-card rounded-xl p-4 space-y-3 animate-pop-in">
+      {/* Header: supplier identity + status */}
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-ink truncate">{supplier?.displayName ?? callout.supplierId}</p>
-          <p className="text-[11px] text-ink-muted">
+        <div className="min-w-0 space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-medium text-ink truncate">{supplier?.displayName ?? callout.supplierId}</p>
             {supplier?.verified ? (
-              <span className="text-mandate font-medium">Verified · </span>
+              <span className="text-[10px] bg-mandate/10 text-mandate px-1.5 py-0.5 rounded-full border border-mandate/25 font-medium">Verified</span>
             ) : (
-              <span className="text-amber-700 font-medium">Synthetic roster · </span>
+              <span className="text-[10px] bg-ink/5 text-ink-muted px-1.5 py-0.5 rounded-full border border-ink/10">Synthetic</span>
             )}
-            {supplier?.serviceArea.postalDistrict ?? ''} · {CALLOUT_LABEL[callout.status]}
+          </div>
+          <p className="text-[11px] text-ink-muted">
+            {supplier?.serviceArea.postalDistrict ?? ''} · {CALLOUT_LABEL[callout.status] ?? callout.status}
           </p>
         </div>
-        {(callout.status === 'SENT') && (
-          <span className="text-[10px] text-escalate font-medium whitespace-nowrap">{timeLeft(callout.expiresAt)}</span>
+        {isSent && (
+          <span className={`text-[10px] font-medium whitespace-nowrap ${timeLeft(callout.expiresAt) === 'expired' ? 'text-escalate' : 'text-ink-muted'}`}>
+            {timeLeft(callout.expiresAt)}
+          </span>
         )}
       </div>
+
+      {/* Perf-edge separator — the receipt motif */}
+      <div className="receipt-perf" />
 
       {/* Drafted callout message, ready to paste into WhatsApp */}
       <div className="relative">
@@ -132,7 +138,7 @@ function CalloutCard({ row, budget, onChanged }: { row: CalloutRow; budget: numb
         <p className="text-[11px] text-escalate font-medium">Above budget — will trigger the over-budget stop at commitment.</p>
       )}
 
-      {callout.status === 'SENT' && (
+      {isSent && (
         <>
           <form onSubmit={submit} className="grid grid-cols-12 gap-1.5">
             <input
@@ -214,16 +220,17 @@ function EscalatedCard({ mission, onChanged }: { mission: Mission; onChanged: ()
   };
 
   return (
-    <div className="paper-card rounded-xl p-4 space-y-2 border-l-2 border-l-escalate">
+    <div className="paper-card rounded-xl p-4 space-y-3 border-l-2 border-l-escalate animate-pop-in">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 space-y-1">
           <p className="text-sm font-medium text-ink truncate">{mission.goal}</p>
           <p className="text-[11px] text-ink-muted">
-            {mission.mandate.serviceArea.postalDistrict} · budget {formatGBP(mission.mandate.budget.maxAmount)} · {mission.id}
+            {mission.mandate.serviceArea.postalDistrict} · {formatMoney(mission.mandate.budget.maxAmount)} · {mission.id}
           </p>
         </div>
-        <span className="text-[10px] text-escalate font-medium whitespace-nowrap">{STATUS_LABEL[mission.status]}</span>
+        <span className="text-[10px] text-escalate font-medium whitespace-nowrap shrink-0">Escalated — needs action</span>
       </div>
+      <div className="receipt-perf" />
       <p className="text-[11px] text-ink-muted leading-relaxed">
         Every supplier declined or timed out with no quote. Re-run sourcing to send fresh callouts to the current roster, or onboard a new verified supplier first.
       </p>
@@ -288,8 +295,13 @@ function OnboardForm({ onChanged }: { onChanged: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="paper-card rounded-xl p-4 space-y-2.5">
-      <p className="text-xs text-ink-muted">
+    <form onSubmit={submit} className="paper-card rounded-xl p-4 space-y-3 animate-pop-in">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-ink">Onboard a verified supplier</p>
+        <button type="button" onClick={() => setOpen(false)} className="text-[11px] text-ink-muted hover:underline">Cancel</button>
+      </div>
+      <div className="receipt-perf" />
+      <p className="text-xs text-ink-muted leading-relaxed">
         Only after you've run the find-and-verify playbook (register lookup + a real phone call). See <span className="font-medium text-ink">docs/SUPPLY-SIDE.md</span>.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -302,10 +314,25 @@ function OnboardForm({ onChanged }: { onChanged: () => void }) {
         <button type="submit" disabled={busy} className="btn-primary text-sm py-2 px-3 disabled:opacity-60">
           {busy ? 'Onboarding...' : done ? 'Onboarded ✓' : 'Onboard (verified)'}
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="text-[11px] text-ink-muted hover:underline">Cancel</button>
+        {error && <span className="text-[11px] text-escalate">{error}</span>}
       </div>
-      {error && <p className="text-[11px] text-escalate">{error}</p>}
     </form>
+  );
+}
+
+// A live "desk open" indicator — the same pulse motif the buyer home page
+// uses for active jobs, tuned for the concierge's always-on surface.
+function DeskOpenIndicator({ count }: { count: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mandate opacity-75" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-mandate" />
+      </span>
+      <p className="text-xs font-medium text-ink">
+        {count > 0 ? `${count} job${count > 1 ? 's' : ''} on the desk` : 'Desk open — no jobs waiting'}
+      </p>
+    </div>
   );
 }
 
@@ -353,68 +380,113 @@ export default function OpsConsole() {
 
   const active = useMemo(() => missions.filter((m) => ACTIVE_STATUSES.has(m.status)), [missions]);
   const escalated = useMemo(() => missions.filter((m) => m.status === ESCALATED_STATUS), [missions]);
+  const totalCount = active.length + escalated.length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <OnboardForm onChanged={refresh} />
 
-      {error && <p className="text-xs text-escalate">{error}</p>}
+      {error && (
+        <p className="text-xs text-escalate paper-card rounded-xl p-3">{error}</p>
+      )}
 
-      {loading && <p className="text-xs text-ink-muted">Loading the desk…</p>}
-
-      {!loading && active.length === 0 && escalated.length === 0 && (
+      {loading && (
         <div className="paper-card rounded-2xl p-6 text-center space-y-2">
-          <p className="text-ink font-medium">No jobs waiting on a quote right now</p>
-          <p className="text-xs text-ink-muted">When a mission reaches sourcing, its callouts appear here. This page refreshes itself every 10s.</p>
+          <p className="font-display text-lg text-ink">Opening the desk…</p>
+          <p className="text-xs text-ink-muted">This should only take a moment.</p>
+        </div>
+      )}
+
+      {!loading && totalCount === 0 && (
+        <div className="paper-card rounded-2xl p-8 text-center space-y-3">
+          <div className="flex justify-center">
+            <span className="receipt-punch" />
+          </div>
+          <p className="font-display text-xl text-ink">No jobs waiting on a quote</p>
+          <p className="text-xs text-ink-muted max-w-sm mx-auto leading-relaxed">
+            When a mission reaches sourcing, its callouts appear here. This page refreshes itself every 10 seconds.
+          </p>
           <a href="/missions/new" className="btn-secondary text-xs py-2 px-3 inline-block">Start a job</a>
         </div>
       )}
 
       {escalated.length > 0 && (
-        <div className="space-y-2.5">
-          <p className="text-xs uppercase tracking-wider text-escalate font-medium">Escalated — needs action ({escalated.length})</p>
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs uppercase tracking-[0.16em] text-escalate font-medium">Escalated — needs action ({escalated.length})</p>
+            <DeskOpenIndicator count={totalCount} />
+          </div>
           {escalated.map((m) => {
             const callouts = calloutsByMission[m.id] ?? [];
+            const declined = callouts.filter((c) => c.status === 'DECLINED').length;
+            const expired = callouts.filter((c) => c.status === 'EXPIRED').length;
             return (
               <div key={m.id} className="space-y-1.5">
                 <EscalatedCard mission={m} onChanged={refresh} />
                 {callouts.length > 0 && (
                   <p className="text-[11px] text-ink-muted pl-2">
-                    {callouts.filter(c => c.status === 'DECLINED').length} declined · {callouts.filter(c => c.status === 'EXPIRED').length} expired
+                    {declined} declined · {expired} expired
                   </p>
                 )}
               </div>
             );
           })}
-        </div>
+        </section>
       )}
 
-      <div className="space-y-4">
-        {active.map((m) => {
-          const callouts = calloutsByMission[m.id] ?? [];
-          const calloutRows: CalloutRow[] = callouts
-            .map((c) => ({ callout: c, supplier: suppliers[c.supplierId] }))
-            .sort((a, b) => (a.callout.simulated === b.callout.simulated ? 0 : a.callout.simulated ? 1 : -1));
-          return (
-            <div key={m.id} className="space-y-2.5">				<div className="flex items-start justify-between gap-3 pb-3 border-b border-ink/10">
-					<div className="min-w-0">
-						<p className="text-sm font-medium text-ink truncate">{m.goal}</p>
-						<p className="text-[11px] text-ink-muted">
-							{m.mandate.serviceArea.postalDistrict} · budget {formatGBP(m.mandate.budget.maxAmount)} · {m.id}
-						</p>
-					</div>
-					<span className="text-[10px] text-mandate font-medium whitespace-nowrap">{STATUS_LABEL[m.status] ?? m.status}</span>
-				</div>
-				{calloutRows.length === 0 && (
-					<p className="text-[11px] text-ink-muted italic">No callouts yet.</p>
-				)}
-				{calloutRows.map((row) => (
-					<CalloutCard key={row.callout.id} row={row} budget={m.mandate.budget.maxAmount} onChanged={refresh} />
-				))}
+      {active.length > 0 && (
+        <section className="space-y-4">
+          {escalated.length === 0 && (
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-[0.16em] text-mandate font-medium">On the desk ({active.length})</p>
+              <DeskOpenIndicator count={totalCount} />
             </div>
-          );
-        })}
-      </div>
+          )}
+          {active.map((m) => {
+            const callouts = calloutsByMission[m.id] ?? [];
+            const calloutRows: CalloutRow[] = callouts
+              .map((c) => ({ callout: c, supplier: suppliers[c.supplierId] }))
+              .sort((a, b) => (a.callout.simulated === b.callout.simulated ? 0 : a.callout.simulated ? 1 : -1));
+            const realCount = callouts.filter((c) => !c.simulated).length;
+            const simCount = callouts.filter((c) => c.simulated).length;
+            return (
+              <div key={m.id} className="paper-card rounded-2xl p-5 space-y-4">
+                {/* Mission header — same rhythm as the buyer timeline */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-1">
+                  <div className="space-y-1.5 min-w-0">
+                    <StatusBadge status={m.status} />
+                    <h2 className="font-display text-xl text-ink leading-tight">{m.goal}</h2>
+                    <p className="text-[11px] text-ink-muted">
+                      {m.mandate.serviceArea.postalDistrict} · {formatMoney(m.mandate.budget.maxAmount)} · {m.id}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Callout summary line */}
+                {callouts.length > 0 && (
+                  <p className="text-[11px] text-ink-muted">
+                    {realCount > 0 && <>{realCount} real callout{realCount > 1 ? 's' : ''} </>
+                    }{realCount > 0 && simCount > 0 && <>· </>}
+                    {simCount > 0 && <>{simCount} simulated</>}
+                  </p>
+                )}
+
+                <div className="receipt-perf" />
+
+                {calloutRows.length === 0 && (
+                  <p className="text-[11px] text-ink-muted italic">No callouts yet — the worker is matching the roster.</p>
+                )}
+
+                <div className="space-y-2.5">
+                  {calloutRows.map((row) => (
+                    <CalloutCard key={row.callout.id} row={row} budget={m.mandate.budget.maxAmount} onChanged={refresh} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 }

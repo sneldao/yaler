@@ -3,21 +3,19 @@ import Layout from '../layouts/Layout.astro';
 import OpsConsole from '../components/islands/OpsConsole';
 ---
 
-<!--
-  OpsConsole: the concierge's cockpit. Internal tool — not linked from the
-  public nav. Reach it at /ops (see docs/SUPPLY-SIDE.md for the runbook).
--->
 <Layout title="Concierge Desk — Yaler">
-  <div class="space-y-6 py-2">
+  <div class="space-y-8 py-2">
+    <!-- Header (consistent rhythm: label → headline → subtext) -->
     <div class="space-y-2">
-      <p class="text-xs uppercase tracking-[0.16em] text-mandate">Internal · Concierge desk</p>
-      <h1 class="font-display text-3xl text-ink">Dispatch</h1>
+      <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">Internal · Concierge desk</p>
+      <h1 class="font-display text-3xl sm:text-4xl text-ink tracking-tight">Dispatch</h1>
       <p class="text-ink-muted text-sm max-w-xl leading-relaxed">
         Jobs waiting on real quotes. Copy the drafted callout, ping the engineer on WhatsApp, enter what they say.
-        Verified suppliers get real callouts; the synthetic roster auto-responds with clearly labelled simulated quotes.
+        Verified suppliers get real callouts; the synthetic roster auto-responds with clearly labelled simulated quotes so the flow keeps running.
       </p>
     </div>
 
+    <!-- The desk -->
     <OpsConsole client:load />
   </div>
 </Layout>
