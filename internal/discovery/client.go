@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -176,7 +177,7 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 	})
 
 	req, err := http.NewRequestWithContext(ctx, "POST",
-		"https://api.apify.com/v2/acts/apify~cheerio-scraper/run-sync-get-dataset-items?token="+d.apifyKey,
+		"https://api.apify.com/v2/acts/apify~cheerio-scraper/run-sync-get-dataset-items?token="+d.apifyKey+"&timeout=90",
 		bytes.NewBuffer(body),
 	)
 	if err != nil {
@@ -186,8 +187,11 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 	req.Header.Set("Content-Type", "application/json")
 
 	// A synchronous Cheerio scrape (start → fetch → render → return) routinely
-	// takes 20-40s on Companies House. The previous 12s timeout silently
-	// turned every check into not_checked.
+	// takes 20-40s on Companies House and occasionally exceeds Apify's sync
+	// window. The previous 12s timeout silently turned every check into
+	// not_checked. timeout=90 gives the run the window inline; when it still
+	// exceeds it Apify answers 201/202 with the run to poll, which we follow
+	// to completion below.
 	client := &http.Client{Timeout: 90 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -195,7 +199,25 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 		return out
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
+
+	var rows []map[string]any
+
+	switch {
+	case resp.StatusCode == http.StatusOK:
+		if derr := json.NewDecoder(resp.Body).Decode(&rows); derr != nil {
+			out.Detail = "apify response decode failed: " + derr.Error()
+			return out
+		}
+
+	case resp.StatusCode == http.StatusCreated, resp.StatusCode == http.StatusAccepted:
+		// The run started but did not finish inside the sync window. Poll it
+		// until SUCCEEDED, then read the dataset items.
+		rows, out.Detail = d.apifyPollRun(ctx, resp.Body)
+		if out.Detail != "" {
+			return out
+		}
+
+	default:
 		out.Detail = fmt.Sprintf("apify returned status %d", resp.StatusCode)
 
 		// Multi-failover: try to extract the actor permission error from the
@@ -219,19 +241,13 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 		return out
 	}
 
-	var rows []struct {
-		Text string `json:"text"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&rows); err != nil {
-		out.Detail = "apify response decode failed: " + err.Error()
-		return out
-	}
 	if len(rows) == 0 {
 		out.Detail = "apify returned no rows"
 		return out
 	}
 
-	hay := strings.ToLower(rows[0].Text)
+	raw, _ := rows[0]["text"].(string)
+	hay := strings.ToLower(raw)
 	needles := strings.Fields(strings.ToLower(q))
 	if len(needles) == 0 {
 		return out
@@ -255,4 +271,97 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 	out.AsOf = time.Now().UTC().Format("2 Jan 2006")
 	out.Detail = "Name appears on the public company search"
 	return out
+}
+
+// apifyPollRun handles the 201/202 case of run-sync-get-dataset-items: the
+// run started but did not finish inside the sync window, so Apify returns the
+// run object to poll. Waits for SUCCEEDED (up to ~75s), then reads the
+// dataset items. Returns the rows and an empty detail on success.
+func (d *DiscoveryService) apifyPollRun(ctx context.Context, body io.Reader) ([]map[string]any, string) {
+	var runResp struct {
+		Data struct {
+			ID               string `json:"id"`
+			DefaultDatasetID string `json:"defaultDatasetId"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(body).Decode(&runResp); err != nil {
+		return nil, "apify run response decode failed: " + err.Error()
+	}
+	runID := runResp.Data.ID
+	if runID == "" {
+		return nil, "apify returned 201 without a run id"
+	}
+	datasetID := runResp.Data.DefaultDatasetID
+
+	deadline := time.Now().Add(75 * time.Second)
+	for time.Now().Before(deadline) {
+		time.Sleep(3 * time.Second)
+		status, dsID, err := d.apifyRunStatus(ctx, runID)
+		if err != nil {
+			return nil, err.Error()
+		}
+		if dsID != "" {
+			datasetID = dsID
+		}
+		switch status {
+		case "SUCCEEDED":
+			items, ierr := d.apifyDatasetItems(ctx, datasetID)
+			if ierr != nil {
+				return nil, ierr.Error()
+			}
+			return items, ""
+		case "FAILED", "TIMED-OUT", "ABORTED":
+			return nil, "apify run " + status
+		}
+	}
+	return nil, "apify run did not finish in time"
+}
+
+// apifyRunStatus fetches the run and returns (status, defaultDatasetId).
+func (d *DiscoveryService) apifyRunStatus(ctx context.Context, runID string) (string, string, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET",
+		"https://api.apify.com/v2/actor-runs/"+url.PathEscape(runID)+"?token="+d.apifyKey, nil)
+	if err != nil {
+		return "", "", err
+	}
+	resp, err := d.client.Do(req)
+	if err != nil {
+		return "", "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("apify run status returned %d", resp.StatusCode)
+	}
+	var out struct {
+		Data struct {
+			Status           string `json:"status"`
+			DefaultDatasetID string `json:"defaultDatasetId"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return "", "", err
+	}
+	return out.Data.Status, out.Data.DefaultDatasetID, nil
+}
+
+// apifyDatasetItems reads the results of a finished run from its dataset.
+func (d *DiscoveryService) apifyDatasetItems(ctx context.Context, datasetID string) ([]map[string]any, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET",
+		"https://api.apify.com/v2/datasets/"+url.PathEscape(datasetID)+"/items?token="+d.apifyKey, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := d.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("apify dataset returned %d", resp.StatusCode)
+	}
+	var rows []map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&rows); err != nil {
+		return nil, err
+	}
+	return rows, nil
 }
