@@ -33,7 +33,7 @@ const ogDescription = receipt
 
 <Layout title={ogTitle} description={ogDescription}>
   <div class="max-w-xl mx-auto py-4 space-y-6">
-    {receipt ? (
+    {receipt && (
       <>
         <article class="receipt-sheet rounded-sm relative overflow-hidden">
           <div class="absolute -left-2 top-16 receipt-punch"></div>
@@ -133,10 +133,15 @@ const ogDescription = receipt
           </div>
         </div>
       </>
-    ) : (
+    )}
+
+    {!receipt && (
       <div class="paper-card rounded-2xl p-8 text-center space-y-3">
+        <div class="flex justify-center">
+          <span class="receipt-punch"></span>
+        </div>
         <h2 class="font-display text-2xl text-ink">Receipt not ready yet</h2>
-        <p class="text-sm text-ink-muted">It appears once the photos are in and checked.</p>
+        <p class="text-sm text-ink-muted max-w-sm mx-auto">It appears once the photos are in and checked.</p>
         <a href={`/missions/${id}`} class="btn-primary inline-flex">Back to the job</a>
       </div>
     )}
