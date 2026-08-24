@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { type Event, type Mission, getEvents, getMission } from '../../lib/api';
+import { type Event, type Mission, getEvents, getMission, submitMissionFeedback } from '../../lib/api';
 import ThinkingTrace, { type TraceRow } from '../primitives/ThinkingTrace';
 import { LoadingStatus } from '../primitives/LoaderGrid';
 import ToolChips, { type ToolChipCall } from '../primitives/ToolChips';
@@ -10,15 +10,16 @@ import { celebrate, shake, playUiSound, markJobCompleted } from '../../lib/delig
 /** Map status to a human-readable description of what the agent is doing right now */
 function agentNarrative(status?: string): string {
   switch (status) {
-    case 'SOURCING': return 'Searching the N1 roster for engineers who do this work and are free today';
-    case 'OFFERS_RECEIVED': return 'Comparing three quotes against your budget and distance rules';
+    case 'SOURCING': return 'Asked nearby engineers and is waiting for real quotes. This can take a few minutes — you don’t need to stay here.';
+    case 'OFFERS_RECEIVED': return 'Comparing the quotes that came back against your budget and area rules.';
     case 'NEGOTIATING': return 'Checking if a counter-offer keeps us within mandate';
-    case 'COMMITTED': return 'Locking in the booking — engineer confirmed, dispatching now';
+    case 'COMMITTED': return 'Locked in the booking — engineer confirmed, dispatching now';
     case 'AWAITING_APPROVAL': return 'One quote is over budget. Waiting for your call — approve, reject, or reroute';
     case 'IN_PROGRESS': return 'Engineer is on site. Waiting for completion update';
     case 'EVIDENCE_PENDING': return 'Asking for photo evidence before we close this off';
-    case 'VERIFYING': return 'Gemini is checking the photo against the mandate requirements';
-    case 'COMPLETED': return 'Verified and done. Receipt is ready';
+    case 'VERIFYING': return 'Checking the photos against what was agreed';
+    case 'COMPLETED': return 'Verified and done. The receipt is ready — and you can rate the engineer to build the roster.';
+    case 'ESCALATED': return 'Every engineer declined or timed out with no quote. We’ll re-run the search, or you can add a verified one.';
     default: return 'Preparing the mission';
   }
 }
@@ -245,6 +246,9 @@ export default function MissionTimeline({
             </div>
           )}
         </div>
+      )}      {/* Rate the engineer — closes the reliability loop in the UI buyers see */}
+      {mission?.status === 'COMPLETED' && !rehearsal && (
+        <FeedbackCard missionId={mission.id} />
       )}
 
       {/* Settled trace — shown when done, collapsed by default */}
@@ -262,6 +266,90 @@ export default function MissionTimeline({
           />
         </div>
       )}
+    </div>
+  );
+}
+
+// FeedbackCard — the buyer rates the engineer on a completed job. One
+// rating per mission; submitting it recomputes the supplier's
+// ReliabilityScore on the backend (the reliability loop).
+function FeedbackCard({ missionId }: { missionId: string }) {
+  const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async () => {
+    if (rating < 1 || rating > 5) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await submitMissionFeedback(missionId, rating, comment || undefined);
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to submit rating');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div className="paper-card rounded-2xl p-5 space-y-2 animate-pop-in">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-mandate/10">
+            <span className="text-mandate text-sm">✓</span>
+          </span>
+          <div>
+            <p className="text-sm font-medium text-ink">Thanks — your rating is in</p>
+            <p className="text-xs text-ink-muted">It feeds the engineer’s reliability score, so the roster learns from real jobs.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="paper-card rounded-2xl p-5 space-y-3 animate-pop-in">
+      <div>
+        <h3 className="text-sm font-medium text-ink">Rate the engineer</h3>
+        <p className="text-xs text-ink-muted mt-0.5">One rating per job. It shapes their reliability score — earned, not assumed.</p>
+      </div>
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setRating(n)}
+            onMouseEnter={() => setHover(n)}
+            onMouseLeave={() => setHover(0)}
+            className="text-2xl p-1 transition-transform hover:scale-110"
+            aria-label={`${n} star${n > 1 ? 's' : ''}`}
+          >
+            <span className={(hover || rating) >= n ? 'text-mandate' : 'text-ink/20'}>★</span>
+          </button>
+        ))}
+      </div>
+      <input
+        type="text"
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Optional note (what went well, what didn’t)"
+        className="field-input text-sm"
+      />
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={submitting || rating === 0}
+          className="btn-primary text-sm py-2.5 px-4 disabled:opacity-40"
+        >
+          {submitting ? 'Sending…' : 'Submit rating'}
+        </button>
+        {error && <span className="text-xs text-escalate">{error}</span>}
+      </div>
     </div>
   );
 }

@@ -37,6 +37,7 @@ export interface Offer {
   id: string;
   missionId: string;
   supplierAgentId: string;
+  calloutId?: string;
   price: number;
   currency: string;
   availability: string;
@@ -45,6 +46,7 @@ export interface Offer {
   explanation?: string;
   status: string;
   createdAt: string;
+  simulated?: boolean;
 }
 
 export interface Event {
@@ -164,6 +166,34 @@ export async function resumeMission(missionId: string): Promise<Mission> {
   if (!res.ok) {
     const err = await res.text().catch(() => '');
     throw new Error(`Failed to resume mission (${res.status})${err ? `: ${err}` : ''}`);
+  }
+  return res.json();
+}
+
+// Buyer rates a completed job (1..5). Recomputes the supplier's
+// ReliabilityScore from their full feedback history.
+export interface MissionFeedback {
+  id: string;
+  missionId: string;
+  supplierId: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+}
+
+export async function submitMissionFeedback(
+  missionId: string,
+  rating: number,
+  comment?: string,
+): Promise<{ feedback: MissionFeedback; supplier: Supplier }> {
+  const res = await fetch(`${API_BASE}/api/missions/${missionId}/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating, comment }),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    throw new Error(`Failed to submit feedback (${res.status})${err ? `: ${err}` : ''}`);
   }
   return res.json();
 }

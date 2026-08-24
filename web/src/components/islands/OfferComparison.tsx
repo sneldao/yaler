@@ -151,6 +151,9 @@ export default function OfferComparison({
         {offers.map((offer, idx) => {
           const isSelected = offer.id === selected.id;
           const isBlocked = offer.status === 'BLOCKED';
+          const isSimulated = offer.simulated === true;
+          // Prefer a real (non-simulated) quote as the default selection —
+          // a simulated quote is never auto-selected over a real one.
           return (
             <button
               key={offer.id}
@@ -162,20 +165,24 @@ export default function OfferComparison({
                   : isSelected
                     ? 'border-mandate'
                     : 'hover:border-ink/20'
-              }`}
+              } ${isSimulated ? 'opacity-70' : ''}`}
               disabled={isBlocked}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   {offer.status === 'BLOCKED' ? (
                     <p className="text-[11px] uppercase tracking-wider text-escalate mb-1">Over your ceiling</p>
-                  ) : idx === 0 && (
-                    <p className="text-[11px] uppercase tracking-wider text-mandate mb-1">Best match</p>
+                  ) : isSimulated ? (
+                    <p className="text-[11px] uppercase tracking-wider text-ink-muted mb-1">Simulated — not a real offer</p>
+                  ) : idx === 0 && !isSimulated ? (
+                    <p className="text-[11px] uppercase tracking-wider text-mandate mb-1">Best match · Verified engineer</p>
+                  ) : (
+                    <p className="text-[11px] uppercase tracking-wider text-mandate mb-1">Verified engineer</p>
                   )}
-                  <p className="font-medium text-ink">{supplierLabel(offer.supplierAgentId)}</p>
+                  <p className={`font-medium ${isSimulated ? 'text-ink-muted' : 'text-ink'}`}>{supplierLabel(offer.supplierAgentId)}</p>
                   <p className="text-xs text-ink-muted mt-0.5">{offer.availability}</p>
                 </div>
-                <p className="font-display text-2xl text-ink">{formatMoney(offer.price, offer.currency)}</p>
+                <p className={`font-display text-2xl ${isSimulated ? 'text-ink-muted' : 'text-ink'}`}>{formatMoney(offer.price, offer.currency)}</p>
               </div>
               {isSelected && offer.terms && (
                 <p className="text-sm text-ink-muted mt-3 border-t border-ink/10 pt-3">{offer.terms}</p>
@@ -184,9 +191,11 @@ export default function OfferComparison({
                 <p className="text-xs text-ink-muted mt-2">{offer.explanation}</p>
               )}
               <p className="text-[11px] text-ink-muted mt-2">
-                {credentials[offer.supplierAgentId]?.status === 'listed'
-                  ? `${credentials[offer.supplierAgentId].register} listed · ${credentials[offer.supplierAgentId].asOf}`
-                  : 'Public register: not checked'}
+                {isSimulated
+                  ? 'Synthetic roster — auto-generated so the flow runs. No real engineer was asked.'
+                  : credentials[offer.supplierAgentId]?.status === 'listed'
+                    ? `${credentials[offer.supplierAgentId].register} listed · ${credentials[offer.supplierAgentId].asOf}`
+                    : 'Public register: not checked'}
               </p>
             </button>
           );

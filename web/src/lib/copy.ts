@@ -12,7 +12,7 @@ const STATUS_LABELS: Record<string, string> = {
   EVIDENCE_PENDING: 'Waiting on photos',
   VERIFYING: 'Checking the photos',
   COMPLETED: 'Done',
-  ESCALATED: 'Needs you',
+  ESCALATED: 'Escalated — re-asking',
 };
 
 const EVENT_LABELS: Record<string, string> = {
@@ -21,7 +21,14 @@ const EVENT_LABELS: Record<string, string> = {
   MANDATE_CONFIRMED: 'Rules confirmed',
   MANDATE_UPDATED: 'Rules updated',
   SOURCING_STARTED: 'Asking nearby engineers',
+  SUPPLIERS_SOURCED: 'Asked nearby engineers',
+  CALLOUT_SENT: 'Asked an engineer',
+  CALLOUT_DECLINED: 'Engineer declined',
+  CALLOUT_EXPIRED: 'Ask timed out',
+  NO_SUPPLIERS: 'No engineers on the roster',
+  NO_QUOTES: 'No quotes came back',
   OFFER_RECEIVED: 'Quote in',
+  QUOTE_RECEIVED: 'Quote in',
   OFFERS_RECEIVED: 'Quotes in',
   OFFERS_RANKED: 'Quotes compared',
   NEGOTIATING: 'Comparing quotes',
@@ -30,11 +37,15 @@ const EVENT_LABELS: Record<string, string> = {
   POLICY_ALLOW: 'Within your rules',
   POLICY_DENY: 'Blocked by your rules',
   POLICY_ESCALATE: 'Needs your call',
+  POLICY_BLOCKED: 'Blocked by your rules',
   EVIDENCE_SUBMITTED: 'Photos sent',
   EVIDENCE_VERIFIED: 'Photos checked',
   RECEIPT_ISSUED: 'Receipt ready',
   COMPLETED: 'Done',
-  ESCALATED: 'Paused for you',
+  MISSION_RESUMED: 'Re-running the search',
+  FEEDBACK_RECORDED: 'You rated the job',
+  ESCALATED: 'Escalated',
+  WORKER_FAILED: 'Something went wrong',
 };
 
 const AUTONOMY_COPY: Record<string, { label: string; help: string }> = {
@@ -59,7 +70,8 @@ export function statusLabel(status?: string): string {
 
 export function statusTone(status?: string): StatusTone {
   if (status === 'COMPLETED') return 'success';
-  if (status === 'AWAITING_APPROVAL' || status === 'ESCALATED') return 'alert';
+  if (status === 'AWAITING_APPROVAL') return 'alert';
+  if (status === 'ESCALATED') return 'alert';
   if (status === 'DRAFT' || status === 'MANDATE_CONFIRMED') return 'neutral';
   return 'progress';
 }
@@ -75,7 +87,7 @@ export function nextActionLabel(status?: string, rehearsal = false): string {
       case 'ESCALATED':
         return 'One quote is £80 over. We stopped. Tap it, then pick someone in budget.';
       case 'COMPLETED':
-        return 'This is the paper you’d pin up. Save the rules if they look right.';
+        return 'This is the paper you’d pin up. Save the rules if they look right. Rate the engineer to build the roster.';
       default:
         return 'Practice only. Nothing is booked.';
     }
@@ -84,15 +96,18 @@ export function nextActionLabel(status?: string, rehearsal = false): string {
   switch (status) {
     case 'DRAFT':
       return 'Check the budget and area, then start the search.';
+    case 'SOURCING':
+      return 'Asking nearby engineers and waiting for real quotes. You don’t need to stay here.';
     case 'AWAITING_APPROVAL':
-    case 'ESCALATED':
       return 'We need a yes from you before anyone is booked.';
+    case 'ESCALATED':
+      return 'Every engineer declined or timed out. We’ll re-run the search — or you can add a verified one.';
     case 'EVIDENCE_PENDING':
       return 'Waiting for the engineer to send photos.';
     case 'VERIFYING':
       return 'Checking the photos against what was agreed.';
     case 'COMPLETED':
-      return 'Job done. The receipt is ready to share.';
+      return 'Job done. The receipt is ready. Rate the engineer so the roster learns.';
     case 'COMMITTED':
     case 'IN_PROGRESS':
       return 'An engineer is booked. We’ll update you as they go.';

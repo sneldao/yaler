@@ -59,7 +59,14 @@ try {
                 <span class="text-[11px] text-mandate font-medium">{Math.round(s.reliabilityScore * 100)}% on time</span>
               </div>
               <div>
-                <p class="font-medium text-ink">{s.displayName}</p>
+                <div class="flex items-center gap-2">
+                  <p class="font-medium text-ink">{s.displayName}</p>
+                  {s.verified ? (
+                    <span class="text-[10px] bg-mandate/10 text-mandate px-1.5 py-0.5 rounded-full border border-mandate/25 font-medium">Verified</span>
+                  ) : (
+                    <span class="text-[10px] bg-ink/5 text-ink-muted px-1.5 py-0.5 rounded-full border border-ink/10">Synthetic</span>
+                  )}
+                </div>
                 <p class="text-xs text-ink-muted mt-0.5">{s.serviceArea.postalDistrict} · {s.serviceArea.radiusKm} km</p>
               </div>
               <div class="flex flex-wrap gap-1.5">
@@ -69,6 +76,11 @@ try {
                   </span>
                 ))}
               </div>
+              {s.verified ? (
+                <p class="text-[10px] text-ink-muted italic">Reliability earned from real completed jobs.</p>
+              ) : (
+                <p class="text-[10px] text-ink-muted italic">Synthetic profile — keeps the demo running. Not a real business.</p>
+              )}
             </div>
           ))}
         </div>
