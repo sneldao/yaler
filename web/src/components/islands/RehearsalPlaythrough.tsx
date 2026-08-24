@@ -205,7 +205,10 @@ export default function RehearsalPlaythrough() {
             events={rehearsalEvents('done', booked.supplierAgentId)}
           />
 
-          <article className="receipt-sheet rounded-sm relative overflow-hidden">
+          <article className="receipt-sheet rounded-sm relative overflow-hidden animate-receipt-print">
+            <div className="receipt-stamp">Verified</div>
+            <div className="receipt-fold" style={{ top: '33%' }} />
+            <div className="receipt-fold" style={{ top: '66%' }} />
             <div className="absolute -left-2 top-16 receipt-punch" />
             <div className="absolute -right-2 top-16 receipt-punch" />
             <div className="receipt-perf" />

@@ -35,7 +35,10 @@ const ogDescription = receipt
   <div class="max-w-xl mx-auto py-4 space-y-6">
     {receipt && (
       <>
-        <article class="receipt-sheet rounded-sm relative overflow-hidden">
+        <article class="receipt-sheet rounded-sm relative overflow-hidden animate-receipt-print">
+          <div class="receipt-stamp">Verified</div>
+          <div class="receipt-fold" style="top: 33%"></div>
+          <div class="receipt-fold" style="top: 66%"></div>
           <div class="absolute -left-2 top-16 receipt-punch"></div>
           <div class="absolute -right-2 top-16 receipt-punch"></div>
           <div class="receipt-perf"></div>

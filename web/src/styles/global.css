@@ -172,6 +172,105 @@
   background-color: var(--paper-inset);
 }
 
+/* ── Animated receipt motifs ────────────────────────────── */
+
+/* The receipt prints out of a slot — slides down with a slight
+   overshoot, like a thermal printer feeding paper. */
+@keyframes receipt-print {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px) scaleY(0.3);
+    clip-path: inset(0 0 100% 0);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(4px) scaleY(1.02);
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.animate-receipt-print {
+  animation: receipt-print 600ms var(--ease) both;
+}
+
+/* Verified stamp — thuds down with a slight rotation, like a
+   rubber stamp hitting paper. Delayed so it lands after the
+   receipt settles. */
+@keyframes stamp-thud {
+  0% {
+    opacity: 0;
+    transform: scale(2.5) rotate(-12deg);
+    filter: blur(2px);
+  }
+  70% {
+    opacity: 0.9;
+    transform: scale(0.95) rotate(-8deg);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1) rotate(-8deg);
+    filter: blur(0);
+  }
+}
+
+.receipt-stamp {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  border: 2.5px solid var(--mandate);
+  color: var(--mandate);
+  padding: 0.25rem 0.75rem;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border-radius: 2px;
+  pointer-events: none;
+  opacity: 0.85;
+  animation: stamp-thud 400ms var(--ease) 800ms both;
+  z-index: 5;
+}
+
+.receipt-stamp::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 2.5px solid var(--mandate);
+  border-radius: 2px;
+  opacity: 0.3;
+  filter: blur(1px);
+}
+
+/* Fold lines — dashed creases that fade in after the receipt
+   settles, suggesting it was folded in a pocket. */
+@keyframes fold-appear {
+  0% { opacity: 0; }
+  100% { opacity: 0.08; }
+}
+
+.receipt-fold {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 4px,
+    var(--ink) 4px,
+    var(--ink) 8px
+  );
+  opacity: 0;
+  animation: fold-appear 400ms ease 1.2s both;
+  pointer-events: none;
+}
+
 .field-input {
   @apply w-full bg-paper border border-ink/15 focus:border-mandate rounded-xl p-3.5 text-ink placeholder:text-ink-muted/70 focus:outline-none transition-colors duration-200;
 }
