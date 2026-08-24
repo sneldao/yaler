@@ -1,5 +1,7 @@
 # Yaler — Get the fridge fixed
 
+[![CI](https://github.com/sneldao/yaler/actions/workflows/ci.yml/badge.svg)](https://github.com/sneldao/yaler/actions/workflows/ci.yml)
+
 > **Built with Kiro** | [Spec → Design → Tasks](.kiro/specs/mission-loop/) — autonomous agent that books real-world work
 > **Build Club Hack Night** | Hosted by Build Club with Gemini / Google DeepMind & Exa
 
