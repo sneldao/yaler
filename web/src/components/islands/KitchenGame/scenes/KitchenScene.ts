@@ -179,8 +179,20 @@ export class KitchenScene extends Phaser.Scene {
 
     this.playerBody.setVelocity(vx, vy);
 
-    // Sync sprite to physics body
+    // Sync sprite to physics body + walk bob
+    const isMoving = vx !== 0 || vy !== 0;
     this.playerSprite.setPosition(this.player.x, this.player.y - 4);
+
+    // Bob animation: resume when moving, pause when still
+    const bobTween = this.tweens.getTweens().find(t => (t as any).key === 'playerBob');
+    if (bobTween) {
+      if (isMoving && !bobTween.isPlaying()) bobTween.resume();
+      else if (!isMoving && bobTween.isPlaying()) bobTween.pause();
+    }
+
+    // Flip sprite based on horizontal direction
+    if (vx < 0) this.playerSprite.setFlipX(true);
+    else if (vx > 0) this.playerSprite.setFlipX(false);
 
     // Footsteps
     if (vx !== 0 || vy !== 0) {
@@ -205,22 +217,40 @@ export class KitchenScene extends Phaser.Scene {
   // ─── Setup ───────────────────────────────────────────────
 
   private createPlayer() {
-    // Nouns-inspired character: round head, square glasses, coloured body
+    // Nouns-inspired character: detailed with shadow and walk bob
     const g = this.add.graphics();
-    g.fillStyle(C.player, 1);
-    g.fillRoundedRect(-8, -8, 16, 20, 3); // body
-    g.fillStyle(0xffddaa, 1);
-    g.fillCircle(0, -12, 7); // head
-    g.fillStyle(0xff4444, 1);
-    g.fillRect(-6, -14, 12, 4); // nouns glasses
+    // Shadow
+    g.fillStyle(0x000000, 0.2);
+    g.fillEllipse(10, 28, 14, 6);
+    // Body (apron/chef whites)
+    g.fillStyle(0xfaf8f0, 1);
+    g.fillRoundedRect(3, 10, 14, 16, 3);
+    // Apron strings
+    g.lineStyle(1, 0xccccbb);
+    g.lineBetween(7, 12, 7, 22);
+    g.lineBetween(13, 12, 13, 22);
+    // Head
+    g.fillStyle(0xd4956a, 1);
+    g.fillRoundedRect(4, 0, 12, 12, 4);
+    // Hair (dark, top of head)
+    g.fillStyle(0x2a1a0a, 1);
+    g.fillRoundedRect(4, 0, 12, 5, { tl: 4, tr: 4, bl: 0, br: 0 });
+    // Nouns glasses (red frame)
+    g.fillStyle(0xe04040, 1);
+    g.fillRect(4, 4, 12, 4);
+    // Lenses (white)
     g.fillStyle(0xffffff, 1);
-    g.fillRect(-5, -14, 4, 3); // left lens
-    g.fillRect(1, -14, 4, 3); // right lens
+    g.fillRect(5, 5, 4, 2);
+    g.fillRect(11, 5, 4, 2);
+    // Eyes behind lenses
+    g.fillStyle(0x12212b, 1);
+    g.fillRect(6, 5, 2, 2);
+    g.fillRect(12, 5, 2, 2);
     g.generateTexture('player_sprite', 20, 32);
     g.destroy();
 
     this.player = this.add.rectangle(5 * T + 12, 6 * T + 12, 16, 20, C.player);
-    this.player.setVisible(false); // collision body only
+    this.player.setVisible(false);
     this.physics.add.existing(this.player);
     this.playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     this.playerBody.setCollideWorldBounds(true);
@@ -230,42 +260,74 @@ export class KitchenScene extends Phaser.Scene {
     // Visual sprite follows the physics body
     this.playerSprite = this.add.image(this.player.x, this.player.y, 'player_sprite');
     this.playerSprite.setDepth(5);
+
+    // Walk bob tween (paused, started when moving)
+    this.tweens.add({
+      targets: this.playerSprite,
+      y: '-=1.5',
+      duration: 150,
+      yoyo: true,
+      repeat: -1,
+      paused: true,
+      key: 'playerBob',
+    });
   }
 
   private createEquipment() {
     EVENTS.forEach((evt, idx) => {
-      const x = evt.col * T + 8;
-      const y = evt.row * T + 8;
-      const rect = this.add.rectangle(x, y, 14, 14, evt.color);
-      rect.setStrokeStyle(1, 0xffffff, 0.3);
+      const x = evt.col * T + 12;
+      const y = evt.row * T + 12;
+      // Equipment as a larger, more visible block
+      const rect = this.add.rectangle(x, y, 20, 20, evt.color);
+      rect.setStrokeStyle(1.5, 0xffffff, 0.4);
       rect.setDepth(3);
       this.targets.push(rect);
 
-      // Label
-      this.add.text(x, y + 10, evt.key.charAt(0).toUpperCase(), {
-        fontSize: '5px', color: '#ffffff66',
+      // Label below equipment
+      this.add.text(x, y + 14, evt.key, {
+        fontSize: '8px', color: '#ffffff88',
       }).setOrigin(0.5).setDepth(3);
 
       // Alarm icon (hidden)
-      const icon = this.add.text(x - 4, y - 12, '!', {
-        fontSize: '18px', color: '#ff4444', fontStyle: 'bold',
+      const icon = this.add.text(x - 2, y - 16, '!', {
+        fontSize: '16px', color: '#ff4444', fontStyle: 'bold',
       }).setVisible(false).setDepth(6);
       this.alarmIcons.push(icon);
     });
   }
 
   private createEngineer() {
-    // Engineer: blue overalls, nouns-style glasses
+    // Engineer: blue overalls, tool belt, nouns-style blue glasses
     const g = this.add.graphics();
-    g.fillStyle(C.engineer, 1);
-    g.fillRoundedRect(-8, -8, 16, 20, 3);
-    g.fillStyle(0xffddaa, 1);
-    g.fillCircle(0, -12, 7);
-    g.fillStyle(0x4444ff, 1);
-    g.fillRect(-6, -14, 12, 4);
-    g.fillStyle(0xffffff, 1);
-    g.fillRect(-5, -14, 4, 3);
-    g.fillRect(1, -14, 4, 3);
+    // Shadow
+    g.fillStyle(0x000000, 0.2);
+    g.fillEllipse(10, 28, 14, 6);
+    // Body (blue overalls)
+    g.fillStyle(0x3366aa, 1);
+    g.fillRoundedRect(3, 10, 14, 16, 3);
+    // Tool belt
+    g.fillStyle(0x5a4a3a, 1);
+    g.fillRect(3, 18, 14, 3);
+    // Belt buckle
+    g.fillStyle(0xccaa44, 1);
+    g.fillRect(8, 18, 4, 3);
+    // Head
+    g.fillStyle(0xc48a5a, 1);
+    g.fillRoundedRect(4, 0, 12, 12, 4);
+    // Hard hat (yellow top)
+    g.fillStyle(0xffcc22, 1);
+    g.fillRoundedRect(3, -1, 14, 5, { tl: 4, tr: 4, bl: 0, br: 0 });
+    // Nouns glasses (blue frame)
+    g.fillStyle(0x2255cc, 1);
+    g.fillRect(4, 4, 12, 4);
+    // Lenses
+    g.fillStyle(0xddeeff, 1);
+    g.fillRect(5, 5, 4, 2);
+    g.fillRect(11, 5, 4, 2);
+    // Eyes
+    g.fillStyle(0x12212b, 1);
+    g.fillRect(6, 5, 2, 2);
+    g.fillRect(12, 5, 2, 2);
     g.generateTexture('engineer_sprite', 20, 32);
     g.destroy();
 
@@ -359,13 +421,26 @@ export class KitchenScene extends Phaser.Scene {
   }
 
   private addAmbientNPCs() {
-    const npc1 = this.add.rectangle(13 * T + 8, 3 * T + 8, 10, 10, 0xaa8866);
-    npc1.setStrokeStyle(1, 0xffffff, 0.2).setDepth(4);
-    this.tweens.add({ targets: npc1, y: 8 * T + 8, duration: 3500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    // Generate a kitchen staff sprite (similar to player but different colour)
+    const g = this.add.graphics();
+    g.fillStyle(0x000000, 0.15);
+    g.fillEllipse(10, 26, 12, 5);
+    g.fillStyle(0xf0ede5, 1);
+    g.fillRoundedRect(4, 10, 12, 14, 2);
+    g.fillStyle(0xb87a4a, 1);
+    g.fillRoundedRect(5, 1, 10, 10, 3);
+    g.fillStyle(0x1a1a1a, 1);
+    g.fillRoundedRect(5, 1, 10, 4, { tl: 3, tr: 3, bl: 0, br: 0 });
+    g.generateTexture('staff_sprite', 20, 30);
+    g.destroy();
 
-    const npc2 = this.add.rectangle(6 * T + 8, 9 * T + 8, 10, 10, 0xaa8866);
-    npc2.setStrokeStyle(1, 0xffffff, 0.2).setDepth(4);
-    this.tweens.add({ targets: npc2, x: 15 * T + 8, duration: 4500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const npc1 = this.add.image(13 * T + 12, 3 * T + 12, 'staff_sprite');
+    npc1.setDepth(4).setAlpha(0.8);
+    this.tweens.add({ targets: npc1, y: 7 * T + 12, duration: 3500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    const npc2 = this.add.image(6 * T + 12, 8 * T + 12, 'staff_sprite');
+    npc2.setDepth(4).setAlpha(0.8).setFlipX(true);
+    this.tweens.add({ targets: npc2, x: 14 * T + 12, duration: 4500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
   }
 
   // ─── Intro ───────────────────────────────────────────────
