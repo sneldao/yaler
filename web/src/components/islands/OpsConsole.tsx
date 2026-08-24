@@ -248,8 +248,7 @@ function EscalatedCard({ mission, onChanged }: { mission: Mission; onChanged: ()
   );
 }
 
-function OnboardForm({ onChanged }: { onChanged: () => void }) {
-  const [open, setOpen] = useState(false);
+function OnboardForm({ onChanged, open, setOpen, hideCollapsed = false }: { onChanged: () => void; open: boolean; setOpen: (open: boolean) => void; hideCollapsed?: boolean }) {
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [district, setDistrict] = useState('');
@@ -287,6 +286,7 @@ function OnboardForm({ onChanged }: { onChanged: () => void }) {
   };
 
   if (!open) {
+    if (hideCollapsed) return null;
     return (
       <div className="flex justify-end">
         <button onClick={() => setOpen(true)} className="btn-secondary text-xs py-2 px-3">+ Onboard a verified supplier</button>
@@ -320,6 +320,49 @@ function OnboardForm({ onChanged }: { onChanged: () => void }) {
   );
 }
 
+// RosterHealthBanner — the cold-start nudge. When the roster has no
+// verified suppliers, every mission sources against the synthetic seed:
+// simulated quotes auto-commit, and the concierge loop never actually
+// runs. This banner makes that state visible and points at the runbook so
+// the concierge builds a real roster before relying on the desk.
+function RosterHealthBanner({ verifiedCount, onOnboard }: { verifiedCount: number; onOnboard: () => void }) {
+  if (verifiedCount > 0) return null;
+
+  return (
+    <div className="paper-card rounded-2xl p-5 space-y-4 border-l-2 border-l-escalate animate-pop-in">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-xs uppercase tracking-[0.16em] text-escalate font-medium">No verified suppliers on the roster</p>
+          <p className="font-display text-lg text-ink">The desk is running on the synthetic seed</p>
+        </div>
+      </div>
+      <div className="receipt-perf" />
+      <p className="text-xs text-ink-muted leading-relaxed">
+        Every mission right now sources against the synthetic roster — quotes are auto-generated and labelled simulated, so nothing is actually booked with a real engineer. To run the real concierge loop, find and verify 3–5 local engineers first:
+      </p>
+      <ol className="space-y-2 text-xs text-ink-muted">
+        <li className="flex gap-2">
+          <span className="text-mandate font-medium shrink-0">1.</span>
+          <span><span className="text-ink font-medium">Find names</span> — <a href="/suppliers" className="text-mandate hover:underline">/suppliers</a> or the Exa discovery endpoint returns candidate businesses in your district.</span>
+        </li>
+        <li className="flex gap-2">
+          <span className="text-mandate font-medium shrink-0">2.</span>
+          <span><span className="text-ink font-medium">Verify registration</span> — the Companies House check (fail-closed). If the business isn't on the register, move on.</span>
+        </li>
+        <li className="flex gap-2">
+          <span className="text-mandate font-medium shrink-0">3.</span>
+          <span><span className="text-ink font-medium">Phone them</span> — confirm F-Gas certification, capacity for same-day jobs, and a real contact number.</span>
+        </li>
+      </ol>
+      <div className="flex items-center gap-3 pt-1">
+        <button onClick={onOnboard} className="btn-primary text-xs py-2 px-3">+ Onboard a verified supplier</button>
+        <a href="/suppliers" className="text-xs text-mandate hover:underline">See the roster</a>
+      </div>
+      <p className="text-[10px] text-ink-muted italic">Full runbook: docs/SUPPLY-SIDE.md</p>
+    </div>
+  );
+}
+
 // A live "desk open" indicator — the same pulse motif the buyer home page
 // uses for active jobs, tuned for the concierge's always-on surface.
 function DeskOpenIndicator({ count }: { count: number }) {
@@ -343,6 +386,7 @@ export default function OpsConsole() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [onboardOpen, setOnboardOpen] = useState(false);
 
   const refresh = () => setRefreshKey((k) => k + 1);
 
@@ -381,10 +425,14 @@ export default function OpsConsole() {
   const active = useMemo(() => missions.filter((m) => ACTIVE_STATUSES.has(m.status)), [missions]);
   const escalated = useMemo(() => missions.filter((m) => m.status === ESCALATED_STATUS), [missions]);
   const totalCount = active.length + escalated.length;
+  const verifiedCount = useMemo(() => Object.values(suppliers).filter((s) => s.verified).length, [suppliers]);
 
   return (
     <div className="space-y-6">
-      <OnboardForm onChanged={refresh} />
+      <RosterHealthBanner verifiedCount={verifiedCount} onOnboard={() => setOnboardOpen(true)} />
+      {/* When the roster-health banner is visible it carries the onboarding CTA,
+          so suppress the duplicate collapsed button; keep the form itself usable. */}
+      <OnboardForm onChanged={refresh} open={onboardOpen} setOpen={setOnboardOpen} hideCollapsed={verifiedCount === 0} />
 
       {error && (
         <p className="text-xs text-escalate paper-card rounded-xl p-3">{error}</p>
