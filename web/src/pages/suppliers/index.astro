@@ -23,7 +23,8 @@ try {
       </p>
     </div>
 
-    <!-- Coverage map (alive element) -->
+    <div class="receipt-perf -my-3"></div>
+
     <section class="space-y-2">
       <p class="text-xs uppercase tracking-wider text-ink-muted">Coverage by district</p>
       <TacticalRadar client:load activeDistrict="N1" />
@@ -45,8 +46,7 @@ try {
       </div>
     </div>
 
-    <!-- Supplier cards -->
-    {suppliers.length > 0 ? (
+    {suppliers.length > 0 && (
       <section class="space-y-3">
         <p class="text-xs uppercase tracking-wider text-ink-muted">On the roster</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -54,16 +54,17 @@ try {
             <div class="paper-card rounded-2xl p-4 space-y-2.5">
               <div class="flex items-center justify-between gap-3">
                 <span class="text-[11px] text-ink-muted">
-                  {s.priceTier === 'PREMIUM' ? 'Premium' : s.priceTier === 'BUDGET' ? 'Budget' : 'Mid range'}
+                  {s.priceTier === 'PREMIUM' && 'Premium'}{s.priceTier === 'BUDGET' && 'Budget'}{s.priceTier !== 'PREMIUM' && s.priceTier !== 'BUDGET' && 'Mid range'}
                 </span>
                 <span class="text-[11px] text-mandate font-medium">{Math.round(s.reliabilityScore * 100)}% on time</span>
               </div>
               <div>
                 <div class="flex items-center gap-2">
                   <p class="font-medium text-ink">{s.displayName}</p>
-                  {s.verified ? (
+                  {s.verified && (
                     <span class="text-[10px] bg-mandate/10 text-mandate px-1.5 py-0.5 rounded-full border border-mandate/25 font-medium">Verified</span>
-                  ) : (
+                  )}
+                  {!s.verified && (
                     <span class="text-[10px] bg-ink/5 text-ink-muted px-1.5 py-0.5 rounded-full border border-ink/10">Synthetic</span>
                   )}
                 </div>
@@ -76,16 +77,19 @@ try {
                   </span>
                 ))}
               </div>
-              {s.verified ? (
+              {s.verified && (
                 <p class="text-[10px] text-ink-muted italic">Reliability earned from real completed jobs.</p>
-              ) : (
+              )}
+              {!s.verified && (
                 <p class="text-[10px] text-ink-muted italic">Synthetic profile — keeps the demo running. Not a real business.</p>
               )}
             </div>
           ))}
         </div>
       </section>
-    ) : (
+    )}
+
+    {suppliers.length === 0 && (
       <div class="paper-card rounded-2xl p-8 text-center space-y-3">
         <div class="flex justify-center">
           <span class="receipt-punch"></span>
@@ -93,7 +97,7 @@ try {
         <p class="font-display text-xl text-ink">No engineers loaded</p>
         <p class="text-xs text-ink-muted max-w-sm mx-auto leading-relaxed">Start the Go backend, or <a href="/rehearsal" class="text-mandate hover:text-ink">try the rehearsal</a> for synthetic data.</p>
       </div>
-    )
+    )}
 
     <!-- Market stats -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">

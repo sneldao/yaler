@@ -54,6 +54,10 @@ function labelStatus(status) {
     <!-- The form -->
     <MissionForm client:load />
 
+    {active.length > 0 && (
+      <div class="receipt-perf -my-3"></div>
+    )}
+
     <!-- Active jobs -->
     {active.length > 0 && (
       <section class="space-y-3">
@@ -80,6 +84,10 @@ function labelStatus(status) {
           ))}
         </div>
       </section>
+    )}
+
+    {completed.length > 0 && (
+      <div class="receipt-perf -my-3"></div>
     )}
 
     <!-- Completed jobs -->
