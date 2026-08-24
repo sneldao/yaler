@@ -64,3 +64,10 @@ repos:
         language: system
         pass_filenames: false
         types: [go]
+
+      - id: no-astro-ternary-jsx
+        name: astro ternary-with-JSX check
+        entry: ./scripts/check-astro-ternary.sh
+        language: system
+        pass_filenames: false
+        files: '\.astro$'
