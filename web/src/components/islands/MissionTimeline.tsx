@@ -5,6 +5,7 @@ import { LoadingStatus } from '../primitives/LoaderGrid';
 import ToolChips, { type ToolChipCall } from '../primitives/ToolChips';
 import StatusBadge from '../primitives/StatusBadge';
 import { eventLabel, formatMoney, nextActionLabel } from '../../lib/copy';
+import { SponsorRail, type SponsorId } from '../primitives/SponsorCallout';
 import { celebrate, shake, playUiSound, markJobCompleted } from '../../lib/delight';
 
 /** Map status to a human-readable description of what the agent is doing right now */
@@ -121,6 +122,24 @@ export default function MissionTimeline({
   const isWorking = mission?.status !== 'COMPLETED' && mission?.status !== 'DRAFT';
   const showWork = isWorking && !hideWork;
 
+  // Derive which sponsor APIs are active/completed from the mission status.
+  const statusSponsors: Record<string, { active?: SponsorId; done?: SponsorId[] }> = {
+    DRAFT: { active: 'vapi' },
+    MANDATE_CONFIRMED: { done: ['vapi', 'gemini'] },
+    SOURCING: { done: ['vapi', 'gemini'], active: 'exa' },
+    OFFERS_RECEIVED: { done: ['vapi', 'gemini', 'exa'], active: 'apify' },
+    NEGOTIATING: { done: ['vapi', 'gemini', 'exa', 'apify'] },
+    COMMITTED: { done: ['vapi', 'gemini', 'exa', 'apify'] },
+    AWAITING_APPROVAL: { done: ['vapi', 'gemini', 'exa', 'apify'] },
+    IN_PROGRESS: { done: ['vapi', 'gemini', 'exa', 'apify'] },
+    EVIDENCE_PENDING: { done: ['vapi', 'gemini', 'exa', 'apify'], active: 'gemini' },
+    VERIFYING: { done: ['vapi', 'gemini', 'exa', 'apify'], active: 'gemini' },
+    COMPLETED: { done: ['vapi', 'gemini', 'exa', 'apify', 'elevenlabs'] },
+  };
+  const sponsorState = statusSponsors[mission?.status || ''] || {};
+  const activeSponsor = sponsorState.active;
+  const completedSponsors = sponsorState.done;
+
   const traceRows: TraceRow[] = events.map((evt) => ({
     primary: eventLabel(evt.type),
     secondary: new Date(evt.createdAt).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' }),
@@ -228,6 +247,9 @@ export default function MissionTimeline({
           <p className="text-sm text-ink leading-relaxed">
             {agentNarrative(mission?.status)}
           </p>
+
+          {/* Sponsor rail — shows which APIs are active at each stage */}
+          <SponsorRail active={activeSponsor} completed={completedSponsors} />
 
           {showWork && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3 border-t border-ink/10">
