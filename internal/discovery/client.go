@@ -170,7 +170,16 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 	q = strings.TrimSpace(q)
 	startURL := "https://find-and-update.company-information.service.gov.uk/search/companies?q=" + url.QueryEscape(q)
 
-	pageFn := "async function pageFunction(context) { const $ = context.$; return { text: $('body').text().replace(/\\s+/g, ' ').slice(0, 4000) }; }"
+	// Extract only the result titles (.type-company h2 a) — the body text is
+	// dominated by cookie banner + nav, and a naive 4k slice cut off the
+	// results list entirely, silently failing every check. Falls back to the
+	// capped body text when no titles match the selector.
+	pageFn := `async function pageFunction(context) {
+  const $ = context.$;
+  const titles = $('li.type-company h3 a, li.type-company h2 a').map((_, el) => $(el).text().trim()).get();
+  const text = titles.length > 0 ? titles.join(' | ') : $('body').text().replace(/\s+/g, ' ').slice(0, 4000);
+  return { text };
+}`
 	body, _ := json.Marshal(map[string]any{
 		"startUrls":    []map[string]string{{"url": startURL}},
 		"pageFunction": pageFn,
