@@ -39,5 +39,7 @@ export function lastTuesdayReceipt(): ProofReceipt {
     shareToken: 'last-tuesday-n1',
     humanReviewed: true,
     createdAt: '2026-08-11T09:12:00.000Z',
+    rating: 5,
+    ratingComment: 'Fixed before lunch. No food lost. Would book again.',
   };
 }

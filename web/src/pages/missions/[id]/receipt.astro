@@ -70,6 +70,19 @@ const ogDescription = receipt
               </ul>
             </div>
 
+            {receipt.rating && receipt.rating > 0 && (
+              <div class="space-y-2">
+                <p class="text-[11px] uppercase tracking-wider text-ink-muted">Buyer's verdict</p>
+                <div class="flex items-center gap-2">
+                  <span class="text-mandate text-lg leading-none">{'★'.repeat(receipt.rating)}<span class="text-ink/15">{'★'.repeat(5 - receipt.rating)}</span></span>
+                  <span class="text-sm text-ink font-medium">{receipt.rating} / 5</span>
+                </div>
+                {receipt.ratingComment && (
+                  <p class="text-sm text-ink-muted italic leading-relaxed">“{receipt.ratingComment}”</p>
+                )}
+              </div>
+            )}
+
             <div class="space-y-2">
               <p class="text-[11px] uppercase tracking-wider text-ink-muted">Public record</p>
               <dl class="text-sm space-y-2">

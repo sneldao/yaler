@@ -71,6 +71,8 @@ export interface ProofReceipt {
   shareToken: string;
   humanReviewed: boolean;
   createdAt: string;
+  rating?: number;
+  ratingComment?: string;
 }
 
 export interface Supplier {

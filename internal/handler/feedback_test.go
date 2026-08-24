@@ -117,3 +117,60 @@ func TestSubmitFeedback_ValidatesRatingRange(t *testing.T) {
 		}
 	}
 }
+
+// The proof receipt is enriched at read time with the buyer's rating —
+// feedback is submitted after the receipt is issued, so the rating lives
+// on MissionFeedback and is joined when the receipt is fetched.
+func TestReceiptEnrichedWithFeedback(t *testing.T) {
+	mux, st := setupCalloutTest(t, domain.StatusCompleted)
+	st.SaveSupplier(context.Background(), &domain.Supplier{
+		ID: "sup_real", DisplayName: "Real Refrigeration Co",
+		ReliabilityScore: 0.9, Status: "ACTIVE", Verified: true,
+	})
+	m, _ := st.GetMission(context.Background(), testMissionID)
+	m.SelectedSupplierID = "sup_real"
+	m.Version++
+	st.UpdateMission(context.Background(), m)
+
+	// Issue a receipt for the completed mission.
+	receipt := &domain.ProofReceipt{
+		ID:         testMissionID,
+		MissionID:  testMissionID,
+		Summary:    "Done",
+		ShareToken: "rt_test",
+	}
+	st.SaveProofReceipt(context.Background(), receipt)
+
+	// Before feedback: receipt has no rating.
+	req := httptest.NewRequest("GET", "/api/missions/"+testMissionID+"/receipt", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	var before domain.ProofReceipt
+	json.NewDecoder(rec.Body).Decode(&before)
+	if before.Rating != 0 {
+		t.Errorf("receipt before feedback should have no rating, got %d", before.Rating)
+	}
+
+	// Submit feedback.
+	body, _ := json.Marshal(map[string]any{"rating": 4, "comment": "On time, tidy"})
+	fbReq := httptest.NewRequest("POST", "/api/missions/"+testMissionID+"/feedback", bytes.NewBuffer(body))
+	fbReq.Header.Set("Content-Type", "application/json")
+	fbRec := httptest.NewRecorder()
+	mux.ServeHTTP(fbRec, fbReq)
+	if fbRec.Code != http.StatusOK {
+		t.Fatalf("feedback: expected 200, got %d", fbRec.Code)
+	}
+
+	// After feedback: receipt shows the rating + comment.
+	req2 := httptest.NewRequest("GET", "/api/missions/"+testMissionID+"/receipt", nil)
+	rec2 := httptest.NewRecorder()
+	mux.ServeHTTP(rec2, req2)
+	var after domain.ProofReceipt
+	json.NewDecoder(rec2.Body).Decode(&after)
+	if after.Rating != 4 {
+		t.Errorf("receipt after feedback should show rating 4, got %d", after.Rating)
+	}
+	if after.RatingComment != "On time, tidy" {
+		t.Errorf("receipt should carry the comment, got %q", after.RatingComment)
+	}
+}

@@ -548,6 +548,7 @@ func (h *Handler) HandleGetReceipt(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "Receipt not found for mission")
 		return
 	}
+	h.enrichReceiptWithFeedback(r.Context(), receipt)
 	writeJSON(w, http.StatusOK, receipt)
 }
 
@@ -559,7 +560,21 @@ func (h *Handler) HandleGetReceiptByToken(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusNotFound, "Invalid or expired proof receipt token")
 		return
 	}
+	h.enrichReceiptWithFeedback(r.Context(), receipt)
 	writeJSON(w, http.StatusOK, receipt)
+}
+
+// enrichReceiptWithFeedback stamps the buyer's post-job rating onto the
+// receipt at read time. Feedback is submitted after the receipt is issued,
+// so the rating lives on MissionFeedback and is joined here rather than
+// persisted on the receipt itself.
+func (h *Handler) enrichReceiptWithFeedback(ctx context.Context, receipt *domain.ProofReceipt) {
+	fb, err := h.store.GetMissionFeedback(ctx, receipt.MissionID)
+	if err != nil || fb == nil {
+		return // unrated — leave the zero value
+	}
+	receipt.Rating = fb.Rating
+	receipt.RatingComment = fb.Comment
 }
 
 // 13. List Suppliers

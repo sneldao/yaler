@@ -175,6 +175,11 @@ type ProofReceipt struct {
 	ShareToken       string            `json:"shareToken" firestore:"shareToken"`
 	HumanReviewed    bool              `json:"humanReviewed" firestore:"humanReviewed"`
 	CreatedAt        time.Time         `json:"createdAt" firestore:"createdAt"`
+	// Buyer verdict (the reliability loop). Enriched at read time from
+	// MissionFeedback — not stored on the receipt itself, since feedback
+	// is submitted after the receipt is issued. Zero value means unrated.
+	Rating        int    `json:"rating,omitempty" firestore:"-"`
+	RatingComment string `json:"ratingComment,omitempty" firestore:"-"`
 }
 
 // TaskPayload represents the async task payload sent via Cloud Tasks or direct call emulator.
