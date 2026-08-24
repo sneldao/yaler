@@ -1,0 +1,78 @@
+# CI — type-check + build + test on every push and PR.
+#
+# Catches the two classes of errors that silently slipped through this session:
+#   1. TypeScript errors (tsc --noEmit) — the pre-existing audio.ts / wrapper
+#      errors that were only discovered during a later audit.
+#   2. Astro build failures (astro build) — the ternary-with-JSX pattern that
+#      breaks the compiler with "Expected } but found $$render" but exits 0
+#      (an Astro quirk). The pre-commit hook catches the pattern at write
+#      time; this catches any build regression at CI time, including ones
+#      the hook can't foresee.
+#   3. Go vet + test regressions.
+#
+# The web job runs tsc BEFORE astro build so a type error is reported cleanly
+# (astro build's own tsc is less precise). The astro build step pipes through
+# grep to catch the ERROR marker, since `astro build` can exit 0 on failure.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs when a new commit is pushed.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: Go vet + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
+
+  web:
+    name: tsc + astro build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Astro build (fail on ERROR marker)
+        # `astro build` can exit 0 even when the compiler fails (Astro quirk).
+        # Pipe through grep to catch the ERROR line and exit 1 if found.
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee /tmp/astro-build.log
+          if grep -q '\[ERROR\]' /tmp/astro-build.log; then
+            echo "::error::Astro build failed with errors (see log above)"
+            exit 1
+          fi
