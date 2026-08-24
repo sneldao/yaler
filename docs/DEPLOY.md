@@ -27,6 +27,41 @@ make deploy-backend
 
 That runs `cloudbuild-backend.yaml`: build `Dockerfile.server`, push the image, `gcloud run deploy` the same service. Path-filter: do this when `cmd/`, `internal/`, `Dockerfile.server`, or seed data change — not for copy in `web/`.
 
+### Cloud Tasks queue (production async spine)
+
+The backend runs mission steps through a task client. Local dev uses an
+in-process direct client; production enqueues on a real Cloud Tasks queue so
+a sourcing mission can wait for a real quote and resume when the concierge
+enters one — the step survives across requests and scale-to-zero.
+
+One-time setup (create the queue + give the service account invoke rights):
+
+```bash
+QUEUE=projects/cognivern/locations/europe-west2/queues/yaler-missions
+gcloud tasks queues create yaler-missions --location=europe-west2
+# Retry config: 5 attempts, exponential backoff 10s→10min.
+gcloud tasks queues update yaler-missions --location=europe-west2 \
+  --max-attempts=5 --max-backoff=600s --max-doublings=3
+# Let the Cloud Run service account invoke itself.
+RUNNER=$(gcloud run services describe yaler-backend --region=europe-west2 --format='value(status.template.spec.serviceAccountName)')
+gcloud tasks queues add-iam-policy-binding yaler-missions --location=europe-west2 \
+  --member="serviceAccount:${RUNNER}" --role='roles/cloudtasks.enqueuer'
+```
+
+Then set these env vars on the Cloud Run service (via `cloudbuild-backend.yaml`
+`--set-env-vars` or `gcloud run services update --set-env-vars`):
+
+```text
+CLOUD_TASKS_EMULATOR=false
+CLOUD_TASKS_QUEUE=projects/cognivern/locations/europe-west2/queues/yaler-missions
+CLOUD_TASKS_TARGET=https://yaler-backend-48617502162.europe-west2.run.app/api/worker/step
+# CLOUD_TASKS_SA is optional; unset => the service's runtime account is used.
+```
+
+The server fails to start if `CLOUD_TASKS_EMULATOR=false` without these —
+that's a deliberate fail-loud guard. Locally, leave `CLOUD_TASKS_EMULATOR=true`
+and no queue is needed.
+
 ```bash
 curl -sS https://yaler-backend-48617502162.europe-west2.run.app/health
 curl -sS "https://yaler-backend-48617502162.europe-west2.run.app/api/discovery?district=N1"

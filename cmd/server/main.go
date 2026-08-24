@@ -67,8 +67,29 @@ func main() {
 	}
 
 	// 4. Initialize Task Client
-	workerURL := fmt.Sprintf("http://localhost:%s/api/worker/step", port)
-	tc := tasks.NewLocalDirectClient(workerURL)
+	//    Local dev (CLOUD_TASKS_EMULATOR=true, or unset) uses the in-process
+	//    direct client. Production (CLOUD_TASKS_EMULATOR=false) enqueues on a
+	//    real Cloud Tasks queue so mission steps survive across requests and
+	//    scale-to-zero — a sourcing mission can wait for a real quote and
+	//    resume when the concierge enters one.
+	var tc tasks.Client
+	if os.Getenv("CLOUD_TASKS_EMULATOR") == "false" {
+		cq, err := tasks.NewCloudTasksClient(ctx)
+		if err != nil {
+			log.Fatalf("[Server] Cloud Tasks client init failed: %v", err)
+		}
+		defer func() {
+			if err := cq.Close(); err != nil {
+				log.Printf("[Server] warning: closing cloud tasks client: %v", err)
+			}
+		}()
+		tc = cq
+		log.Println("[Server] Using Cloud Tasks queue.")
+	} else {
+		workerURL := fmt.Sprintf("http://localhost:%s/api/worker/step", port)
+		tc = tasks.NewLocalDirectClient(workerURL)
+		log.Println("[Server] Using local direct task client (CLOUD_TASKS_EMULATOR).")
+	}
 
 	// 5. Initialize Handler
 	h := handler.NewHandler(st, pe, gc, tc)

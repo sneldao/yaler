@@ -133,7 +133,7 @@ Yaler was spec-driven from day one using [Kiro](https://kiro.dev). Every feature
 
 3. **All state transitions are deterministic and recorded.** Requirement FR-7 mandated immutable events for every action. This produced the append-only `events` subcollection and the `Event` type with `PolicyResult` and `IdempotencyKey` fields. The state machine in `internal/domain/` tests every valid transition and rejects invalid ones with table-driven tests.
 
-4. **Cloud Tasks local simulation.** The design spec required production Cloud Tasks but a working local demo. Tasks.md task 6 produced the task interface with `local.go` (labelled direct worker call) and `cloud_tasks.go` (real Cloud Tasks), with `CLOUD_TASKS_EMULATOR=true` switching between them.
+4. **Cloud Tasks local simulation.** The design spec required production Cloud Tasks but a working local demo. `internal/tasks` provides a `LocalDirectClient` (an in-process goroutine that calls the worker endpoint, for local dev) and a `CloudTasksClient` (a real Cloud Tasks queue with OIDC auth to the Cloud Run service, for production). `CLOUD_TASKS_EMULATOR=false` switches the server to the real queue; otherwise the local direct client is used. Retry/backoff is delegated to the queue's config on Cloud Tasks; the worker is idempotent via `ExpectedVersion` + `IdempotencyKey` so tasks are safe to retry on both transports.
 
 ### How Kiro was used in practice
 
