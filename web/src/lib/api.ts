@@ -312,6 +312,18 @@ export async function checkCredential(name: string): Promise<CredentialCheck> {
   return res.json();
 }
 
+// Probe a real credential check against a known roster supplier. Used by
+// the ops console to surface whether the Companies House/Apify check is
+// actually working (and to expose the one-click Apify approval link when
+// Apify refuses to run the actor before account approval).
+export async function probeCredentialCheck(): Promise<CredentialCheck> {
+  const res = await fetch(
+    `${API_BASE}/api/credentials?name=${encodeURIComponent('Commercial Refrigeration Services London')}`,
+  );
+  if (!res.ok) return { name: 'Commercial Refrigeration Services London', status: 'not_checked' };
+  return res.json();
+}
+
 export async function listSuppliers(): Promise<Supplier[]> {
   const res = await fetch(`${API_BASE}/api/suppliers`);
   if (!res.ok) throw new Error('Failed to list suppliers');

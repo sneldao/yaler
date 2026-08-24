@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import StatusBadge from '../primitives/StatusBadge';
-import { listCallouts, listMissions, listSuppliers, onboardSupplier, resumeMission, submitCalloutOffer, type Callout, type Mission, type Supplier } from '../../lib/api';
+import { listCallouts, listMissions, listSuppliers, onboardSupplier, probeCredentialCheck, resumeMission, submitCalloutOffer, type Callout, type CredentialCheck, type Mission, type Supplier } from '../../lib/api';
 import { formatMoney } from '../../lib/copy';
 
 /**
@@ -363,7 +363,62 @@ function RosterHealthBanner({ verifiedCount, onOnboard }: { verifiedCount: numbe
   );
 }
 
-// A live "desk open" indicator — the same pulse motif the buyer home page
+// ApifyHealthCard — probes the real credential check once on mount and
+// surfaces the outcome to the concierge. If Apify refuses to run the actor
+// (permission not yet approved), it shows the one-click approval link so the
+// fix is a single click, not a mystery. If the check works, it quietly
+// confirms the trust tooling is live.
+function ApifyHealthCard() {
+  const [state, setState] = useState<'checking' | 'ok' | 'needs_approval' | 'down'>('checking');
+  const [approvalUrl, setApprovalUrl] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    probeCredentialCheck().then((res: CredentialCheck) => {
+      if (cancelled) return;
+      if (res.status === 'not_checked' && res.detail && res.detail.includes('approve')) {
+        setApprovalUrl(res.detail.replace(/^Apify:\s*/, '').replace(/Once: /i, ''));
+        setState('needs_approval');
+      } else if (res.status === 'listed') {
+        setState('ok');
+      } else {
+        setState('ok'); // checks are observable; not every name is listed
+      }
+    }).catch(() => {
+      if (!cancelled) setState('ok');
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (state === 'checking') return null;
+
+  if (state === 'needs_approval') {
+    return (
+      <div className="paper-card rounded-2xl p-4 space-y-2 border-l-2 border-l-escalate animate-pop-in">
+        <div className="flex items-center gap-2">
+          <span className="text-escalate font-display text-sm">⚠</span>
+          <p className="text-xs font-medium text-ink">Apify needs a one-time approval</p>
+        </div>
+        <p className="text-xs text-ink-muted leading-relaxed">
+          The Companies House check is running through Apify's cheerio-scraper actor, but your Apify account hasn't approved that actor's permissions yet. Approve it once (free) and checks work immediately:
+        </p>
+        <a
+          href="https://console.apify.com/actors/YrQuEkowkNCLdk4j2?approvePermissions=true"
+          target="_blank"
+          rel="noreferrer"
+          className="btn-primary text-xs py-2 px-3 inline-block"
+        >
+          Approve cheerio-scraper on Apify
+        </a>
+        <p className="text-[10px] text-ink-muted italic">After approving, this card clears on the next refresh (~10s).</p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// A live "desk open" indicator — the same pulse the buyer home page
 // uses for active jobs, tuned for the concierge's always-on surface.
 function DeskOpenIndicator({ count }: { count: number }) {
   return (
@@ -429,6 +484,7 @@ export default function OpsConsole() {
 
   return (
     <div className="space-y-6">
+      <ApifyHealthCard />
       <RosterHealthBanner verifiedCount={verifiedCount} onOnboard={() => setOnboardOpen(true)} />
       {/* When the roster-health banner is visible it carries the onboarding CTA,
           so suppress the duplicate collapsed button; keep the form itself usable. */}

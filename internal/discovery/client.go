@@ -197,6 +197,25 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		out.Detail = fmt.Sprintf("apify returned status %d", resp.StatusCode)
+
+		// Multi-failover: try to extract the actor permission error from the
+		// JSON body. Apify routinely refuses to run the cheerio-scraper actor
+		// with "full-permission-actor-not-approved" until the account owner
+		// approves its permissions once at the console URL. Surface that
+		// specific message + the one-click approval link to the concierge
+		// instead of a generic "apify 403".
+		var apifyErr struct {
+			Error struct {
+				Type    string `json:"type"`
+				Message string `json:"message"`
+				Data    struct {
+					ApprovalURL string `json:"approvalUrl"`
+				} `json:"data"`
+			} `json:"error"`
+		}
+		if derr := json.NewDecoder(resp.Body).Decode(&apifyErr); derr == nil && apifyErr.Error.Type == "full-permission-actor-not-approved" {
+			out.Detail = "Apify: approve the cheerio-scraper actor once: " + apifyErr.Error.Data.ApprovalURL
+		}
 		return out
 	}
 
