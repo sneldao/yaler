@@ -5,6 +5,7 @@ import ActivityPulse from '../components/islands/ActivityPulse';
 import DiscoveryBadge from '../components/islands/DiscoveryBadge';
 import WaitlistCapture from '../components/islands/WaitlistCapture';
 import ProgressiveHero from '../components/islands/ProgressiveHero';
+import DistrictPicker from '../components/islands/DistrictPicker';
 import { listMissions } from '../lib/api';
 
 let missions = [];
@@ -41,7 +42,10 @@ function labelStatus(status) {
     <div class="space-y-4 pt-2">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">For London kitchens</p>
-        <ActivityPulse client:load />
+        <div class="flex items-center gap-3">
+          <DistrictPicker client:load />
+          <ActivityPulse client:load />
+        </div>
       </div>
 
       <ProgressiveHero client:load />
