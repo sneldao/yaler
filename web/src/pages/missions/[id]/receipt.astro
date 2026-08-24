@@ -98,7 +98,7 @@ const ogDescription = receipt
               </dl>
             </div>
 
-            <HearReceipt client:load text={`${receipt.summary} ${receipt.agreedTerms}`} />
+            <HearReceipt client:load receipt={receipt} />
 
             <!-- Print button (desktop only) -->
             <button

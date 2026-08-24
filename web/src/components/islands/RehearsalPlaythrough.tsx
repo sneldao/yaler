@@ -250,7 +250,13 @@ export default function RehearsalPlaythrough() {
                   : 'Public register: not checked'}
               </p>
               <HearReceipt
-                text={`Receipt. ${receipt.summary} ${receipt.agreedTerms} Nothing was booked. This was a rehearsal.`}
+                receipt={{
+                  summary: `${receipt.summary} Nothing was booked — this was a rehearsal.`,
+                  agreedTerms: receipt.agreedTerms,
+                  evidenceLabels: receipt.evidenceLabels,
+                  rating: receipt.rating,
+                  ratingComment: receipt.ratingComment,
+                }}
               />
             </div>
             <div className="receipt-perf" />
