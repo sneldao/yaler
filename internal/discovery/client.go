@@ -281,16 +281,33 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 	if len(needles) == 0 {
 		return out
 	}
-	hits := 0
-	for _, n := range needles {
-		if len(n) < 4 {
+	// Match against the extracted result titles (pageFunction returns just
+	// the company names from the results list). A name counts as confirmed
+	// when at least two meaningful tokens (>=4 chars) appear in the titles.
+	// Generic words (LTD, LIMITED, LTD, SERVICES, COMPANY, COMPANIES) are
+	// ignored so a match isn't a false positive from the generic suffix.
+	needles = needles[:0]
+	for _, tok := range strings.Fields(strings.ToLower(q)) {
+		tok = strings.Trim(tok, ",.&'()")
+		if len(tok) < 4 {
 			continue
 		}
+		switch tok {
+		case "limited", "ltd", "company", "companies", "service", "services", "group", "holdings", "and", "the", "london":
+			continue
+		}
+		needles = append(needles, tok)
+	}
+	if len(needles) == 0 {
+		return out
+	}
+	hits := 0
+	for _, n := range needles {
 		if strings.Contains(hay, n) {
 			hits++
 		}
 	}
-	if hits < 2 || !strings.Contains(hay, "companies house") {
+	if hits < 2 {
 		out.Detail = "name not confirmed on the public register"
 		return out
 	}
