@@ -12,9 +12,9 @@ import (
 // the title-extracting pageFunction no longer includes.
 func TestCheckCredential_TitlesMatch(t *testing.T) {
 	cases := []struct {
-		name  string
+		name   string
 		titles string
-		want  bool
+		want   bool
 	}{
 		{
 			name:   "Xpress Refrigeration",
