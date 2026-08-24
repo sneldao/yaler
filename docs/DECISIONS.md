@@ -255,3 +255,10 @@ Do not choose pricing until repeat mission behavior and the value of reliability
 ### Q010 — Cloud Tasks local simulation
 
 **Closed as D019.** Local mode is a labelled direct worker call. Production uses Cloud Tasks.
+
+
+### D036 — Landing is a 30-second pitch, not a product dashboard
+
+**Decision:** The home page (`/`) is a compact pitch: universal pain headline → 3-step how-it-works → time comparison → sponsor tech strip → story teaser → market stats → waitlist. Product demo elements (DiscoveryBadge, SavedMandateCard, SponsorFlowDemo, DistrictPicker, active jobs) move to their contextual pages (`/missions/new`, `/rehearsal`). The hero leads with universal pain ("Equipment breaks. Every minute costs you money.") with "Live in London" as a credibility signal, not a geographic gate.
+
+**Reason:** The Build Club SF hackathon audience is researchers, engineers, and founders — not London kitchen managers. They need to understand the problem, scale, and solution in 30 seconds of scrolling. The previous landing tried to be both a pitch page and a returning-user dashboard, diluting both. Product depth lives one click away in the rehearsal (where SponsorFlowDemo now shows all 5 sponsor APIs firing in sequence). The sponsor tech strip on the landing ensures judges see Gemini, Vapi, Exa, Apify, and ElevenLabs named and working without needing to click through — critical given dedicated prize tracks for Vapi, Apify, and ElevenLabs.

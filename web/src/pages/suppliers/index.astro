@@ -16,19 +16,19 @@ try {
   <div class="space-y-8 py-2">
     <!-- Header (consistent rhythm: label → headline → subtext) -->
     <div class="space-y-2">
-      <p class="text-xs uppercase tracking-[0.16em] text-mandate">The engineers Priya's agent found</p>
+      <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">The engineers Priya's agent found</p>
       <h1 class="font-display text-3xl text-ink">Local. Checked. Ready.</h1>
       <p class="text-ink-muted text-sm max-w-xl">
         These are the people who get clear, scoped jobs from Yaler — not fishing expeditions. They know what's broken, the budget, and the deadline before they respond.
       </p>
     </div>
 
-    <div class="receipt-perf -my-3"></div>
-
     <section class="space-y-2">
       <p class="text-xs uppercase tracking-wider text-ink-muted">Coverage by district</p>
       <TacticalRadar client:load activeDistrict="N1" />
     </section>
+
+    <div class="receipt-perf"></div>
 
     <!-- How engineers experience Yaler -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -121,8 +121,8 @@ try {
 
     <!-- Forward CTA -->
     <div class="flex flex-col sm:flex-row gap-3">
-      <a href="/missions/new" class="btn-primary text-sm text-center py-2.5 flex-1">Start a job</a>
-      <a href="/rehearsal" class="btn-secondary text-sm text-center py-2.5 flex-1">Try the rehearsal</a>
+      <a href="/missions/new" class="btn-primary text-sm py-3 px-5 flex-1 text-center">Start a job</a>
+      <a href="/rehearsal" class="btn-secondary text-sm py-3 px-5 flex-1 text-center">Try the rehearsal</a>
     </div>
 
     <!-- Supply-side waitlist -->

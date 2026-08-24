@@ -2,6 +2,8 @@
 import Layout from '../../layouts/Layout.astro';
 import MissionForm from '../../components/islands/MissionForm';
 import DiscoveryBadge from '../../components/islands/DiscoveryBadge';
+import DistrictPicker from '../../components/islands/DistrictPicker';
+import SavedMandateCard from '../../components/islands/SavedMandateCard';
 import { listMissions } from '../../lib/api';
 
 let missions = [];
@@ -37,16 +39,22 @@ function labelStatus(status) {
 ---
 
 <Layout title="Jobs — Yaler">
-  <div class="py-4 space-y-8">
+  <div class="space-y-8 py-2">
     <!-- Header -->
     <div class="space-y-2">
-      <p class="text-xs uppercase tracking-[0.16em] text-mandate">Cafe Noor, N1</p>
+      <div class="flex items-center justify-between gap-3">
+        <p class="text-xs uppercase tracking-[0.16em] text-mandate">New job</p>
+        <DistrictPicker client:load />
+      </div>
       <h1 class="font-display text-3xl text-ink">What's broken?</h1>
       <p class="text-sm text-ink-muted max-w-xl">
         This is live — someone may be booked. Want to feel the flow first?
         <a href="/rehearsal" class="text-mandate hover:text-ink transition-colors ml-1">Try the rehearsal</a>
       </p>
     </div>
+
+    <!-- Saved mandate (returning users) -->
+    <SavedMandateCard client:load />
 
     <!-- Discovery signal -->
     <DiscoveryBadge client:load district="N1" />
@@ -55,7 +63,7 @@ function labelStatus(status) {
     <MissionForm client:load />
 
     {active.length > 0 && (
-      <div class="receipt-perf -my-3"></div>
+      <div class="receipt-perf"></div>
     )}
 
     <!-- Active jobs -->
@@ -87,7 +95,7 @@ function labelStatus(status) {
     )}
 
     {completed.length > 0 && (
-      <div class="receipt-perf -my-3"></div>
+      <div class="receipt-perf"></div>
     )}
 
     <!-- Completed jobs -->

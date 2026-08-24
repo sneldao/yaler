@@ -89,6 +89,11 @@ The `.kiro/` directory must demonstrate meaningful spec-driven development:
   (Gemini, Vapi, Exa, Apify, ElevenLabs) fires as a visible branded
   callout when active, with a SponsorRail in the footer and timeline
   showing the full stack at a glance.
+- **Landing restructured for pitch (Horizon 1):** compact 30-second
+  pitch page — universal pain hero, 3-step flow, time comparison,
+  sponsor tech strip (all 5 named with one-liner roles), story teaser,
+  market stats. Product demo elements live on contextual pages
+  (`/rehearsal`, `/missions/new`). Location-agnostic framing per D036.
 - **Animated receipt built (Horizon 1):** thermal-print animation,
   verified stamp, fold lines, buyer rating — the People's Choice
   artifact.

@@ -1,12 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import RehearsalPlaythrough from '../components/islands/RehearsalPlaythrough';
+import SponsorFlowDemo from '../components/islands/SponsorFlowDemo';
 
 const autoplay = Astro.url.searchParams.has('autoplay');
 ---
 
 <Layout title="Rehearsal — Cafe Noor's fridge, last Tuesday">
-  <div class="space-y-5">
+  <div class="space-y-8 py-2">
     <!-- Header (consistent rhythm) -->
     <div class="space-y-2">
       <p class="text-xs uppercase tracking-[0.16em] text-mandate">Cafe Noor · N1 · practice</p>
@@ -21,5 +22,14 @@ const autoplay = Astro.url.searchParams.has('autoplay');
 
     <!-- The playthrough (alive element — the entire island) -->
     <RehearsalPlaythrough client:load autoplay={autoplay} />
+
+    <!-- Sponsor flow — shows the tech stack in action after the demo -->
+    <SponsorFlowDemo client:load />
+
+    <!-- Forward -->
+    <div class="flex flex-col sm:flex-row gap-3">
+      <a href="/missions/new" class="btn-primary text-sm py-3 px-5 flex-1 text-center">Start a real job</a>
+      <a href="/story" class="btn-secondary text-sm py-3 px-5 flex-1 text-center">How it works</a>
+    </div>
   </div>
 </Layout>
