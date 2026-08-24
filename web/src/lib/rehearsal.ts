@@ -192,6 +192,8 @@ export function rehearsalReceipt(engineer: string, amount: number): ProofReceipt
       engineer,
       paid: `£${amount}`,
     },
+    rating: 5,
+    ratingComment: 'Fixed before lunch. No food lost. Would book again.',
     shareToken: 'rehearsal-n1',
     humanReviewed: false,
     createdAt: '2026-08-11T12:41:00.000Z',

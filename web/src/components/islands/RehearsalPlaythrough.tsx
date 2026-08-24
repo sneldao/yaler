@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { LoaderGrid } from '../primitives/LoaderGrid';
 import type { CredentialCheck, Mission, Offer } from '../../lib/api';
 import { checkCredential } from '../../lib/api';
 import {
@@ -166,11 +167,17 @@ export default function RehearsalPlaythrough() {
             mission={lookingMission}
             events={rehearsalEvents('sourcing')}
           />
-          <div className="paper-card rounded-2xl p-6 text-center space-y-2">
+          <div className="paper-card rounded-2xl p-8 text-center space-y-3 animate-pop-in">
+            <div className="flex justify-center">
+              <span className="receipt-punch" />
+            </div>
             <h3 className="font-display text-xl text-ink">Asking nearby engineers</h3>
-            <p className="text-sm text-ink-muted max-w-md mx-auto">
+            <p className="text-sm text-ink-muted max-w-md mx-auto leading-relaxed">
               In a real job this can take a few minutes. Here it is last Tuesday, sped up.
             </p>
+            <div className="flex justify-center pt-1">
+              <LoaderGrid />
+            </div>
           </div>
         </>
       )}
@@ -218,6 +225,18 @@ export default function RehearsalPlaythrough() {
                   </li>
                 ))}
               </ul>
+              {receipt.rating && receipt.rating > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] uppercase tracking-wider text-ink-muted">Buyer's verdict</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-mandate text-lg leading-none">{'★'.repeat(receipt.rating)}<span className="text-ink/15">{'★'.repeat(5 - receipt.rating)}</span></span>
+                    <span className="text-sm text-ink font-medium">{receipt.rating} / 5</span>
+                  </div>
+                  {receipt.ratingComment && (
+                    <p className="text-sm text-ink-muted italic leading-relaxed">“{receipt.ratingComment}”</p>
+                  )}
+                </div>
+              )}
               <div className="flex justify-between items-center border-t border-ink/10 pt-3">
                 <span className="text-sm text-ink-muted">Paid</span>
                 <span className="font-display text-2xl text-ink">{formatMoney(booked.price, booked.currency)}</span>
