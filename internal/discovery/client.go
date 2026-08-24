@@ -154,10 +154,13 @@ type Credential struct {
 }
 
 // CheckCredential looks up a name on Companies House via Apify.
-// Any missing key, timeout, or unexpected page returns not_checked.
+// Any missing key, timeout, or unexpected page returns not_checked, but it
+// records the reason in Detail so the concierge can tell "not on the register"
+// apart from "the check itself broke" — fail-closed but observable.
 func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Credential {
 	out := Credential{Name: name, Status: "not_checked"}
 	if d.apifyKey == "" || strings.TrimSpace(name) == "" {
+		out.Detail = "apify key not configured"
 		return out
 	}
 
@@ -177,24 +180,35 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 		bytes.NewBuffer(body),
 	)
 	if err != nil {
+		out.Detail = "request build failed: " + err.Error()
 		return out
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 12 * time.Second}
+	// A synchronous Cheerio scrape (start → fetch → render → return) routinely
+	// takes 20-40s on Companies House. The previous 12s timeout silently
+	// turned every check into not_checked.
+	client := &http.Client{Timeout: 90 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
+		out.Detail = "apify request failed: " + err.Error()
 		return out
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
+		out.Detail = fmt.Sprintf("apify returned status %d", resp.StatusCode)
 		return out
 	}
 
 	var rows []struct {
 		Text string `json:"text"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&rows); err != nil || len(rows) == 0 {
+	if err := json.NewDecoder(resp.Body).Decode(&rows); err != nil {
+		out.Detail = "apify response decode failed: " + err.Error()
+		return out
+	}
+	if len(rows) == 0 {
+		out.Detail = "apify returned no rows"
 		return out
 	}
 
@@ -213,6 +227,7 @@ func (d *DiscoveryService) CheckCredential(ctx context.Context, name string) Cre
 		}
 	}
 	if hits < 2 || !strings.Contains(hay, "companies house") {
+		out.Detail = "name not confirmed on the public register"
 		return out
 	}
 
