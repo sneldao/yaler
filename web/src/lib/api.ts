@@ -340,3 +340,15 @@ export async function uploadImage(file: File): Promise<{ url: string; filename: 
   if (!res.ok) throw new Error('Failed to upload image');
   return res.json();
 }
+
+export interface Stats {
+  completed: number;
+  distinctBuyers: number;
+  totalMissions: number;
+}
+
+export async function getStats(): Promise<Stats> {
+  const res = await fetch(`${API_BASE}/api/stats`);
+  if (!res.ok) throw new Error('Failed to fetch stats');
+  return res.json();
+}

@@ -65,6 +65,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/worker/step", h.HandleWorkerStep)
 	mux.HandleFunc("POST /api/waitlist", h.HandleWaitlist)
 	mux.HandleFunc("GET /api/waitlist", h.HandleListWaitlist)
+	mux.HandleFunc("GET /api/stats", h.HandleStats)
 
 	// Note: uploads write to local disk (./uploads/) on an ephemeral container.
 	// Files uploaded to one Cloud Run instance may not be servable by another.
@@ -190,6 +191,30 @@ func (h *Handler) HandleListMissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, missions)
+}
+
+// HandleStats returns mission metrics for the homepage social-proof bar.
+func (h *Handler) HandleStats(w http.ResponseWriter, r *http.Request) {
+	missions, err := h.store.ListMissions(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to compute stats")
+		return
+	}
+	var completed int
+	buyers := make(map[string]bool)
+	for _, m := range missions {
+		if m.Status == domain.StatusCompleted {
+			completed++
+			if m.BuyerID != "" {
+				buyers[m.BuyerID] = true
+			}
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"completed":      completed,
+		"distinctBuyers": len(buyers),
+		"totalMissions":  len(missions),
+	})
 }
 
 // 3. Get Mission

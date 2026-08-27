@@ -6,6 +6,7 @@ import StepsCarousel from '../components/islands/StepsCarousel';
 import SponsorChips from '../components/islands/SponsorChips';
 import StoryTeaser from '../components/islands/StoryTeaser';
 import DeferredWaitlist from '../components/islands/DeferredWaitlist';
+import StatsBar from '../components/islands/StatsBar';
 ---
 
 <Layout title="Yaler — Get the job done">
@@ -78,6 +79,11 @@ import DeferredWaitlist from '../components/islands/DeferredWaitlist';
         <p class="font-display text-lg text-ink">Concierge dispatch desk</p>
       </a>
     </div>
+
+    <!-- Social proof — live mission count from the backend -->
+    <section class="reveal-on-scroll py-4">
+      <StatsBar client:load />
+    </section>
 
     <!-- Market — one hero stat, the rest a thin strip -->
     <section class="paper-card rounded-2xl p-5 sm:p-6 space-y-4 reveal-on-scroll">

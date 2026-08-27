@@ -2,6 +2,7 @@
 import Layout from '../../../layouts/Layout.astro';
 import HearReceipt from '../../../components/primitives/HearReceipt';
 import ShareReceipt from '../../../components/islands/ShareReceipt';
+import ReceiptCardImage from '../../../components/islands/ReceiptCardImage';
 import { getProofReceipt } from '../../../lib/api';
 import { lastTuesdayReceipt } from '../../../lib/lastTuesday';
 
@@ -129,6 +130,17 @@ const ogDescription = receipt
         <!-- Share + viral hooks -->
         <ShareReceipt client:load receiptId={id} summary={receipt.summary} shareToken={receipt.shareToken} />
 
+        <!-- Download a branded receipt card image for WhatsApp / WeChat / Instagram -->
+        <ReceiptCardImage
+          client:load
+          summary={receipt.summary ?? ''}
+          agreedTerms={receipt.agreedTerms ?? ''}
+          rating={receipt.rating ?? 0}
+          ratingComment={receipt.ratingComment ?? undefined}
+          evidenceLabels={receipt.evidenceLabels}
+          createdAt={receipt.createdAt ?? new Date().toISOString()}
+        />
+
         <!-- Recipient landing — someone who was SENT this receipt gets
              context + a CTA, so the share page is not a dead end. -->
         <div class="paper-card rounded-2xl p-5 sm:p-6 space-y-3 border-l-2 border-l-mandate/40">
@@ -144,7 +156,7 @@ const ogDescription = receipt
           </a>
         </div>
 
-        <!-- Repeat booking — the path from emergency to routine. -->
+        <!-- Post-completion loop: next job -->
         <div class="paper-card rounded-2xl p-5 sm:p-6 space-y-4">
           <h3 class="font-display text-xl text-ink">Something else broken?</h3>
           <p class="text-sm text-ink-muted leading-relaxed">
