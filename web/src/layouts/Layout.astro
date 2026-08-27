@@ -22,6 +22,16 @@ const {
   title = 'Yaler — Get the job done',
   description = 'Tell us what\'s broken. We find a local engineer, stay inside your budget, and give you a receipt when it\'s done.'
 } = Astro.props;
+
+// ─── Nav active-state detection ────────────────────────────────
+// Strips query strings and trailing slashes so /story/?foo=bar still matches.
+const currentPage = (Astro.url.pathname.replace(/\?.*$/, '').replace(/\/$/, '')) || '/';
+const isActive = (path: string): boolean => {
+  if (path === currentPage) return true;
+  // /missions/* routes map to "Start a job" on mobile
+  if (path === '/missions/new' && currentPage.startsWith('/missions/')) return true;
+  return false;
+};
 ---
 
 <!DOCTYPE html>
@@ -59,19 +69,38 @@ const {
         </a>
 
         <!-- Desktop nav (hidden on mobile) -->
-        <nav class="hidden sm:flex items-center gap-3 text-sm">
+        <nav class="hidden sm:flex items-center gap-1 text-sm" aria-label="Main navigation">
           <ActiveJobPill client:load />
           <KitchenModeToggle client:load />
-          <a href="/rehearsal" class="text-ink hover:text-mandate transition-colors font-medium">Try it</a>
-          <a href="/story" class="text-ink-muted hover:text-ink transition-colors">How it works</a>
-          <a href="/suppliers" class="text-ink-muted hover:text-ink transition-colors">Engineers</a>
+          <div class="w-px h-5 bg-ink/10 mx-1" aria-hidden />
+          {[
+            ['/rehearsal', 'Try it'],
+            ['/story', 'How it works'],
+            ['/suppliers', 'Engineers'],
+          ].map(([path, label]) => (
+            <a
+              href={path}
+              class={[
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors',
+                  isActive(path)
+                    ? 'text-mandate font-semibold bg-mandate/8'
+                    : 'text-ink-muted hover:text-ink hover:bg-paper-inset',
+                ].join(' ')}
+              aria-current={isActive(path) ? 'page' : undefined}
+            >
+              {isActive(path) && (
+                <span className="w-1.5 h-1.5 rounded-full bg-mandate shrink-0" aria-hidden />
+              )}
+              {label}
+            </a>
+          ))}
         </nav>
 
         <!-- Mobile nav (visible on small screens) -->
         <div class="flex items-center gap-1 sm:hidden">
           <ActiveJobPill client:load />
           <KitchenModeToggle client:load />
-          <MobileNav client:load />
+          <MobileNav client:load currentPage={currentPage} />
         </div>
       </div>
     </header>
