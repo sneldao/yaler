@@ -486,14 +486,15 @@ func TestResumeEscalatedMission(t *testing.T) {
 		t.Fatalf("resume on COMMITTED: expected 409, got %d", rec2.Code)
 	}
 
-	// Resume is ops-guarded when OPS_TOKEN is set.
+	// Resume stays open even when OPS_TOKEN is set — retrying a stalled
+	// job is a buyer action, not a concierge one.
 	t.Setenv("OPS_TOKEN", "s3cret-concierge")
 	req3 := httptest.NewRequest("POST", "/api/missions/"+testMissionID+"/resume", bytes.NewBuffer(body2))
 	req3.Header.Set("Content-Type", "application/json")
 	rec3 := httptest.NewRecorder()
 	mux2.ServeHTTP(rec3, req3)
-	if rec3.Code != http.StatusUnauthorized {
-		t.Fatalf("resume without ops token: expected 401, got %d", rec3.Code)
+	if rec3.Code != http.StatusConflict {
+		t.Fatalf("resume without ops token: expected 409 (still gated on status), got %d", rec3.Code)
 	}
 }
 
