@@ -951,7 +951,10 @@ func (h *Handler) cancelCompetingCallouts(ctx context.Context, missionID, winnin
 		}
 		h.recordEvent(ctx, missionID, "CALLOUT_CANCELLED", "DEMAND_AGENT",
 			map[string]string{"supplierId": co.SupplierID, "calloutId": co.ID, "reason": "first_accept_wins"},
-			"ALLOW", idempotencyKey)
+			// Per-callout key: the events store writes by doc ID with no
+			// key dedupe, so a worker-step replay sharing the accept's key
+			// would double-record cancellations and skew later metrics.
+			"ALLOW", idempotencyKey+":cancel:"+co.ID)
 	}
 }
 
