@@ -554,7 +554,10 @@ func (h *Handler) HandleSubmitFeedback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Recompute the supplier's reliability from their full feedback history.
+	// Recompute the supplier's reliability from their full feedback history
+	// AND their callout response-latency record. The latency blend follows
+	// the incentive design: penalize silence/non-response (expiry), not
+	// honest declines. See domain.ReliabilityFromLatency.
 	history, _ := h.store.ListMissionFeedbackBySupplier(ctx, m.SelectedSupplierID)
 	sup, err := h.store.GetSupplier(ctx, m.SelectedSupplierID)
 	if err == nil {
@@ -562,7 +565,11 @@ func (h *Handler) HandleSubmitFeedback(w http.ResponseWriter, r *http.Request) {
 		if seed == 0 {
 			seed = 0.5 // onboarding default before any feedback
 		}
-		sup.ReliabilityScore = domain.ReliabilityFromFeedback(seed, history)
+		// Gather this supplier's callout outcomes across all missions so
+		// the latency factor reflects their full response history, not
+		// just this one job.
+		outcomes := h.gatherSupplierCalloutOutcomes(ctx, m.SelectedSupplierID)
+		sup.ReliabilityScore = domain.ReliabilityFromLatency(seed, history, outcomes)
 		if err := h.store.SaveSupplier(ctx, sup); err != nil {
 			log.Printf("[Feedback] Failed to recompute reliability for %s: %v", sup.ID, err)
 		}
@@ -732,6 +739,23 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 		}
 
 		simulated := 0
+
+		// A/B cohort: "parallel" (the structural fix) broadcasts to all
+		// qualified engineers at once. "sequential" (the status-quo control
+		// arm) sends one callout, waits for a terminal response, then sends
+		// the next — the sequential bargaining the incentive design argues
+		// against. The field experiment measures the difference.
+		cohort := m.ExperimentCohort
+		if cohort == "" {
+			cohort = "parallel" // default for missions created before the field
+		}
+
+		if cohort == "sequential" {
+			// Send only the FIRST engineer; the sweeper advances the rest
+			// after decline/expiry. The accept window is still 10 min.
+			active = active[:1]
+		}
+
 		for _, sup := range active {
 			co := &domain.Callout{
 				ID:         fmt.Sprintf("co_%s_%d", sup.ID, now.UnixNano()),
@@ -1027,6 +1051,45 @@ func assignExperimentCohort(missionID string) string {
 	return "sequential"
 }
 
+// gatherSupplierCalloutOutcomes builds the latency-signal record for a
+// supplier by scanning all missions' callouts for this supplier. This is
+// the derived-from-the-audit-trail data that ReliabilityFromLatency uses —
+// no self-report, just response times and outcomes from the event log.
+// Scans recent missions (the supplier's callout history isn't indexed by
+// supplier in the store, so we list missions and check callouts per
+// mission; bounded by the mission list size which is small pre-scale).
+func (h *Handler) gatherSupplierCalloutOutcomes(ctx context.Context, supplierID string) []domain.CalloutOutcome {
+	missions, err := h.store.ListMissions(ctx)
+	if err != nil {
+		return nil
+	}
+	var outcomes []domain.CalloutOutcome
+	for _, m := range missions {
+		callouts, err := h.store.ListCallouts(ctx, m.ID)
+		if err != nil {
+			continue
+		}
+		for _, co := range callouts {
+			if co.SupplierID != supplierID {
+				continue
+			}
+			var respSec float64
+			if !co.RespondedAt.IsZero() && !co.SentAt.IsZero() {
+				respSec = co.RespondedAt.Sub(co.SentAt).Seconds()
+				if respSec < 0 {
+					respSec = 0
+				}
+			}
+			outcomes = append(outcomes, domain.CalloutOutcome{
+				SupplierID:  co.SupplierID,
+				Status:      co.Status,
+				ResponseSec: respSec,
+			})
+		}
+	}
+	return outcomes
+}
+
 // calloutTTL is how long a real callout waits for a response before it is
 // considered expired. The structural incentive design (see INCENTIVES.md):
 // a short, visible accept window removes the leverage that makes
@@ -1150,13 +1213,98 @@ func (h *Handler) SweepStalledSourcing(ctx context.Context) {
 
 		allTerminal := true
 		for _, co := range callouts {
-			if co.Status != domain.CalloutDeclined && co.Status != domain.CalloutExpired {
+			if co.Status != domain.CalloutDeclined && co.Status != domain.CalloutExpired && co.Status != domain.CalloutCancelled {
 				allTerminal = false
 				break
 			}
 		}
 		if !allTerminal {
 			continue
+		}
+
+		// Sequential cohort: if the first engineer declined/expired, send
+		// the NEXT qualified engineer rather than escalating. The sweeper
+		// is the engine of the sequential control arm — it advances one
+		// callout at a time, waiting for each terminal response.
+		if m.ExperimentCohort == "sequential" && len(callouts) > 0 {
+			// Find the suppliers already asked (by callout) so we skip them.
+			asked := make(map[string]bool)
+			for _, co := range callouts {
+				asked[co.SupplierID] = true
+			}
+			// Find the next active supplier who hasn't been called yet.
+			suppliers, _ := h.store.SearchSuppliers(ctx, m.Mandate.ServiceCategory, m.Mandate.ServiceArea.PostalDistrict)
+			if len(suppliers) == 0 {
+				suppliers, _ = h.store.ListSuppliers(ctx)
+			}
+			var next *domain.Supplier
+			for _, sup := range suppliers {
+				if asked[sup.ID] {
+					continue
+				}
+				if sup.Status != "" && !strings.EqualFold(sup.Status, "ACTIVE") {
+					continue
+				}
+				next = sup
+				break
+			}
+			if next != nil {
+				now := time.Now().UTC()
+				co := &domain.Callout{
+					ID:        fmt.Sprintf("co_%s_%d", next.ID, now.UnixNano()),
+					MissionID: m.ID,
+					SupplierID: next.ID,
+					Status:    domain.CalloutSent,
+					Message:   calloutMessage(m, next, 1), // 1 competitor = just this engineer
+					SentAt:    now,
+					ExpiresAt: now.Add(calloutTTL),
+				}
+				if next.Verified {
+					if saveErr := h.store.SaveCallout(ctx, co); saveErr != nil {
+						log.Printf("[Sweeper] Failed to save next callout for %s: %v", m.ID, saveErr)
+					} else {
+						h.recordEvent(ctx, m.ID, "CALLOUT_SENT", "DEMAND_AGENT", map[string]string{"supplier": next.DisplayName, "calloutId": co.ID, "cohort": "sequential_next"}, "ALLOW", "")
+						log.Printf("[Sweeper] Sequential arm: sent next callout to %s for %s", next.DisplayName, m.ID)
+						continue // don't escalate — the next callout is in flight
+					}
+				}
+				// Simulated supplier: auto-generate the quote immediately
+				// (same as the worker does in the parallel arm).
+				co.Simulated = true
+				co.Status = domain.CalloutOffered
+				co.RespondedAt = now
+				if saveErr := h.store.SaveCallout(ctx, co); saveErr != nil {
+					log.Printf("[Sweeper] Failed to save simulated callout for %s: %v", m.ID, saveErr)
+				}
+				price := 350.0
+				if next.PriceTier == "PREMIUM" {
+					price = 420.0
+				}
+				off := &domain.Offer{
+					ID:              fmt.Sprintf("off_%s_%d", next.ID, now.Unix()),
+					MissionID:       m.ID,
+					SupplierAgentID: next.ID,
+					CalloutID:       co.ID,
+					Price:           price,
+					Currency:        "GBP",
+					Availability:    next.Availability,
+					Terms:           "Simulated quote - synthetic roster, not a real offer",
+					Status:          "SUBMITTED",
+					Evidence:        []string{"synthetic_roster"},
+					CreatedAt:       now,
+					Simulated:       true,
+				}
+				_ = h.store.SaveOffer(ctx, off)
+				h.recordEvent(ctx, m.ID, "OFFER_RECEIVED", next.ID, off, "ALLOW", "")
+				// Advance to evaluation.
+				if err := domain.Transition(m, domain.StatusOffersReceived); err == nil {
+					if uerr := h.updateMissionWithRetry(ctx, m); uerr == nil {
+						h.enqueueNext(ctx, m)
+					}
+				}
+				continue
+			}
+			// No more suppliers to ask — fall through to escalate.
 		}
 
 		if err := domain.Transition(m, domain.StatusEscalated); err != nil {
