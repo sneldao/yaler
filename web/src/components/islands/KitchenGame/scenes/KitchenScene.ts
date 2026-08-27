@@ -292,7 +292,9 @@ export class KitchenScene extends Phaser.Scene {
 
       // Label below equipment
       this.add.text(x, y + 14, evt.key, {
-        fontSize: '8px', color: '#ffffff88',
+        fontSize: '10px', color: '#ffffffcc',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        resolution: 2,
       }).setOrigin(0.5).setDepth(3);
 
       // Alarm icon (hidden)
@@ -458,14 +460,17 @@ export class KitchenScene extends Phaser.Scene {
 
   private showIntro() {
     const bg = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.85).setDepth(30);
+    // High-contrast, generously sized text: this card is read on phones
+    // where the 480×270 canvas scales DOWN, and pixelArt nearest-neighbour
+    // upscaling makes small text crunchy. resolution: 2 keeps glyphs crisp.
     const lines = [
-      { text: 'CAFÉ NOOR — Dalston, N1', y: 50, size: '9px', color: '#2a6f6a', bold: true },
-      { text: 'Tuesday, 6:47am', y: 68, size: '8px', color: '#ffffff', bold: false },
-      { text: 'The breakfast rush starts in 13 minutes.', y: 82, size: '7px', color: '#ffffffaa', bold: false },
-      { text: 'Three things are going to break today.', y: 100, size: '7px', color: '#ffffffaa', bold: false },
-      { text: 'Walk to each one. Yaler handles the rest.', y: 114, size: '7px', color: '#ffffffaa', bold: false },
-      { text: 'WASD / tap to move · Space / tap to interact', y: 138, size: '6px', color: '#ffffff55', bold: false },
-      { text: 'tap anywhere to start', y: 158, size: '7px', color: '#2a6f6a', bold: true },
+      { text: 'CAFÉ NOOR — Dalston, N1', y: 52, size: '14px', color: '#4fd1c5', bold: true },
+      { text: 'Tuesday, 6:47am', y: 74, size: '11px', color: '#ffffff', bold: false },
+      { text: 'The breakfast rush starts in 13 minutes.', y: 92, size: '10px', color: '#f0f0f4', bold: false },
+      { text: 'Three things are going to break today.', y: 109, size: '10px', color: '#f0f0f4', bold: false },
+      { text: 'Walk to each one. Yaler handles the rest.', y: 126, size: '10px', color: '#f0f0f4', bold: false },
+      { text: 'WASD / tap to move · Space / tap to interact', y: 148, size: '9px', color: '#c8c8d4', bold: false },
+      { text: 'tap anywhere to start', y: 168, size: '11px', color: '#4fd1c5', bold: true },
     ];
 
     const textObjs: Phaser.GameObjects.Text[] = [];
@@ -474,6 +479,8 @@ export class KitchenScene extends Phaser.Scene {
         fontSize: line.size,
         color: line.color,
         fontStyle: line.bold ? 'bold' : 'normal',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        resolution: 2,
       }).setOrigin(0.5).setDepth(31).setAlpha(this.reducedMotion ? 1 : 0);
       textObjs.push(t);
       // Reduced motion: intro lines are simply there — no staggered fade.
@@ -662,7 +669,7 @@ export class KitchenScene extends Phaser.Scene {
     const desc = this.add.text(0, -16, `${evt.label}: £${evt.cost} (budget £${evt.budget})`, { fontSize: '18px', color: '#ffffff' }).setOrigin(0.5);
     this.overlayContainer.add(desc);
 
-    const prompt = this.add.text(0, 0, 'Approve the overspend or reject and reroute?', { fontSize: '18px', color: '#ffffffaa' }).setOrigin(0.5);
+    const prompt = this.add.text(0, 0, 'Approve the overspend or reject and reroute?', { fontSize: '18px', color: '#f0f0f4' }).setOrigin(0.5);
     this.overlayContainer.add(prompt);
 
     // Approve button — larger for mobile touch
