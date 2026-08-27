@@ -46,6 +46,9 @@ interface BreakdownEvent {
   cost: number;
   budget: number;
   type: 'auto' | 'approval' | 'escalation';
+  /** £/second the till bleeds while this is down. */
+  bleed: number;
+  bleedLabel: string;
   agentSteps: string[];
   receipt: string;
 }
@@ -58,12 +61,13 @@ const EVENTS: BreakdownEvent[] = [
     color: C.fridge,
     cost: 420, budget: 500,
     type: 'auto',
+    bleed: 6, bleedLabel: 'food spoiling',
     agentSteps: [
-      'Searching N1 fridge engineers...',
-      '3 quotes received',
-      'Budget: £420 < £500 ✓',
-      'Booked: London Rapid ColdCare',
-      'Engineer dispatched',
+      'Searching N1 engineers…',
+      '3 quotes in',
+      '£420 < £500 ✓',
+      'Booked Rapid ColdCare',
+      'Dispatched',
     ],
     receipt: 'Commercial fridge repair',
   },
@@ -74,11 +78,12 @@ const EVENTS: BreakdownEvent[] = [
     color: C.hood,
     cost: 580, budget: 500,
     type: 'approval',
+    bleed: 4, bleedLabel: 'smoke · covers leaving',
     agentSteps: [
-      'Searching N1 hood specialists...',
-      '2 quotes received',
-      'Budget: £580 > £500 ✗',
-      'OVER BUDGET — needs your approval',
+      'Searching N1 specialists…',
+      '2 quotes in',
+      '£580 > £500 ✗',
+      'OVER BUDGET — your call',
     ],
     receipt: 'Extraction hood service',
   },
@@ -89,12 +94,13 @@ const EVENTS: BreakdownEvent[] = [
     color: C.gasline,
     cost: 650, budget: 500,
     type: 'escalation',
+    bleed: 5, bleedLabel: 'hobs locked · orders lost',
     agentSteps: [
-      'Searching N1 gas engineers...',
-      'REGULATED CATEGORY: Gas Safety',
-      'Policy engine: BLOCK',
-      'Escalating to Gas Safe registered only',
-      'Found: GasCert London (registered)',
+      'Searching gas engineers…',
+      'REGULATED: Gas Safety',
+      'Policy engine: BLOCK ✗',
+      'Escalate: Gas Safe only',
+      'GasCert London ✓',
     ],
     receipt: 'Gas line repair (Gas Safe)',
   },
@@ -126,9 +132,18 @@ export class KitchenScene extends Phaser.Scene {
   private decisions: string[] = [];
   private totalCost = 0;
 
+  // Shift economy: the till ticks up while service runs and bleeds while
+  // equipment is down — makes the cost of every breakdown visceral.
+  private cash = 0;
+  private bleedRate = 0;
+  private bleedLabel = '';
+  private totalLosses = 0;
+  private cashAcc = 0;
+
   // UI
   private interactHint!: Phaser.GameObjects.Text;
   private shiftLabel!: Phaser.GameObjects.Text;
+  private cashText!: Phaser.GameObjects.Text;
   private overlayContainer!: Phaser.GameObjects.Container;
 
   constructor() {
@@ -146,6 +161,11 @@ export class KitchenScene extends Phaser.Scene {
     this.eventTimes = [];
     this.decisions = [];
     this.totalCost = 0;
+    this.cash = 0;
+    this.bleedRate = 0;
+    this.bleedLabel = '';
+    this.totalLosses = 0;
+    this.cashAcc = 0;
 
     this.buildKitchen();
     this.createPlayer();
@@ -160,6 +180,7 @@ export class KitchenScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number) {
+    this.tickEconomy(delta);
     if (this.phase !== 'idle' && this.phase !== 'alarm' && this.phase !== 'walking') {
       this.playerBody.setVelocity(0, 0);
       return;
@@ -215,6 +236,30 @@ export class KitchenScene extends Phaser.Scene {
         this.interactHint.setText('SPACE / tap').setVisible(true);
       } else {
         this.interactHint.setText(`→ ${evt.label}`).setVisible(true);
+      }
+    }
+  }
+
+  // ─── Economy ─────────────────────────────────────────────
+
+  /** Till ticks up while service runs, bleeds while kit is down. */
+  private tickEconomy(delta: number) {
+    if (this.phase === 'intro' || this.phase === 'summary') return;
+    const dt = delta / 1000;
+    this.cashAcc += delta;
+    if (this.bleedRate > 0) {
+      const loss = this.bleedRate * dt;
+      this.cash -= loss;
+      this.totalLosses += loss;
+    } else {
+      this.cash += 3 * dt; // breakfast covers, ~£180/hr compressed
+    }
+    if (this.cashAcc >= 150) {
+      this.cashAcc = 0;
+      if (this.bleedRate > 0) {
+        this.cashText.setText(`Till £${Math.round(this.cash)} · ${this.bleedLabel}`).setColor('#ff6b6b');
+      } else {
+        this.cashText.setText(`Till £${Math.round(this.cash)}`).setColor('#4ade80');
       }
     }
   }
@@ -354,8 +399,16 @@ export class KitchenScene extends Phaser.Scene {
     }).setOrigin(0.5).setVisible(false).setDepth(15);
 
     this.shiftLabel = this.add.text(6, 4, '', {
-      fontSize: '18px', color: '#ffffff88',
+      fontSize: '11px', color: '#ffffffcc',
+      fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
     }).setDepth(15);
+
+    // The till — live P&L for the shift.
+    this.cashText = this.add.text(W - 6, 4, '', {
+      fontSize: '11px', fontStyle: 'bold', color: '#4ade80',
+      backgroundColor: '#00000066', padding: { x: 5, y: 3 },
+      fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
+    }).setOrigin(1, 0).setDepth(15);
 
     this.overlayContainer = this.add.container(W / 2, H / 2).setDepth(20).setVisible(false);
   }
@@ -534,6 +587,8 @@ export class KitchenScene extends Phaser.Scene {
   private triggerAlarm() {
     this.phase = 'alarm';
     const evt = EVENTS[this.eventIdx];
+    this.bleedRate = evt.bleed;
+    this.bleedLabel = evt.bleedLabel;
     const target = this.targets[this.eventIdx];
     const icon = this.alarmIcons[this.eventIdx];
 
@@ -594,7 +649,7 @@ export class KitchenScene extends Phaser.Scene {
   private runAgent() {
     const evt = EVENTS[this.eventIdx];
 
-    const bg = this.add.rectangle(0, 0, 250, 120, 0x12212b, 0.95);
+    const bg = this.add.rectangle(0, 0, 260, 128, 0x12212b, 0.95);
     bg.setStrokeStyle(1, evt.type === 'escalation' ? C.escalate : C.mandate, 0.6);
 
     this.overlayContainer.removeAll(true);
@@ -603,12 +658,15 @@ export class KitchenScene extends Phaser.Scene {
 
     // Title
     const titleColor = evt.type === 'escalation' ? '#c45c26' : '#2a6f6a';
-    const title = this.add.text(0, -46, 'YALER AGENT', { fontSize: '18px', color: titleColor, fontStyle: 'bold' }).setOrigin(0.5);
+    const title = this.add.text(0, -52, 'YALER AGENT', {
+      fontSize: '11px', color: titleColor, fontStyle: 'bold',
+      fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
+    }).setOrigin(0.5);
     this.overlayContainer.add(title);
 
-    // Animate steps
+    // Animate steps — short lines at 10px so everything stays inside the panel.
     evt.agentSteps.forEach((text, idx) => {
-      this.time.delayedCall(idx * 1000, () => {
+      this.time.delayedCall(idx * 700, () => {
         if (!this.overlayContainer.visible) return;
 
         // Dim previous
@@ -623,7 +681,10 @@ export class KitchenScene extends Phaser.Scene {
         const color = isError ? '#ff4444' : isSuccess ? '#44cc88' : '#ffffff';
         const prefix = isError ? '✗' : isSuccess ? '✓' : '●';
 
-        const stepText = this.add.text(-112, -26 + idx * 14, `${prefix} ${text}`, { fontSize: '18px', color });
+        const stepText = this.add.text(-118, -34 + idx * 14, `${prefix} ${text}`, {
+          fontSize: '10px', color, wordWrap: { width: 226 },
+          fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
+        });
         this.overlayContainer.add(stepText);
 
         if (isSuccess) playDing();
@@ -632,7 +693,7 @@ export class KitchenScene extends Phaser.Scene {
     });
 
     // After steps complete, handle based on type
-    const afterSteps = evt.agentSteps.length * 1000 + 500;
+    const afterSteps = evt.agentSteps.length * 700 + 400;
     this.time.delayedCall(afterSteps, () => {
       this.overlayContainer.setVisible(false);
 
@@ -657,30 +718,45 @@ export class KitchenScene extends Phaser.Scene {
     this.phase = 'decision';
     const evt = EVENTS[this.eventIdx];
 
-    const bg = this.add.rectangle(0, 0, 240, 100, 0x12212b, 0.95);
+    const bg = this.add.rectangle(0, 0, 270, 112, 0x12212b, 0.95);
     bg.setStrokeStyle(1, C.escalate, 0.6);
     this.overlayContainer.removeAll(true);
     this.overlayContainer.add(bg);
     this.overlayContainer.setVisible(true);
 
-    const q = this.add.text(0, -32, 'OVER BUDGET', { fontSize: '13px', color: '#c45c26', fontStyle: 'bold' }).setOrigin(0.5);
+    const q = this.add.text(0, -42, 'OVER BUDGET', {
+      fontSize: '11px', color: '#c45c26', fontStyle: 'bold',
+      fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
+    }).setOrigin(0.5);
     this.overlayContainer.add(q);
 
-    const desc = this.add.text(0, -16, `${evt.label}: £${evt.cost} (budget £${evt.budget})`, { fontSize: '18px', color: '#ffffff' }).setOrigin(0.5);
+    const desc = this.add.text(0, -26, `${evt.label}: £${evt.cost} (budget £${evt.budget})`, {
+      fontSize: '10px', color: '#ffffff', wordWrap: { width: 240 },
+      fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
+    }).setOrigin(0.5);
     this.overlayContainer.add(desc);
 
-    const prompt = this.add.text(0, 0, 'Approve the overspend or reject and reroute?', { fontSize: '18px', color: '#f0f0f4' }).setOrigin(0.5);
+    const prompt = this.add.text(0, -10, 'Approve the overspend or reject and reroute?', {
+      fontSize: '10px', color: '#f0f0f4', wordWrap: { width: 240 },
+      fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
+    }).setOrigin(0.5);
     this.overlayContainer.add(prompt);
 
     // Approve button — larger for mobile touch
-    const approveBg = this.add.rectangle(-50, 26, 90, 28, C.escalate, 0.8).setInteractive({ useHandCursor: true });
-    const approveText = this.add.text(-50, 26, 'APPROVE £580', { fontSize: '18px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+    const approveBg = this.add.rectangle(-62, 30, 110, 26, C.escalate, 0.8).setInteractive({ useHandCursor: true });
+    const approveText = this.add.text(-62, 30, 'APPROVE £580', {
+      fontSize: '11px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
+    }).setOrigin(0.5);
     this.overlayContainer.add(approveBg);
     this.overlayContainer.add(approveText);
 
     // Reject button — larger for mobile touch
-    const rejectBg = this.add.rectangle(50, 26, 90, 28, C.mandate, 0.8).setInteractive({ useHandCursor: true });
-    const rejectText = this.add.text(50, 26, 'REROUTE', { fontSize: '18px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+    const rejectBg = this.add.rectangle(62, 30, 110, 26, C.mandate, 0.8).setInteractive({ useHandCursor: true });
+    const rejectText = this.add.text(62, 30, 'REROUTE', {
+      fontSize: '11px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
+    }).setOrigin(0.5);
     this.overlayContainer.add(rejectBg);
     this.overlayContainer.add(rejectText);
 
@@ -761,6 +837,8 @@ export class KitchenScene extends Phaser.Scene {
     const icon = this.alarmIcons[this.eventIdx];
 
     const onFixed = () => {
+      this.bleedRate = 0;
+      this.bleedLabel = '';
       target.setFillStyle(C.fixed);
       target.setStrokeStyle(2, 0x44cc88, 0.8);
       icon.setText('✓').setColor('#44cc88').setAlpha(1);
@@ -807,30 +885,54 @@ export class KitchenScene extends Phaser.Scene {
     const approved = this.decisions.includes('approved');
     const stars = rerouted ? 3 : (!approved ? 3 : 2); // Rerouting is good governance
 
-    const bg = this.add.rectangle(W/2, H/2, 360, 220, 0xfafaf8, 0.97).setDepth(25);
+    // Your all-in: repair spend + whatever the till bled while kit was down.
+    const withYaler = this.totalCost + Math.round(this.totalLosses);
+    // Modelled manual path: same three breakdowns handled by phone.
+    const withoutYaler = 1980 + 240 + 176 + 410; // pricier quotes, spoiled stock, staff time, lost covers
+
+    const bg = this.add.rectangle(W / 2, H / 2, 400, 238, 0xfafaf8, 0.97).setDepth(25);
     bg.setStrokeStyle(1, C.mandate, 0.4);
 
+    const FONT = 'system-ui, -apple-system, sans-serif';
     const els: Phaser.GameObjects.Text[] = [];
+    const add = (x: number, y: number, text: string, style: Phaser.Types.GameObjects.Text.TextStyle) => {
+      els.push(this.add.text(x, y, text, { fontFamily: FONT, resolution: 2, ...style }).setOrigin(0.5).setDepth(26));
+    };
 
-    els.push(this.add.text(W/2, 24, 'SHIFT COMPLETE', { fontSize: '18px', color: '#2a6f6a', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
-    els.push(this.add.text(W/2, 38, 'Café Noor — Tuesday morning', { fontSize: '13px', color: '#555555' }).setOrigin(0.5).setDepth(26));
+    add(W / 2, 30, 'SHIFT COMPLETE', { fontSize: '13px', color: '#2a6f6a', fontStyle: 'bold' });
+    add(W / 2, 44, 'Café Noor — Tuesday breakfast', { fontSize: '9px', color: '#888888' });
+    add(W / 2, 60, '★'.repeat(stars) + '☆'.repeat(3 - stars), { fontSize: '13px', color: '#2a6f6a' });
 
-    // Stars
-    const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
-    els.push(this.add.text(W/2, 54, starStr, { fontSize: '18px', color: '#2a6f6a' }).setOrigin(0.5).setDepth(26));
+    // The pitch: the same shift, with and without the agent.
+    const lx = 150, rx = 330;
+    this.add.rectangle(W / 2, 108, 1, 76, 0xdddddd).setDepth(26);
+    add(lx, 78, 'WITH YALER', { fontSize: '10px', color: '#2a6f6a', fontStyle: 'bold' });
+    add(rx, 78, 'WITHOUT YALER*', { fontSize: '10px', color: '#c45c26', fontStyle: 'bold' });
+    add(lx, 93, `${totalTime}s · 0 calls`, { fontSize: '9px', color: '#444444' });
+    add(rx, 93, '~11 hrs · 43 calls', { fontSize: '9px', color: '#444444' });
+    add(lx, 106, 'nothing spoiled', { fontSize: '9px', color: '#444444' });
+    add(rx, 106, '£240 stock spoiled', { fontSize: '9px', color: '#444444' });
+    add(lx, 119, 'full service kept', { fontSize: '9px', color: '#444444' });
+    add(rx, 119, '£410 covers lost', { fontSize: '9px', color: '#444444' });
 
-    // Stats
-    els.push(this.add.text(80, 74, `Time: ${totalTime}s`, { fontSize: '18px', color: '#12212b', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
-    els.push(this.add.text(240, 74, `Cost: £${this.totalCost}`, { fontSize: '18px', color: '#12212b', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
-    els.push(this.add.text(W/2, 90, `Manual estimate: ~12 hours, 40+ phone calls`, { fontSize: '18px', color: '#888888' }).setOrigin(0.5).setDepth(26));
-
-    // Event breakdown
-    const breakdown = EVENTS.map((evt, i) => {
-      const decision = this.decisions[i] || '';
-      const label = decision === 'rerouted' ? '↻ rerouted' : decision === 'approved' ? '⚠ approved over' : decision === 'escalated' ? '🛡 escalated' : '✓ auto';
-      return `${evt.key}: ${label}`;
-    }).join('   ');
-    els.push(this.add.text(W/2, 106, breakdown, { fontSize: '18px', color: '#555555' }).setOrigin(0.5).setDepth(26));
+    // Totals race up — Yaler lands fast; the manual grind takes its time.
+    const withTotal = this.add.text(lx, 140, '£0', {
+      fontSize: '15px', color: '#2a6f6a', fontStyle: 'bold', fontFamily: FONT, resolution: 2,
+    }).setOrigin(0.5).setDepth(26);
+    const withoutTotal = this.add.text(rx, 140, '£0', {
+      fontSize: '15px', color: '#c45c26', fontStyle: 'bold', fontFamily: FONT, resolution: 2,
+    }).setOrigin(0.5).setDepth(26);
+    const countUp = (label: Phaser.GameObjects.Text, target: number, duration: number, delay: number) => {
+      const fmt = (v: number) => `£${Math.round(v).toLocaleString('en-GB')}`;
+      if (this.reducedMotion) { label.setText(fmt(target)); return; }
+      const counter = { v: 0 };
+      this.tweens.add({
+        targets: counter, v: target, duration, delay, ease: 'Linear',
+        onUpdate: () => label.setText(fmt(counter.v)),
+      });
+    };
+    countUp(withTotal, withYaler, 1800, 400);
+    countUp(withoutTotal, withoutYaler, 3600, 800);
 
     // Governance note
     const note = rerouted
@@ -838,23 +940,27 @@ export class KitchenScene extends Phaser.Scene {
       : approved
         ? 'You approved an overspend. Rerouting would have saved £120.'
         : 'All events resolved within budget automatically.';
-    els.push(this.add.text(W/2, 122, note, { fontSize: '18px', color: rerouted ? '#2a6f6a' : '#c45c26' }).setOrigin(0.5).setDepth(26));
+    add(W / 2, 164, note, { fontSize: '9px', color: rerouted ? '#2a6f6a' : '#c45c26', wordWrap: { width: 370 } });
 
-    els.push(this.add.text(W/2, 142, 'Every step mapped to a real system.', { fontSize: '13px', color: '#12212b' }).setOrigin(0.5).setDepth(26));
-    els.push(this.add.text(W/2, 158, '→ Try it with your real kitchen', { fontSize: '13px', color: '#2a6f6a', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
+    add(W / 2, 184, 'Quotes, budget checks and Gas Safe verification — before your first customer sat down.', { fontSize: '8px', color: '#888888', wordWrap: { width: 370 } });
+    add(W / 2, 202, '→ Try it with your real kitchen', { fontSize: '11px', color: '#2a6f6a', fontStyle: 'bold' });
+    add(W / 2, 218, '*modelled: same three breakdowns, handled by phone', { fontSize: '8px', color: '#aaaaaa' });
 
     // Animate in — skipped under reduced motion; the summary renders in place.
     if (!this.reducedMotion) {
       bg.setAlpha(0).setPosition(160, 130);
-      this.tweens.add({ targets: bg, alpha: 0.97, y: H/2, duration: 500, ease: 'Back.easeOut' });
+      this.tweens.add({ targets: bg, alpha: 0.97, y: H / 2, duration: 500, ease: 'Back.easeOut' });
       els.forEach((el, i) => {
         el.setAlpha(0);
-        this.tweens.add({ targets: el, alpha: 1, duration: 300, delay: 400 + i * 80, ease: 'Power2' });
+        this.tweens.add({ targets: el, alpha: 1, duration: 300, delay: 400 + i * 60, ease: 'Power2' });
       });
+      withTotal.setAlpha(0);
+      withoutTotal.setAlpha(0);
+      this.tweens.add({ targets: [withTotal, withoutTotal], alpha: 1, duration: 300, delay: 800 });
     }
 
-    // Dispatch to React
-    this.time.delayedCall(2500, () => {
+    // Dispatch to React — after the totals race finishes so it's actually seen.
+    this.time.delayedCall(4600, () => {
       window.dispatchEvent(new CustomEvent('yaler:game-complete', {
         detail: { elapsed: totalTime, stars, totalCost: this.totalCost, decisions: this.decisions },
       }));

@@ -137,7 +137,7 @@ export default function KitchenGame() {
               </div>
               <span className="text-white/20 text-sm">vs</span>
               <div className="text-center">
-                <p className="font-display text-2xl text-white/60">~12 hrs</p>
+                <p className="font-display text-2xl text-white/60">~11 hrs</p>
                 <p className="text-[10px] text-white/50 uppercase tracking-wider">Manual</p>
               </div>
               <span className="text-white/20 text-sm">|</span>
@@ -153,6 +153,10 @@ export default function KitchenGame() {
                 : result.decisions.includes('approved')
                   ? 'You approved an over-budget spend. Rejecting would have triggered a reroute.'
                   : 'Clean shift. All events resolved within budget.'}
+            </p>
+
+            <p className="text-white/40 text-[10px]">
+              By phone, this same shift is ~11 hrs and ~£2,810 all-in — pricier quotes, spoiled stock, lost covers.
             </p>
 
             {/* Mandate pill motifs */}
