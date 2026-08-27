@@ -28,14 +28,48 @@ const CALLOUT_LABEL: Record<string, string> = {
   OFFERED: 'Quote in',
   DECLINED: 'Declined',
   EXPIRED: 'Expired',
-};
+  CANCELLED: 'Taken by another engineer',
+} as const;
 
-function timeLeft(expiresAt: string): string {
-  const ms = new Date(expiresAt).getTime() - Date.now();
-  if (ms <= 0) return 'expired';
-  const h = Math.floor(ms / 3_600_000);
-  if (h >= 1) return `${h}h left`;
-  return `${Math.max(1, Math.round(ms / 60_000))}m left`;
+/** Live countdown for a SENT callout — ticks every second, drains from
+ *  mandate to escalate as the 10-min accept window closes. Makes the time
+ *  pressure visible to the concierge, not just enforced backend-side. */
+function useCountdown(expiresAt: string): { label: string; frac: number; expired: boolean } {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const exp = new Date(expiresAt).getTime();
+  const totalMs = 10 * 60 * 1000; // calloutTTL — keep in sync with backend
+  const remaining = exp - now;
+  if (remaining <= 0) return { label: 'expired', frac: 0, expired: true };
+  const m = Math.floor(remaining / 60_000);
+  const s = Math.floor((remaining % 60_000) / 1000);
+  const label = m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `${s}s`;
+  return { label, frac: Math.max(0, Math.min(1, remaining / totalMs)), expired: false };
+}
+
+function CalloutTimer({ expiresAt }: { expiresAt: string }) {
+  const { label, frac, expired } = useCountdown(expiresAt);
+  // Colour shifts from mandate (green, plenty of time) to escalate (orange,
+  // urgent) as the fraction drops below 0.3.
+  const urgent = frac < 0.3;
+  return (
+    <div className="flex flex-col items-end gap-1 shrink-0">
+      <span className={`text-[10px] font-mono font-medium tabular-nums whitespace-nowrap ${expired ? 'text-escalate' : urgent ? 'text-escalate' : 'text-ink-muted'}`}>
+        {expired ? 'expired' : `${label} left`}
+      </span>
+      {!expired && (
+        <div className="h-1 w-16 rounded-full bg-paper-inset overflow-hidden" aria-hidden>
+          <div
+            className={`h-full rounded-full transition-all duration-1000 ease-linear ${urgent ? 'bg-escalate' : 'bg-mandate'}`}
+            style={{ width: `${frac * 100}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface CalloutRow {
@@ -114,9 +148,7 @@ function CalloutCard({ row, budget, onChanged }: { row: CalloutRow; budget: numb
           </p>
         </div>
         {isSent && (
-          <span className={`text-[10px] font-medium whitespace-nowrap ${timeLeft(callout.expiresAt) === 'expired' ? 'text-escalate' : 'text-ink-muted'}`}>
-            {timeLeft(callout.expiresAt)}
-          </span>
+          <CalloutTimer expiresAt={callout.expiresAt} />
         )}
       </div>
 
@@ -192,6 +224,9 @@ function CalloutCard({ row, budget, onChanged }: { row: CalloutRow; budget: numb
       )}
       {callout.status === 'EXPIRED' && (
         <p className="text-[11px] text-escalate">Callout expired with no response — re-approach or escalate.</p>
+      )}
+      {callout.status === 'CANCELLED' && (
+        <p className="text-[11px] text-ink-muted">Another engineer accepted first — first-accept-wins.</p>
       )}
 
       {error && <p className="text-[11px] text-escalate">{error}</p>}
