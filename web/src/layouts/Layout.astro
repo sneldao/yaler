@@ -11,6 +11,8 @@ import ActiveJobPill from '../components/islands/ActiveJobPill';
 import KitchenModeToggle from '../components/islands/KitchenModeToggle';
 import MobileNav from '../components/islands/MobileNav';
 import KeyHints from '../components/islands/KeyHints';
+import ThemeToggle from '../components/islands/ThemeToggle';
+import EngagementLayer from '../components/islands/EngagementLayer';
 import { SponsorRail } from '../components/primitives/SponsorCallout';
 
 interface Props {
@@ -45,7 +47,20 @@ const isActive = (path: string): boolean => {
     <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#12212B" />
+    <meta name="theme-color" content="#F4EFE6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0D161D" media="(prefers-color-scheme: dark)" />
+    {/* Set the theme class before first paint — stored choice wins,
+        otherwise follow the OS. is:inline so it runs synchronously. */}
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('yaler-theme');
+          if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) { /* private mode — default light */ }
+      })();
+    </script>
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content="/og.svg" />
@@ -110,12 +125,16 @@ const isActive = (path: string): boolean => {
     </main>
 
     <KeyHints client:load />
+    <EngagementLayer client:load />
 
     <footer class="border-t border-ink/10 py-5 sm:py-6 text-xs text-ink-muted relative z-10 safe-bottom">
       <div class="max-w-3xl mx-auto px-4 sm:px-5 space-y-3">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <p>&copy; 2026 Yaler. Built for independent kitchens.</p>
-          <p class="text-ink-muted/80">Delegate the outcome. Keep the mandate.</p>
+          <div class="flex items-center gap-4">
+            <p class="text-ink-muted/80">Delegate the outcome. Keep the mandate.</p>
+            <ThemeToggle client:load />
+          </div>
         </div>
         <SponsorRail client:load />
       </div>
