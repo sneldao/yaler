@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { type Event, type Mission, getEvents, getMission } from '../../lib/api';
 import { listMissionsCached, onMissionsChanged } from '../../lib/cache';
-import { EMPTY_STATE_COPY, statusLabel } from '../../lib/copy';
+import { statusLabel } from '../../lib/copy';
 import MandateEditor from './MandateEditor';
 import MissionTimeline, { ToolTraceRail } from './MissionTimeline';
 import OfferComparison from './OfferComparison';
@@ -97,11 +97,11 @@ function LiveWatchBar({ mission }: { mission: Mission }) {
 /**
  * LiveStrip — honest social proof: shows other real jobs currently in
  * flight on the roster (fetched from listMissions, not a synthetic
- * ticker). Only renders when there is at least one other active job.
+ * ticker). Silent when there is nothing to show — a missing card reads
+ * as a quieter product than a dashed "no jobs" placeholder.
  */
 function LiveStrip({ mission }: { mission: Mission }) {
   const [others, setOthers] = useState<Mission[]>([]);
-  const [fetched, setFetched] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -113,24 +113,15 @@ function LiveStrip({ mission }: { mission: Mission }) {
             .filter(m => m.id !== mission.id)
             .filter(m => m.status !== 'COMPLETED' && m.status !== 'CANCELLED');
           setOthers(activeOthers.slice(0, 3));
-          setFetched(true);
         })
-        .catch(() => { if (live) { setOthers([]); setFetched(true); } });
+        .catch(() => { if (live) setOthers([]); });
     load();
     // Another tab started or finished a job — refresh immediately.
     const off = onMissionsChanged(load);
     return () => { live = false; off(); };
   }, [mission.id]);
 
-  if (!fetched) return null;
-
-  if (others.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-ink/15 px-4 py-3 text-center">
-        <p className="text-xs text-ink-muted">{EMPTY_STATE_COPY.noOtherJobs.title}</p>
-      </div>
-    );
-  }
+  if (others.length === 0) return null;
 
   return (
     <div className="paper-card rounded-2xl px-4 py-3 space-y-2 animate-pop-in">
@@ -200,14 +191,16 @@ function lifecycleIndex(status?: string): number {
 
 function LifecycleScrubber({ mission }: { mission: Mission }) {
   const idx = lifecycleIndex(mission.status);
+  // The dots and bar are decorative — the textual status already lives in
+  // AgentStatusStrip and StatusBadge, and state transitions are announced
+  // by the parent via the sr-only status region. Putting aria-live here
+  // would cause screen readers to repeat the stage on every poll tick.
   return (
-    <div className="sticky top-12 sm:top-16 z-40 -mx-4 sm:-mx-5 px-4 sm:px-5 py-1.5 bg-paper/90 backdrop-blur-sm">
-      <div
-        role="status"
-        aria-live="polite"
-        aria-label={`Job stage: ${LIFECYCLE_LABELS[LIFECYCLE[idx]]}`}
-        className="relative h-1 rounded-full bg-paper-inset"
-      >
+    <div
+      className="sticky top-12 sm:top-16 z-40 -mx-4 sm:-mx-5 px-4 sm:px-5 py-1.5 bg-paper/90 backdrop-blur-sm"
+      aria-hidden
+    >
+      <div className="relative h-1 rounded-full bg-paper-inset">
         <div
           className="absolute inset-y-0 left-0 rounded-full bg-mandate/30 transition-[width] duration-500 ease-yaler"
           style={{ width: `${(idx / (LIFECYCLE.length - 1)) * 100}%` }}
@@ -216,7 +209,6 @@ function LifecycleScrubber({ mission }: { mission: Mission }) {
           <span
             key={state}
             title={LIFECYCLE_LABELS[state]}
-            aria-hidden
             className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full transition-all duration-300 ${
               i === idx
                 ? 'w-2.5 h-2.5 bg-mandate ring-2 ring-mandate/25'
