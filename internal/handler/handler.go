@@ -1063,6 +1063,7 @@ func (h *Handler) gatherSupplierCalloutOutcomes(ctx context.Context, supplierID 
 	if err != nil {
 		return nil
 	}
+	now := time.Now().UTC()
 	var outcomes []domain.CalloutOutcome
 	for _, m := range missions {
 		callouts, err := h.store.ListCallouts(ctx, m.ID)
@@ -1071,6 +1072,14 @@ func (h *Handler) gatherSupplierCalloutOutcomes(ctx context.Context, supplierID 
 		}
 		for _, co := range callouts {
 			if co.SupplierID != supplierID {
+				continue
+			}
+			// A live SENT callout is not silence — the engineer still has
+			// the accept window open. Expiry is applied lazily, so skip
+			// anything still inside its TTL; otherwise an in-flight callout
+			// silently drags the supplier's latency score down whenever
+			// unrelated feedback recomputes it.
+			if co.Status == domain.CalloutSent && now.Before(co.ExpiresAt) {
 				continue
 			}
 			var respSec float64
@@ -1251,22 +1260,26 @@ func (h *Handler) SweepStalledSourcing(ctx context.Context) {
 			if next != nil {
 				now := time.Now().UTC()
 				co := &domain.Callout{
-					ID:        fmt.Sprintf("co_%s_%d", next.ID, now.UnixNano()),
-					MissionID: m.ID,
+					ID:         fmt.Sprintf("co_%s_%d", next.ID, now.UnixNano()),
+					MissionID:  m.ID,
 					SupplierID: next.ID,
-					Status:    domain.CalloutSent,
-					Message:   calloutMessage(m, next, 1), // 1 competitor = just this engineer
-					SentAt:    now,
-					ExpiresAt: now.Add(calloutTTL),
+					Status:     domain.CalloutSent,
+					Message:    calloutMessage(m, next, 1), // 1 competitor = just this engineer
+					SentAt:     now,
+					ExpiresAt:  now.Add(calloutTTL),
 				}
 				if next.Verified {
 					if saveErr := h.store.SaveCallout(ctx, co); saveErr != nil {
+						// Save failed — do NOT fall through to the simulated
+						// branch: that would mint a synthetic offer against a
+						// real supplier's ID. Skip escalation instead and let
+						// the next sweep retry.
 						log.Printf("[Sweeper] Failed to save next callout for %s: %v", m.ID, saveErr)
-					} else {
-						h.recordEvent(ctx, m.ID, "CALLOUT_SENT", "DEMAND_AGENT", map[string]string{"supplier": next.DisplayName, "calloutId": co.ID, "cohort": "sequential_next"}, "ALLOW", "")
-						log.Printf("[Sweeper] Sequential arm: sent next callout to %s for %s", next.DisplayName, m.ID)
-						continue // don't escalate — the next callout is in flight
+						continue
 					}
+					h.recordEvent(ctx, m.ID, "CALLOUT_SENT", "DEMAND_AGENT", map[string]string{"supplier": next.DisplayName, "calloutId": co.ID, "cohort": "sequential_next"}, "ALLOW", "")
+					log.Printf("[Sweeper] Sequential arm: sent next callout to %s for %s", next.DisplayName, m.ID)
+					continue // don't escalate — the next callout is in flight
 				}
 				// Simulated supplier: auto-generate the quote immediately
 				// (same as the worker does in the parallel arm).
@@ -1275,6 +1288,7 @@ func (h *Handler) SweepStalledSourcing(ctx context.Context) {
 				co.RespondedAt = now
 				if saveErr := h.store.SaveCallout(ctx, co); saveErr != nil {
 					log.Printf("[Sweeper] Failed to save simulated callout for %s: %v", m.ID, saveErr)
+					continue
 				}
 				price := 350.0
 				if next.PriceTier == "PREMIUM" {
