@@ -93,6 +93,25 @@ Install the commit-time system hooks once: `brew install gitleaks`.
 
 ---
 
+## 🏆 All Things Agentic Hackathon — Google + Gemini
+
+**Track:** Taskmaster · **Deadline:** September 1, 2026 · **Status:** Ready for submission
+
+| Artifact | Link |
+|---|---|
+| Hosted app | https://yaler.persidian.com |
+| Full repo | https://github.com/sneldao/yaler |
+| Architecture diagram | [docs/architecture.svg](docs/architecture.svg) · [docs/architecture.png](docs/architecture.png) |
+| Submission brief | [docs/HACKATHON-SUBMISSION.md](docs/HACKATHON-SUBMISSION.md) |
+| Demo runbook | [docs/DEMO-RUNBOOK.md](docs/DEMO-RUNBOOK.md) |
+| Spin-up guide | [docs/DEPLOY.md](docs/DEPLOY.md) |
+
+**Google tech gates:** Gemini 2.5 Flash via `google.golang.org/genai` (GenAI SDK) · Firestore · Cloud Tasks · Cloud Run — all verified in CI.
+
+Full details: [docs/HACKATHON-SUBMISSION.md](docs/HACKATHON-SUBMISSION.md)
+
+---
+
 ## 📚 Deep-Dive Documentation
 
 For complete technical specifications, architecture diagrams, and product guides, see the `/docs` directory:

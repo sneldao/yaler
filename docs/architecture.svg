@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/2000/svg" viewBox="0 0 800 580" width="800" height="580">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8f5ef"/>
+      <stop offset="100%" stop-color="#f0ebe3"/>
+    </linearGradient>
+    <filter id="sh" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5c5348"/>
+    </marker>
+  </defs>
+
+  <rect width="800" height="580" fill="url(#bg)" rx="10"/>
+
+  <text x="400" y="32" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="bold" fill="#12212b" letter-spacing="0.05em">YALER ARCHITECTURE</text>
+  <text x="400" y="52" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#5c5348">Autonomous mission agent · Gemini + Google Cloud</text>
+
+  <!-- BUYER column -->
+  <rect x="20" y="75" width="155" height="470" rx="10" fill="#fffaf3" stroke="#2a6f6a" stroke-width="1.5" opacity="0.7"/>
+  <text x="97" y="96" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#2a6f6a" letter-spacing="0.12em">BUYER</text>
+  <rect x="36" y="110" width="123" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="97" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Astro + React</text>
+  <text x="97" y="146" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Islands</text>
+  <rect x="36" y="164" width="123" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="97" y="184" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Mission Composer</text>
+  <text x="97" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Voice / Text</text>
+  <rect x="36" y="218" width="123" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="97" y="238" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Evidence Form</text>
+  <text x="97" y="254" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Photo + Notes</text>
+  <rect x="36" y="272" width="123" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="97" y="292" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Proof Receipt</text>
+  <text x="97" y="308" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Shareable</text>
+  <rect x="36" y="326" width="123" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="97" y="346" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Ops Console</text>
+  <text x="97" y="362" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Concierge Desk</text>
+  <rect x="36" y="380" width="123" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="97" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Replay Player</text>
+  <text x="97" y="416" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Timeline scrub</text>
+
+  <!-- BACKEND column -->
+  <rect x="200" y="75" width="195" height="470" rx="10" fill="#fffaf3" stroke="#2a6f6a" stroke-width="1.5" opacity="0.7"/>
+  <text x="297" y="96" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#2a6f6a" letter-spacing="0.1em">GO BACKEND · CLOUD RUN</text>
+  <rect x="216" y="110" width="163" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="297" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Gateway</text>
+  <text x="297" y="146" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">HTTP API · State Machine</text>
+  <rect x="216" y="164" width="163" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="297" y="184" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Worker</text>
+  <text x="297" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Cloud Tasks Queue</text>
+  <rect x="216" y="218" width="163" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="297" y="238" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Policy Engine</text>
+  <text x="297" y="254" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Pure function — no AI</text>
+  <rect x="216" y="268" width="163" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="297" y="288" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Event Store</text>
+  <text x="297" y="304" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Append-only log</text>
+  <rect x="216" y="318" width="163" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="297" y="338" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Idempotency Layer</text>
+  <text x="297" y="354" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Version-checked writes</text>
+
+  <!-- AI layer -->
+  <rect x="420" y="75" width="165" height="470" rx="10" fill="#fffaf3" stroke="#2a6f6a" stroke-width="1.5" opacity="0.7"/>
+  <text x="502" y="96" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#2a6f6a" letter-spacing="0.1em">AI LAYER</text>
+  <rect x="438" y="110" width="130" height="52" rx="7" fill="#2a6f6a" filter="url(#sh)"/>
+  <text x="503" y="132" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#fff">Gemini</text>
+  <text x="503" y="148" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#e4f0ef">Google Gen AI SDK</text>
+  <rect x="438" y="172" width="130" height="52" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="503" y="194" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Mandate Engine</text>
+  <text x="503" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Extract rules</text>
+  <rect x="438" y="234" width="130" height="52" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="503" y="256" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Offer Ranking</text>
+  <text x="503" y="272" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Score &amp; compare</text>
+  <rect x="438" y="296" width="130" height="52" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="503" y="318" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Evidence Verify</text>
+  <text x="503" y="334" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Photo + text check</text>
+  <rect x="438" y="358" width="130" height="52" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="503" y="380" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Counter Draft</text>
+  <text x="503" y="396" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Negotiation help</text>
+  <rect x="438" y="420" width="130" height="52" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="503" y="442" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Model Armor</text>
+  <text x="503" y="458" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Guardrails</text>
+
+  <!-- GCP column -->
+  <rect x="610" y="75" width="170" height="470" rx="10" fill="#fffaf3" stroke="#2a6f6a" stroke-width="1.5" opacity="0.7"/>
+  <text x="695" y="96" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#2a6f6a" letter-spacing="0.1em">GOOGLE CLOUD</text>
+  <rect x="626" y="110" width="138" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="695" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Firestore</text>
+  <text x="695" y="146" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Mission state</text>
+  <rect x="626" y="164" width="138" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="695" y="184" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Cloud Tasks</text>
+  <text x="695" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Async queue</text>
+  <rect x="626" y="218" width="138" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="695" y="238" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Cloud Run</text>
+  <text x="695" y="254" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Backend service</text>
+  <rect x="626" y="268" width="138" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="695" y="288" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Cloud Logging</text>
+  <text x="695" y="304" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Observability</text>
+  <rect x="626" y="318" width="138" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="695" y="338" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Secret Manager</text>
+  <text x="695" y="354" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">API keys</text>
+  <rect x="626" y="368" width="138" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="695" y="388" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Exa</text>
+  <text x="695" y="404" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Discovery</text>
+  <rect x="626" y="418" width="138" height="44" rx="7" fill="#fff" stroke="#e8e1d4" filter="url(#sh)"/>
+  <text x="695" y="438" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#12212b">Apify</text>
+  <text x="695" y="454" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Verification</text>
+
+  <!-- Arrows: Buyer → Backend -->
+  <line x1="175" y1="132" x2="200" y2="132" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="175" y1="186" x2="200" y2="186" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="175" y1="240" x2="200" y2="240" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="175" y1="294" x2="200" y2="294" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="175" y1="348" x2="200" y2="348" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="175" y1="402" x2="200" y2="402" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+
+  <!-- Arrows: Backend → AI -->
+  <line x1="395" y1="132" x2="422" y2="132" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="395" y1="186" x2="422" y2="186" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="395" y1="240" x2="422" y2="240" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="395" y1="294" x2="422" y2="294" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="395" y1="348" x2="422" y2="348" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="395" y1="402" x2="422" y2="402" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+
+  <!-- Arrows: Backend → GCP -->
+  <line x1="395" y1="132" x2="610" y2="132" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="395" y1="186" x2="610" y2="186" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="395" y1="240" x2="610" y2="240" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="395" y1="294" x2="610" y2="294" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="395" y1="348" x2="610" y2="348" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+  <line x1="395" y1="402" x2="610" y2="402" stroke="#5c5348" stroke-width="1.3" marker-end="url(#ar)"/>
+
+  <!-- Footer -->
+  <text x="400" y="568" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#5c5348">Tech: gemini-2.5-flash · google.golang.org/genai · Firestore · Cloud Tasks · Cloud Run · Exa · Apify · Vapi · ElevenLabs</text>
+</svg>
