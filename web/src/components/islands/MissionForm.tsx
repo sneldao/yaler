@@ -3,6 +3,7 @@ import { navigate } from 'astro:transitions/client';
 import { createMission } from '../../lib/api';
 import { broadcastMissionsChanged } from '../../lib/cache';
 import { loadSavedMandate } from '../../lib/rehearsal';
+import { DISTRICT_EVENT, getDistrict } from './DistrictPicker';
 import { LoaderGrid } from '../primitives/LoaderGrid';
 import SponsorCallout from '../primitives/SponsorCallout';
 import OnboardingTooltip from '../primitives/OnboardingTooltip';
@@ -18,8 +19,21 @@ export default function MissionForm() {
   const [showSamples, setShowSamples] = useState(false);
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [district, setDistrict] = useState('N1');
   const typingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // District flows into the sample jobs — picking a district in the picker
+  // updates the presets live, no reload.
+  useEffect(() => {
+    setDistrict(getDistrict());
+    const onDistrict = (e: Event) => {
+      const next = (e as CustomEvent<string>).detail;
+      if (next) setDistrict(next);
+    };
+    window.addEventListener(DISTRICT_EVENT, onDistrict);
+    return () => window.removeEventListener(DISTRICT_EVENT, onDistrict);
+  }, []);
 
   useEffect(() => {
     return () => { if (typingRef.current) clearInterval(typingRef.current); };
@@ -50,10 +64,12 @@ export default function MissionForm() {
     }
   }, [confirmed]);
 
+  // Sample jobs speak in the user's chosen district — the visible connection
+  // between the district picker and the form.
   const presets = [
-    { title: 'Fridge down before lunch', text: "My commercial fridge is down, need repair before lunch, budget £500, we're in N1.", badge: 'N1 · £500' },
-    { title: 'Hood clean before inspection', text: "Hood extraction needs a deep clean before our food safety inspection Thursday, can go to £350, we're E1.", badge: 'E1 · £350' },
-    { title: 'Walk-in freezer running warm', text: 'Walk-in freezer is running warm at 6 degrees, need someone today, budget £600, SW1.', badge: 'SW1 · £600' },
+    { title: 'Fridge down before lunch', text: `My commercial fridge is down, need repair before lunch, budget £500, we're in ${district}.`, badge: `${district} · £500` },
+    { title: 'Hood clean before inspection', text: `Hood extraction needs a deep clean before our food safety inspection Thursday, can go to £350, we're ${district}.`, badge: `${district} · £350` },
+    { title: 'Walk-in freezer running warm', text: `Walk-in freezer is running warm at 6 degrees, need someone today, budget £600, ${district}.`, badge: `${district} · £600` },
   ];
 
   const typePreset = (text: string) => {

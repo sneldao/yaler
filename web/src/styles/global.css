@@ -419,6 +419,48 @@
 }
 
 
+/* ─── Progressive disclosure (mobile) ──────────────────────
+   Scroll-snap carousel + scroll-triggered reveals. Reveals are
+   IntersectionObserver-driven (a tiny inline script toggles
+   .reveal-visible) so no JS library lands in the home bundle. */
+
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.snap-row {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.snap-row > * {
+  scroll-snap-align: center;
+}
+
+/* Scroll-triggered reveal between "acts" — starts hidden only when JS is
+   available to reveal it (the script adds .js-reveal to <html> first), so
+   no-JS users still see everything. */
+.js-reveal .reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 500ms var(--ease), transform 500ms var(--ease);
+}
+.js-reveal .reveal-on-scroll.reveal-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .js-reveal .reveal-on-scroll {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 /* ─── Micro-celebrations ───────────────────────────────── */
 
 @keyframes confetti-fly {

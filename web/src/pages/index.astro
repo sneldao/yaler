@@ -1,161 +1,126 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import WaitlistCapture from '../components/islands/WaitlistCapture';
 import ActivityPulse from '../components/islands/ActivityPulse';
+import TimeCompare from '../components/islands/TimeCompare';
+import StepsCarousel from '../components/islands/StepsCarousel';
+import SponsorChips from '../components/islands/SponsorChips';
+import StoryTeaser from '../components/islands/StoryTeaser';
+import DeferredWaitlist from '../components/islands/DeferredWaitlist';
 ---
 
 <Layout title="Yaler — Get the job done">
-  <div class="space-y-10">
-    <!-- Hero — universal pain, location as credibility not gate -->
+  {/*
+    Three acts, each earning the next scroll on mobile:
+      1 — Hook:   one headline, one action row, the live pulse, one number.
+      2 — Proof:  swipeable 3-step carousel.
+      3 — Deep:   sponsor chips, story, explore, market — all collapsed.
+    Reveal-on-scroll between acts is handled by the inline script below.
+  */}
+  <div class="space-y-12 sm:space-y-14">
+
+    <!-- ═══ Act 1 — Hook ═══ -->
     <section class="space-y-5 pt-4">
       <div class="space-y-3">
         <h1 class="font-display text-4xl sm:text-5xl text-ink tracking-tight leading-[1.1]">
-          Equipment breaks.<br />Every minute costs you money.
+          Equipment breaks. Every minute costs you money.
         </h1>
-        <p class="text-ink-muted text-base sm:text-lg leading-relaxed max-w-xl">
-          Yaler finds a verified local engineer, stays inside your budget, and sends you a receipt when the job is done. Autonomously.
+        <p class="text-ink-muted text-base sm:text-lg leading-relaxed max-w-md">
+          A verified local engineer, inside your budget, receipt when it's done. Autonomously.
         </p>
       </div>
 
-      <div class="flex items-center gap-3">
-        <span class="text-xs uppercase tracking-[0.14em] text-mandate font-medium">Live in London</span>
-        <ActivityPulse client:load />
-      </div>
+      <ActivityPulse client:load />
 
       <div class="flex flex-col sm:flex-row gap-3">
-        <a href="/rehearsal" class="btn-primary text-sm py-3 px-6">See it work</a>
-        <a href="/story" class="btn-secondary text-sm py-3 px-6">How it works</a>
+        <a href="/rehearsal" class="btn-primary text-sm py-3 px-6 text-center">See it work</a>
+        <a href="/missions/new" class="btn-secondary text-sm py-3 px-6 text-center">Start a job</a>
       </div>
+
+      <TimeCompare client:load />
     </section>
 
-    <!-- How it works — 3 steps, 10 seconds to scan -->
-    <section class="space-y-4">
-      <p class="text-xs uppercase tracking-[0.14em] text-ink-muted font-medium">Three steps. No phone calls.</p>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="paper-card rounded-xl p-5 space-y-2">
-          <span class="flex items-center justify-center w-8 h-8 rounded-full bg-mandate/10 text-mandate text-xs font-bold">1</span>
-          <p class="text-ink font-medium">Say what's broken</p>
-          <p class="text-sm text-ink-muted leading-relaxed">Voice or text. AI extracts the budget, deadline, area, and category into a structured mandate you approve.</p>
-        </div>
-        <div class="paper-card rounded-xl p-5 space-y-2">
-          <span class="flex items-center justify-center w-8 h-8 rounded-full bg-mandate/10 text-mandate text-xs font-bold">2</span>
-          <p class="text-ink font-medium">Agent works within your rules</p>
-          <p class="text-sm text-ink-muted leading-relaxed">Sources engineers, collects quotes, ranks them. Policy engine enforces your budget and area. Stops if anything goes over.</p>
-        </div>
-        <div class="paper-card rounded-xl p-5 space-y-2">
-          <span class="flex items-center justify-center w-8 h-8 rounded-full bg-mandate/10 text-mandate text-xs font-bold">3</span>
-          <p class="text-ink font-medium">Receipt on the wall</p>
-          <p class="text-sm text-ink-muted leading-relaxed">Engineer submits photo evidence. AI verifies the work. You get a shareable proof receipt.</p>
-        </div>
+    <!-- ═══ Act 2 — Proof ═══ -->
+    <section class="space-y-4 reveal-on-scroll">
+      <div class="flex items-center justify-between gap-3">
+        <p class="text-xs uppercase tracking-[0.14em] text-ink-muted font-medium">Three steps. No phone calls.</p>
+        <span class="text-[10px] uppercase tracking-[0.14em] text-mandate font-medium shrink-0">Live in London</span>
       </div>
+      <StepsCarousel client:load />
     </section>
 
-    <!-- Time comparison — the single strongest visual -->
-    <section class="grid grid-cols-2 gap-3">
-      <div class="paper-card rounded-2xl p-5 space-y-1.5 opacity-60">
-        <p class="text-[10px] uppercase tracking-wider text-ink-muted">Without Yaler</p>
-        <p class="font-display text-3xl text-ink-muted">3-4 hrs</p>
-        <p class="text-xs text-ink-muted leading-snug">Phone calls. Voicemail. Callbacks. Comparing quotes on a notepad.</p>
-      </div>
-      <div class="paper-card rounded-2xl p-5 space-y-1.5 border-l-2 border-l-mandate/30">
-        <p class="text-[10px] uppercase tracking-wider text-mandate font-medium">With Yaler</p>
-        <p class="font-display text-3xl text-mandate">~15 min</p>
-        <p class="text-xs text-ink-muted leading-snug">Say it once. Agent sources, ranks, books. Receipt when done.</p>
-      </div>
-    </section>
-
-    <!-- What's under the hood — sponsor tech doing real work -->
-    <section class="space-y-3">
+    <!-- ═══ Act 3 — Deep dive ═══ -->
+    <section class="space-y-3 reveal-on-scroll">
       <p class="text-xs uppercase tracking-[0.14em] text-ink-muted font-medium">What fires on every job</p>
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <div class="paper-card rounded-xl p-3 space-y-1 border-l-2 border-l-blue-200">
-          <p class="text-xs font-medium text-blue-600">Gemini</p>
-          <p class="text-[11px] text-ink-muted leading-snug">Extracts your mandate. Ranks quotes. Verifies evidence photos.</p>
-        </div>
-        <div class="paper-card rounded-xl p-3 space-y-1 border-l-2 border-l-purple-200">
-          <p class="text-xs font-medium text-purple-600">Vapi</p>
-          <p class="text-[11px] text-ink-muted leading-snug">Voice-first input. Say what's broken — no typing required.</p>
-        </div>
-        <div class="paper-card rounded-xl p-3 space-y-1 border-l-2 border-l-emerald-200">
-          <p class="text-xs font-medium text-emerald-600">Exa</p>
-          <p class="text-[11px] text-ink-muted leading-snug">Searches the web for real local engineers matching the job.</p>
-        </div>
-        <div class="paper-card rounded-xl p-3 space-y-1 border-l-2 border-l-orange-200">
-          <p class="text-xs font-medium text-orange-600">Apify</p>
-          <p class="text-[11px] text-ink-muted leading-snug">Scrapes Companies House to verify each business is registered.</p>
-        </div>
-        <div class="paper-card rounded-xl p-3 space-y-1 border-l-2 border-l-pink-200">
-          <p class="text-xs font-medium text-pink-600">ElevenLabs</p>
-          <p class="text-[11px] text-ink-muted leading-snug">Reads your receipt aloud. Audio proof you can play back.</p>
-        </div>
-        <a href="/rehearsal" class="paper-card paper-card-hover rounded-xl p-3 space-y-1 border-l-2 border-l-mandate/30 flex flex-col justify-center">
-          <p class="text-xs font-medium text-mandate">See them fire →</p>
-          <p class="text-[11px] text-ink-muted leading-snug">Watch all 5 work in sequence on a real job.</p>
-        </a>
-      </div>
+      <SponsorChips client:load />
     </section>
 
-    <div class="receipt-perf"></div>
+    <div class="reveal-on-scroll">
+      <StoryTeaser client:load />
+    </div>
 
-    <!-- Story teaser — one card, not a section -->
-    <a href="/story" class="paper-card paper-card-hover rounded-2xl p-5 block space-y-2">
-      <div class="flex items-center justify-between">
-        <p class="text-xs uppercase tracking-[0.14em] text-mandate font-medium">Cafe Noor, Dalston</p>
-        <span class="text-xs text-ink-muted">Read the story →</span>
-      </div>
-      <p class="font-display text-xl text-ink">Fridge died at 6:47am. Fixed by 9:12.</p>
-      <p class="text-sm text-ink-muted leading-relaxed">
-        One voice note. Three quotes. A policy stop. A receipt on the wall.
-      </p>
-    </a>
-
-    <!-- Explore — surfaces that impress different audiences -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <a href="/play" class="paper-card paper-card-hover rounded-2xl p-5 block space-y-2">
+    <!-- Explore — two doors for two audiences -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 reveal-on-scroll">
+      <a href="/play" class="paper-card paper-card-hover rounded-2xl p-5 block space-y-1">
         <p class="text-xs uppercase tracking-[0.14em] text-mandate font-medium">Play — 30 seconds</p>
         <p class="font-display text-lg text-ink">Walk through the kitchen</p>
-        <p class="text-sm text-ink-muted leading-relaxed">
-          Pixel art. Three breakdowns. The agent auto-commits, gets blocked, and escalates — one of each.
-        </p>
       </a>
-      <a href="/ops" class="paper-card paper-card-hover rounded-2xl p-5 block space-y-2">
+      <a href="/ops" class="paper-card paper-card-hover rounded-2xl p-5 block space-y-1">
         <p class="text-xs uppercase tracking-[0.14em] text-ink-muted font-medium">Behind the scenes</p>
         <p class="font-display text-lg text-ink">Concierge dispatch desk</p>
-        <p class="text-sm text-ink-muted leading-relaxed">
-          See the supply side — how callouts reach engineers and quotes flow back into the system.
-        </p>
       </a>
     </div>
 
-    <!-- Scale signal — focused niche, universal pattern -->
-    <section class="paper-card rounded-2xl p-5 space-y-3">
-      <p class="text-xs uppercase tracking-[0.14em] text-ink-muted font-medium">Why this market</p>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-        <div class="space-y-0.5">
-          <p class="font-display text-xl text-ink">12,000+</p>
+    <!-- Market — one hero stat, the rest a thin strip -->
+    <section class="paper-card rounded-2xl p-5 sm:p-6 space-y-4 reveal-on-scroll">
+      <div class="text-center space-y-1">
+        <p class="font-display text-5xl sm:text-6xl text-mandate leading-none">0</p>
+        <p class="text-sm text-ink">autonomous options for a broken kitchen today</p>
+      </div>
+      <div class="flex justify-center gap-6 sm:gap-10 text-center border-t border-ink/5 pt-3">
+        <div>
+          <p class="font-display text-lg text-ink">12,000+</p>
           <p class="text-[10px] text-ink-muted">London food businesses</p>
         </div>
-        <div class="space-y-0.5">
-          <p class="font-display text-xl text-ink">85%</p>
-          <p class="text-[10px] text-ink-muted">Need same-day repair</p>
+        <div>
+          <p class="font-display text-lg text-ink">85%</p>
+          <p class="text-[10px] text-ink-muted">need same-day repair</p>
         </div>
-        <div class="space-y-0.5">
-          <p class="font-display text-xl text-ink">£800+</p>
-          <p class="text-[10px] text-ink-muted">Lost per hour of downtime</p>
-        </div>
-        <div class="space-y-0.5">
-          <p class="font-display text-xl text-mandate">0</p>
-          <p class="text-[10px] text-ink-muted">Autonomous solutions today</p>
+        <div>
+          <p class="font-display text-lg text-ink">£800+</p>
+          <p class="text-[10px] text-ink-muted">lost per hour down</p>
         </div>
       </div>
-      <p class="text-xs text-ink-muted leading-relaxed">
-        Starting with London independent kitchens — urgent, high-frequency, fragmented supply. The same pattern applies to any business where equipment downtime means lost revenue.
-      </p>
     </section>
 
-    <div class="receipt-perf"></div>
-
-    <!-- Waitlist -->
-    <WaitlistCapture client:load variant="general" source="home" />
+    <!-- Waitlist — not in the DOM until the visitor has seen the hero -->
+    <DeferredWaitlist client:load />
   </div>
+
+  {/* Scroll-triggered reveals between acts. No library — IntersectionObserver
+      toggling a class; reduced-motion users get everything immediately. */}
+  <script>
+    document.documentElement.classList.add('js-reveal');
+    function setupReveals() {
+      const els = document.querySelectorAll('.reveal-on-scroll:not(.reveal-visible)');
+      if (!('IntersectionObserver' in window)) {
+        els.forEach((el) => el.classList.add('reveal-visible'));
+        return;
+      }
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('reveal-visible');
+              io.unobserve(entry.target);
+            }
+          }
+        },
+        { threshold: 0.15 },
+      );
+      els.forEach((el) => io.observe(el));
+    }
+    // astro:page-load covers view-transition navigations; DOMContentLoaded the first paint.
+    document.addEventListener('astro:page-load', setupReveals);
+    setupReveals();
+  </script>
 </Layout>

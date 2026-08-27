@@ -10,15 +10,26 @@ import React, { useState, useEffect } from 'react';
  */
 const STORAGE_KEY = 'yaler-district';
 
+/** Custom event name — islands subscribe to district changes, no reload. */
+export const DISTRICT_EVENT = 'yaler:district';
+
 const POPULAR = ['N1', 'E1', 'SE1', 'SW1', 'W1', 'EC1', 'WC1', 'NW1'];
 
 export default function DistrictPicker() {
   const [district, setDistrict] = useState('N1');
   const [open, setOpen] = useState(false);
+  const [justSet, setJustSet] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = getDistrict();
     if (saved) setDistrict(saved);
+    // Stay in sync if another picker on the page changes the district.
+    const onDistrict = (e: Event) => {
+      const next = (e as CustomEvent<string>).detail;
+      if (next) setDistrict(next);
+    };
+    window.addEventListener(DISTRICT_EVENT, onDistrict);
+    return () => window.removeEventListener(DISTRICT_EVENT, onDistrict);
   }, []);
 
   const choose = (d: string) => {
@@ -27,8 +38,11 @@ export default function DistrictPicker() {
     setDistrict(clean);
     localStorage.setItem(STORAGE_KEY, clean);
     setOpen(false);
-    // Reload so all islands pick up the new district
-    window.location.reload();
+    // No reload — tell every island on the page (MissionForm presets,
+    // DiscoveryBadge…) so the app reads as live, not as a page refresh.
+    window.dispatchEvent(new CustomEvent(DISTRICT_EVENT, { detail: clean }));
+    setJustSet(true);
+    setTimeout(() => setJustSet(false), 1800);
   };
 
   return (
@@ -36,13 +50,20 @@ export default function DistrictPicker() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink transition-colors px-2.5 py-1.5 rounded-lg border border-ink/10 bg-paper"
+        aria-expanded={open}
+        aria-label={`Your district is ${district}. Activate to change it.`}
+        className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+          justSet
+            ? 'border-mandate/40 bg-mandate-light text-mandate'
+            : 'text-ink-muted hover:text-ink border-ink/10 bg-paper'
+        }`}
       >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden>
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round" />
           <circle cx="12" cy="10" r="3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <span className="font-medium text-ink">{district}</span>
+        {justSet && <span className="text-[10px] text-mandate">set</span>}
       </button>
       {open && (
         <div className="absolute top-full right-0 mt-1 z-50 paper-card rounded-xl p-3 space-y-2 min-w-[180px] animate-pop-in">
