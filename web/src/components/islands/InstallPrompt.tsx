@@ -7,7 +7,9 @@ import { getVisitCount, playUiSound } from '../../lib/delight';
  * Chromium fires `beforeinstallprompt` once the app is installable; we hold
  * on to that event and only ask once the visitor has had a proper look —
  * 30 seconds on site, or their second visit, whichever comes first.
- * "Not now" is remembered forever. iOS Safari never fires the event, so
+ * "Not now" is remembered forever in localStorage, and every open tab
+ * watches that flag so a dismissal in one tab silences the others (and
+ * clears their stale event caches). iOS Safari never fires the event, so
  * there we show Share → Add to Home Screen instructions instead. Already
  * installed (standalone display-mode)? We stay out of the way entirely.
  */
@@ -79,6 +81,18 @@ export default function InstallPrompt() {
     window.addEventListener('beforeinstallprompt', onBeforeInstall);
     window.addEventListener('appinstalled', onInstalled);
 
+    // Cross-tab correctness: if another tab dismisses (or installs), the
+    // dismissal flag lands in localStorage — react to it here so this tab
+    // doesn't keep showing a prompt (or holding a now-stale cachedPrompt).
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === DISMISS_KEY && e.newValue === 'true') {
+        cachedPrompt = null;
+        setDeferred(null);
+        setDismissed(true);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+
     // Arm on the second visit, or after 30s on site — whichever comes first.
     let timer: number | undefined;
     if (getVisitCount() >= 2) {
@@ -90,6 +104,7 @@ export default function InstallPrompt() {
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstall);
       window.removeEventListener('appinstalled', onInstalled);
+      window.removeEventListener('storage', onStorage);
       if (timer !== undefined) window.clearTimeout(timer);
     };
   }, []);
@@ -107,9 +122,13 @@ export default function InstallPrompt() {
     try {
       await deferred.prompt();
       const choice = await deferred.userChoice;
-      if (choice.outcome === 'accepted') persistDismissal();
+      // Persist either outcome: an install means no more prompting, and a
+      // native-dialog dismissal should count as "not now" — this is also
+      // what syncs the hide to any other open tabs via the storage listener.
+      if (choice.outcome === 'accepted' || choice.outcome === 'dismissed') persistDismissal();
     } catch {
       /* very old Chromium builds can reject — treat as dismissed */
+      persistDismissal();
     }
     cachedPrompt = null;
     setDeferred(null);
