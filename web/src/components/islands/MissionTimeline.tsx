@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type Event, type Mission, getEvents, getMission, submitMissionFeedback } from '../../lib/api';
 import ThinkingTrace, { type TraceRow } from '../primitives/ThinkingTrace';
 import { LoadingStatus } from '../primitives/LoaderGrid';
 import ToolChips, { type ToolChipCall } from '../primitives/ToolChips';
 import StatusBadge from '../primitives/StatusBadge';
-import { eventLabel, formatMoney, nextActionLabel } from '../../lib/copy';
+import { AGENT_TOOLS, EMPTY_STATE_COPY, eventLabel, formatMoney, nextActionLabel, supplierLabel } from '../../lib/copy';
 import { SponsorRail, type SponsorId } from '../primitives/SponsorCallout';
 import { celebrate, shake, playUiSound, markJobCompleted } from '../../lib/delight';
 
@@ -30,6 +30,92 @@ interface Props {
   mission?: Mission;
   events?: Event[];
   rehearsal?: boolean;
+}
+
+/** Compose the sentence a screen reader speaks when a new event lands. */
+function announceEvent(evt: Event): string {
+  if (evt.type === 'OFFER_RECEIVED' || evt.type === 'QUOTE_RECEIVED') {
+    const p = (evt.payload ?? {}) as Record<string, unknown>;
+    const name = supplierLabel((p.supplierAgentId as string) || (p.supplierId as string) || evt.actor);
+    const price = typeof p.price === 'number' ? formatMoney(p.price, (p.currency as string) || 'GBP') : null;
+    const eta = (p.availability as string) || (p.eta as string) || null;
+    return `Quote received from ${name}${price ? `, ${price}` : ''}${eta ? `, arriving ${eta}` : ''}`;
+  }
+  return eventLabel(evt.type);
+}
+
+/** Paper-cutout fridge icon for empty states — pure SVG, no image request. */
+function FridgeCutout({ className = 'w-10 h-10' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={className} aria-hidden>
+      <rect x="6" y="2.5" width="12" height="19" rx="1.5" />
+      <path d="M6 9.5h12" />
+      <path d="M9 5.5v2M9 12v3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/**
+ * ToolTraceRail — the agent's toolbelt as a horizontal rail. Each chip
+ * lights up (with the same fade-up the timeline uses) when the matching
+ * tool fires on the event stream; the most recently fired tool carries a
+ * live dot. Sticky positioning is the caller's job.
+ */
+export function ToolTraceRail({ events }: { events: Event[] }) {
+  const { firedAt, activeId } = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const tool of AGENT_TOOLS) {
+      const hits = events.filter((e) => tool.eventTypes.includes(e.type));
+      if (hits.length > 0) {
+        const latest = hits.reduce((a, b) => (new Date(a.createdAt) > new Date(b.createdAt) ? a : b));
+        map.set(tool.id, latest.createdAt);
+      }
+    }
+    let active: string | null = null;
+    let newest = 0;
+    for (const [id, at] of map) {
+      const t = new Date(at).getTime();
+      if (t >= newest) { newest = t; active = id; }
+    }
+    return { firedAt: map, activeId: active };
+  }, [events]);
+
+  return (
+    <div
+      className="paper-card rounded-2xl px-3 py-2 overflow-x-auto"
+      role="list"
+      aria-label="Agent tools — chips light up as each tool runs"
+    >
+      <div className="flex items-center gap-1.5 min-w-max">
+        {AGENT_TOOLS.map((tool) => {
+          const lit = firedAt.has(tool.id);
+          const isActive = activeId === tool.id;
+          return (
+            <span
+              key={`${tool.id}-${lit}`} // remount on light-up → replay the fade-up
+              role="listitem"
+              aria-label={`${tool.label} ${lit ? 'ran' : 'has not run yet'}`}
+              className={`inline-flex items-center gap-1.5 font-mono text-[11px] px-2.5 py-1 rounded-full border whitespace-nowrap transition-colors duration-300 ${
+                lit
+                  ? 'animate-fade-up bg-mandate-light border-mandate/30 text-mandate'
+                  : 'bg-paper border-ink/10 text-ink-muted/50'
+              }`}
+            >
+              {isActive ? (
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mandate opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-mandate" />
+                </span>
+              ) : (
+                <span className={`h-1.5 w-1.5 rounded-full ${lit ? 'bg-mandate/60' : 'bg-ink/15'}`} />
+              )}
+              {tool.label}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default function MissionTimeline({
@@ -82,23 +168,60 @@ export default function MissionTimeline({
     }
   }, [mission?.status]);
 
-  const fetchLatest = async () => {
-    if (!missionId || rehearsal) return;
+  const fetchLatest = useCallback(async (): Promise<string | null> => {
+    if (!missionId || rehearsal) return null;
     try {
       const [m, evs] = await Promise.all([getMission(missionId), getEvents(missionId)]);
       setMission(m);
       setEvents(evs);
+      // Fingerprint of "did anything change" for the backoff below.
+      return `${m.status}:${evs.length}:${evs[evs.length - 1]?.id ?? ''}`;
     } catch (err) {
       console.error('Polling error:', err);
+      return null;
     }
-  };
+  }, [missionId, rehearsal]);
 
+  // Exponential backoff polling: starts at 2s; after 5 consecutive
+  // identical responses the interval doubles 2s → 4s → 8s → 16s → 30s
+  // ceiling. The moment something changes, it snaps back to 2s.
   useEffect(() => {
     if (!missionId || rehearsal) return;
-    fetchLatest();
-    const interval = setInterval(fetchLatest, 2000);
-    return () => clearInterval(interval);
-  }, [missionId, rehearsal]);
+    // When the parent passes both mission + events it drives the data —
+    // don't run a second poller.
+    if (missionProp && eventsProp) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let delay = 2000;
+    let identical = 0;
+    let lastHash: string | null = null;
+
+    const tick = async () => {
+      const hash = await fetchLatest();
+      if (cancelled) return;
+      if (hash !== null && hash === lastHash) {
+        identical += 1;
+      } else {
+        identical = 0;
+        lastHash = hash;
+      }
+      delay = identical >= 5 ? Math.min(delay * 2, 30000) : 2000;
+      timer = setTimeout(tick, delay);
+    };
+
+    tick();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [missionId, rehearsal, missionProp, eventsProp, fetchLatest]);
+
+  // Newest event, announced to screen readers in plain language (3.3).
+  const announcement = useMemo(() => {
+    if (events.length === 0) return '';
+    const newest = events.reduce((a, b) => (new Date(a.createdAt) > new Date(b.createdAt) ? a : b));
+    return announceEvent(newest);
+  }, [events]);
 
   const stages = [
     { label: 'Details', status: ['DRAFT', 'MANDATE_CONFIRMED'] },
@@ -165,6 +288,26 @@ export default function MissionTimeline({
 
   return (
     <div className="space-y-5" ref={cardRef}>
+      {/* Screen-reader announcer for new timeline events (3.3) */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="false">
+        {announcement}
+      </div>
+
+      {/* Empty state — nothing recorded yet (2.1) */}
+      {mission && events.length === 0 && (
+        <div className="paper-card rounded-2xl p-8 text-center space-y-3 animate-pop-in">
+          <div className="flex justify-center text-ink-muted/60">
+            <FridgeCutout />
+          </div>
+          <h3 className="font-display text-xl text-ink">
+            {mission.status === 'DRAFT' ? EMPTY_STATE_COPY.mandateExtracting.title : EMPTY_STATE_COPY.noEventsYet.title}
+          </h3>
+          <p className="text-sm text-ink-muted max-w-md mx-auto leading-relaxed">
+            {mission.status === 'DRAFT' ? EMPTY_STATE_COPY.mandateExtracting.body : EMPTY_STATE_COPY.noEventsYet.body}
+          </p>
+        </div>
+      )}
+
       {mission && (
         <div className="paper-card rounded-2xl p-5 sm:p-7 space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -253,7 +396,7 @@ export default function MissionTimeline({
 
           {showWork && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3 border-t border-ink/10">
-              <div className="space-y-3">
+              <div className="space-y-3" aria-live="polite" aria-atomic="false">
                 <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wider">Reasoning</h3>
                 <ThinkingTrace
                   activeTitle="Working through the job"
@@ -288,7 +431,7 @@ export default function MissionTimeline({
 
       {/* Settled trace — shown when done, collapsed by default */}
       {!isWorking && events.length > 0 && mission?.status === 'COMPLETED' && (
-        <div className="paper-card rounded-2xl p-5 space-y-3">
+        <div className="paper-card rounded-2xl p-5 space-y-3" aria-live="polite" aria-atomic="false">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-ink">What the agent did</h3>
             <span className="text-[11px] text-ink-muted">{traceRows.length} steps</span>

@@ -52,34 +52,40 @@ export default function HomeStory() {
 
   useGSAP(
     () => {
-      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const fill = root.current?.querySelector('.story-rail-fill');
-      if (reduced) {
-        if (fill) gsap.set(fill, { scaleY: 1 });
-        return;
-      }
+      const steps = root.current?.querySelector('.story-steps');
+      const mm = gsap.matchMedia();
 
-      root.current?.querySelectorAll('.story-beat').forEach((el, i) => {
-        ScrollTrigger.create({
-          trigger: el,
-          start: 'top 62%',
-          end: 'bottom 38%',
-          onToggle: (self) => self.isActive && setActive(i),
-        });
+      // Reduced motion: the rail shows complete and no scroll-linked motion
+      // runs. Every beat stays fully readable in the static column.
+      mm.add('(prefers-reduced-motion: reduce)', () => {
+        if (fill) gsap.set(fill, { scaleY: 1 });
       });
 
-      const steps = root.current?.querySelector('.story-steps');
-      if (fill && steps) {
-        gsap.fromTo(
-          fill,
-          { scaleY: 0 },
-          {
-            scaleY: 1,
-            ease: 'none',
-            scrollTrigger: { trigger: steps, start: 'top 60%', end: 'bottom 65%', scrub: 0.4 },
-          },
-        );
-      }
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        root.current?.querySelectorAll('.story-beat').forEach((el, i) => {
+          ScrollTrigger.create({
+            trigger: el,
+            start: 'top 62%',
+            end: 'bottom 38%',
+            onToggle: (self) => self.isActive && setActive(i),
+          });
+        });
+
+        if (fill && steps) {
+          gsap.fromTo(
+            fill,
+            { scaleY: 0 },
+            {
+              scaleY: 1,
+              ease: 'none',
+              scrollTrigger: { trigger: steps, start: 'top 60%', end: 'bottom 65%', scrub: 0.4 },
+            },
+          );
+        }
+      });
+
+      return () => mm.revert();
     },
     { scope: root },
   );

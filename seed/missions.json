@@ -1,0 +1,493 @@
+[
+  {
+    "mission": {
+      "id": "seed-mission-draft-01",
+      "goal": "Walk-in freezer running warm — holding at 6°C and the compressor sounds rough. Need an engineer this week.",
+      "status": "DRAFT",
+      "mandate": {
+        "goal": "Walk-in freezer running warm — holding at 6°C and the compressor sounds rough. Need an engineer this week.",
+        "budget": { "maxAmount": 650, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 10 },
+        "latestCompletionAt": "2026-08-30T17:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo", "temperature_reading"],
+        "autonomyMode": "DELEGATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "version": 1,
+      "createdAt": "2026-08-27T08:14:00Z",
+      "updatedAt": "2026-08-27T08:14:00Z"
+    },
+    "events": [
+      { "id": "seed-mission-draft-01-ev-01", "missionId": "seed-mission-draft-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Freezer holding at 6°C — needs an engineer this week" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-draft-01-ev-01", "createdAt": "2026-08-27T08:14:00Z" }
+    ],
+    "offers": []
+  },
+  {
+    "mission": {
+      "id": "seed-mission-mandate-01",
+      "goal": "Ice machine only making half batches — drinks service is suffering.",
+      "status": "MANDATE_CONFIRMED",
+      "mandate": {
+        "goal": "Ice machine only making half batches — drinks service is suffering.",
+        "budget": { "maxAmount": 300, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 8 },
+        "latestCompletionAt": "2026-08-29T12:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo"],
+        "autonomyMode": "COLLABORATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "version": 3,
+      "createdAt": "2026-08-27T08:31:00Z",
+      "updatedAt": "2026-08-27T08:31:55Z"
+    },
+    "events": [
+      { "id": "seed-mission-mandate-01-ev-01", "missionId": "seed-mission-mandate-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Ice machine only making half batches" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-mandate-01-ev-01", "createdAt": "2026-08-27T08:31:00Z" },
+      { "id": "seed-mission-mandate-01-ev-02", "missionId": "seed-mission-mandate-01", "type": "MANDATE_EXTRACTED", "actor": "DEMAND_AGENT", "payload": { "budget": 300, "currency": "GBP", "area": "N1", "category": "commercial_refrigeration" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-mandate-01-ev-02", "createdAt": "2026-08-27T08:31:20Z" },
+      { "id": "seed-mission-mandate-01-ev-03", "missionId": "seed-mission-mandate-01", "type": "MANDATE_CONFIRMED", "actor": "BUYER", "payload": { "max": 300, "area": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-mandate-01-ev-03", "createdAt": "2026-08-27T08:31:55Z" }
+    ],
+    "offers": []
+  },
+  {
+    "mission": {
+      "id": "seed-mission-sourcing-01",
+      "goal": "Cold room door seal has perished — temperature creeps up during service.",
+      "status": "SOURCING",
+      "mandate": {
+        "goal": "Cold room door seal has perished — temperature creeps up during service.",
+        "budget": { "maxAmount": 400, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 8 },
+        "latestCompletionAt": "2026-08-28T12:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo", "temperature_reading"],
+        "autonomyMode": "DELEGATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "version": 4,
+      "createdAt": "2026-08-27T09:02:00Z",
+      "updatedAt": "2026-08-27T09:03:35Z"
+    },
+    "events": [
+      { "id": "seed-mission-sourcing-01-ev-01", "missionId": "seed-mission-sourcing-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Cold room door seal perished" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-sourcing-01-ev-01", "createdAt": "2026-08-27T09:02:00Z" },
+      { "id": "seed-mission-sourcing-01-ev-02", "missionId": "seed-mission-sourcing-01", "type": "MANDATE_EXTRACTED", "actor": "DEMAND_AGENT", "payload": { "budget": 400, "currency": "GBP", "area": "N1", "category": "commercial_refrigeration" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-sourcing-01-ev-02", "createdAt": "2026-08-27T09:02:18Z" },
+      { "id": "seed-mission-sourcing-01-ev-03", "missionId": "seed-mission-sourcing-01", "type": "MANDATE_CONFIRMED", "actor": "BUYER", "payload": { "max": 400, "area": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-sourcing-01-ev-03", "createdAt": "2026-08-27T09:02:47Z" },
+      { "id": "seed-mission-sourcing-01-ev-04", "missionId": "seed-mission-sourcing-01", "type": "SOURCING_STARTED", "actor": "DEMAND_AGENT", "payload": { "district": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-sourcing-01-ev-04", "createdAt": "2026-08-27T09:03:02Z" },
+      { "id": "seed-mission-sourcing-01-ev-05", "missionId": "seed-mission-sourcing-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "calloutId": "seed-callout-sourcing-01-rapid" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-sourcing-01-ev-05", "createdAt": "2026-08-27T09:03:10Z" },
+      { "id": "seed-mission-sourcing-01-ev-06", "missionId": "seed-mission-sourcing-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "Capital Kitchen Services (Synthetic)", "calloutId": "seed-callout-sourcing-01-capital" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-sourcing-01-ev-06", "createdAt": "2026-08-27T09:03:20Z" },
+      { "id": "seed-mission-sourcing-01-ev-07", "missionId": "seed-mission-sourcing-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "East London Catering Technicians (Synthetic)", "calloutId": "seed-callout-sourcing-01-east" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-sourcing-01-ev-07", "createdAt": "2026-08-27T09:03:30Z" },
+      { "id": "seed-mission-sourcing-01-ev-08", "missionId": "seed-mission-sourcing-01", "type": "SUPPLIERS_SOURCED", "actor": "DEMAND_AGENT", "payload": "Asked 3 suppliers (3 simulated)", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-sourcing-01-ev-08", "createdAt": "2026-08-27T09:03:35Z" }
+    ],
+    "offers": []
+  },
+  {
+    "mission": {
+      "id": "seed-mission-offers-01",
+      "goal": "Walk-in freezer running warm — suspect the compressor. Need someone before Friday service.",
+      "status": "OFFERS_RECEIVED",
+      "mandate": {
+        "goal": "Walk-in freezer running warm — suspect the compressor. Need someone before Friday service.",
+        "budget": { "maxAmount": 500, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 8 },
+        "latestCompletionAt": "2026-08-28T18:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo", "temperature_reading"],
+        "autonomyMode": "DELEGATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "version": 6,
+      "createdAt": "2026-08-27T08:47:00Z",
+      "updatedAt": "2026-08-27T08:50:40Z"
+    },
+    "events": [
+      { "id": "seed-mission-offers-01-ev-01", "missionId": "seed-mission-offers-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Freezer warm — compressor suspected" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-01", "createdAt": "2026-08-27T08:47:00Z" },
+      { "id": "seed-mission-offers-01-ev-02", "missionId": "seed-mission-offers-01", "type": "MANDATE_EXTRACTED", "actor": "DEMAND_AGENT", "payload": { "budget": 500, "currency": "GBP", "area": "N1", "category": "commercial_refrigeration" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-02", "createdAt": "2026-08-27T08:47:20Z" },
+      { "id": "seed-mission-offers-01-ev-03", "missionId": "seed-mission-offers-01", "type": "MANDATE_CONFIRMED", "actor": "BUYER", "payload": { "max": 500, "area": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-03", "createdAt": "2026-08-27T08:47:55Z" },
+      { "id": "seed-mission-offers-01-ev-04", "missionId": "seed-mission-offers-01", "type": "SOURCING_STARTED", "actor": "DEMAND_AGENT", "payload": { "district": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-04", "createdAt": "2026-08-27T08:48:10Z" },
+      { "id": "seed-mission-offers-01-ev-05", "missionId": "seed-mission-offers-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "calloutId": "seed-callout-offers-01-rapid" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-05", "createdAt": "2026-08-27T08:48:20Z" },
+      { "id": "seed-mission-offers-01-ev-06", "missionId": "seed-mission-offers-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "Capital Kitchen Services (Synthetic)", "calloutId": "seed-callout-offers-01-capital" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-06", "createdAt": "2026-08-27T08:48:30Z" },
+      { "id": "seed-mission-offers-01-ev-07", "missionId": "seed-mission-offers-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "East London Catering Technicians (Synthetic)", "calloutId": "seed-callout-offers-01-east" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-07", "createdAt": "2026-08-27T08:48:40Z" },
+      { "id": "seed-mission-offers-01-ev-08", "missionId": "seed-mission-offers-01", "type": "SUPPLIERS_SOURCED", "actor": "DEMAND_AGENT", "payload": "Asked 3 suppliers (3 simulated)", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-08", "createdAt": "2026-08-27T08:48:45Z" },
+      { "id": "seed-mission-offers-01-ev-09", "missionId": "seed-mission-offers-01", "type": "OFFER_RECEIVED", "actor": "sup_capital_kitchen", "payload": { "supplierId": "sup_capital_kitchen", "price": 420, "currency": "GBP", "availability": "Tomorrow morning" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-09", "createdAt": "2026-08-27T08:49:30Z" },
+      { "id": "seed-mission-offers-01-ev-10", "missionId": "seed-mission-offers-01", "type": "OFFER_RECEIVED", "actor": "sup_east_catering", "payload": { "supplierId": "sup_east_catering", "price": 465, "currency": "GBP", "availability": "Today, within 4 hours" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-10", "createdAt": "2026-08-27T08:50:05Z" },
+      { "id": "seed-mission-offers-01-ev-11", "missionId": "seed-mission-offers-01", "type": "OFFER_RECEIVED", "actor": "sup_rapid_coldcare", "payload": { "supplierId": "sup_rapid_coldcare", "price": 480, "currency": "GBP", "availability": "Today, within 2 hours" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-11", "createdAt": "2026-08-27T08:50:25Z" },
+      { "id": "seed-mission-offers-01-ev-12", "missionId": "seed-mission-offers-01", "type": "OFFERS_RANKED", "actor": "DEMAND_AGENT", "payload": { "count": 3, "best": "sup_rapid_coldcare" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-offers-01-ev-12", "createdAt": "2026-08-27T08:50:40Z" }
+    ],
+    "offers": [
+      { "id": "seed-offer-offers-01-capital", "missionId": "seed-mission-offers-01", "supplierAgentId": "sup_capital_kitchen", "calloutId": "seed-callout-offers-01-capital", "price": 420, "currency": "GBP", "availability": "Tomorrow morning", "terms": "Cheapest, but not before Friday lunch prep.", "score": 0.83, "explanation": "Under budget. Cannot make today.", "evidence": ["safe_contractor_approved"], "status": "SUBMITTED", "createdAt": "2026-08-27T08:49:30Z", "simulated": true },
+      { "id": "seed-offer-offers-01-east", "missionId": "seed-mission-offers-01", "supplierAgentId": "sup_east_catering", "calloutId": "seed-callout-offers-01-east", "price": 465, "currency": "GBP", "availability": "Today, within 4 hours", "terms": "Same day. F-Gas certified on request.", "score": 0.78, "explanation": "In budget and same day, but the slower window.", "evidence": ["nvq_level_3_technicians"], "status": "SUBMITTED", "createdAt": "2026-08-27T08:50:05Z", "simulated": true },
+      { "id": "seed-offer-offers-01-rapid", "missionId": "seed-mission-offers-01", "supplierAgentId": "sup_rapid_coldcare", "calloutId": "seed-callout-offers-01-rapid", "price": 480, "currency": "GBP", "availability": "Today, within 2 hours", "terms": "Emergency callout. Photo of the gauge when done.", "score": 0.91, "explanation": "In N1, same day, under your £500 ceiling.", "evidence": ["f_gas_certified", "refcom_registered"], "status": "SUBMITTED", "createdAt": "2026-08-27T08:50:25Z", "simulated": true }
+    ]
+  },
+  {
+    "mission": {
+      "id": "seed-mission-negotiating-01",
+      "goal": "Display fridge at the counter won't hold below 8°C.",
+      "status": "NEGOTIATING",
+      "mandate": {
+        "goal": "Display fridge at the counter won't hold below 8°C.",
+        "budget": { "maxAmount": 450, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 8 },
+        "latestCompletionAt": "2026-08-28T17:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo", "temperature_reading"],
+        "autonomyMode": "DELEGATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "version": 7,
+      "createdAt": "2026-08-27T07:58:00Z",
+      "updatedAt": "2026-08-27T08:01:50Z"
+    },
+    "events": [
+      { "id": "seed-mission-negotiating-01-ev-01", "missionId": "seed-mission-negotiating-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Display fridge won't hold below 8°C" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-negotiating-01-ev-01", "createdAt": "2026-08-27T07:58:00Z" },
+      { "id": "seed-mission-negotiating-01-ev-02", "missionId": "seed-mission-negotiating-01", "type": "MANDATE_EXTRACTED", "actor": "DEMAND_AGENT", "payload": { "budget": 450, "currency": "GBP", "area": "N1", "category": "commercial_refrigeration" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-negotiating-01-ev-02", "createdAt": "2026-08-27T07:58:20Z" },
+      { "id": "seed-mission-negotiating-01-ev-03", "missionId": "seed-mission-negotiating-01", "type": "MANDATE_CONFIRMED", "actor": "BUYER", "payload": { "max": 450, "area": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-negotiating-01-ev-03", "createdAt": "2026-08-27T07:58:50Z" },
+      { "id": "seed-mission-negotiating-01-ev-04", "missionId": "seed-mission-negotiating-01", "type": "SOURCING_STARTED", "actor": "DEMAND_AGENT", "payload": { "district": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-negotiating-01-ev-04", "createdAt": "2026-08-27T07:59:05Z" },
+      { "id": "seed-mission-negotiating-01-ev-05", "missionId": "seed-mission-negotiating-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "calloutId": "seed-callout-negotiating-01-rapid" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-negotiating-01-ev-05", "createdAt": "2026-08-27T07:59:15Z" },
+      { "id": "seed-mission-negotiating-01-ev-06", "missionId": "seed-mission-negotiating-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "Capital Kitchen Services (Synthetic)", "calloutId": "seed-callout-negotiating-01-capital" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-negotiating-01-ev-06", "createdAt": "2026-08-27T07:59:25Z" },
+      { "id": "seed-mission-negotiating-01-ev-07", "missionId": "seed-mission-negotiating-01", "type": "SUPPLIERS_SOURCED", "actor": "DEMAND_AGENT", "payload": "Asked 2 suppliers (2 simulated)", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-negotiating-01-ev-07", "createdAt": "2026-08-27T07:59:30Z" },
+      { "id": "seed-mission-negotiating-01-ev-08", "missionId": "seed-mission-negotiating-01", "type": "OFFER_RECEIVED", "actor": "sup_capital_kitchen", "payload": { "supplierId": "sup_capital_kitchen", "price": 445, "currency": "GBP", "availability": "Tomorrow morning" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-negotiating-01-ev-08", "createdAt": "2026-08-27T08:00:40Z" },
+      { "id": "seed-mission-negotiating-01-ev-09", "missionId": "seed-mission-negotiating-01", "type": "OFFER_RECEIVED", "actor": "sup_rapid_coldcare", "payload": { "supplierId": "sup_rapid_coldcare", "price": 520, "currency": "GBP", "availability": "Today, within 2 hours" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-negotiating-01-ev-09", "createdAt": "2026-08-27T08:01:10Z" },
+      { "id": "seed-mission-negotiating-01-ev-10", "missionId": "seed-mission-negotiating-01", "type": "NEGOTIATING", "actor": "DEMAND_AGENT", "payload": { "note": "Same-day quote is £70 over — counter-offer sent at £450 to stay inside your rules" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-negotiating-01-ev-10", "createdAt": "2026-08-27T08:01:50Z" }
+    ],
+    "offers": [
+      { "id": "seed-offer-negotiating-01-capital", "missionId": "seed-mission-negotiating-01", "supplierAgentId": "sup_capital_kitchen", "calloutId": "seed-callout-negotiating-01-capital", "price": 445, "currency": "GBP", "availability": "Tomorrow morning", "terms": "In budget, but not same day.", "score": 0.8, "explanation": "Inside your £450 ceiling. Cannot make today.", "evidence": ["safe_contractor_approved"], "status": "SUBMITTED", "createdAt": "2026-08-27T08:00:40Z", "simulated": true },
+      { "id": "seed-offer-negotiating-01-rapid", "missionId": "seed-mission-negotiating-01", "supplierAgentId": "sup_rapid_coldcare", "calloutId": "seed-callout-negotiating-01-rapid", "price": 520, "currency": "GBP", "availability": "Today, within 2 hours", "terms": "Same day. Countered at £450 to meet your ceiling.", "score": 0.86, "explanation": "£70 over your ceiling — counter-offer sent.", "evidence": ["f_gas_certified", "refcom_registered"], "status": "COUNTERED", "createdAt": "2026-08-27T08:01:10Z", "simulated": true }
+    ]
+  },
+  {
+    "mission": {
+      "id": "seed-mission-awaiting-approval-01",
+      "goal": "Walk-in freezer running warm again — lunch service is at risk. Someone here before 12, please.",
+      "status": "AWAITING_APPROVAL",
+      "mandate": {
+        "goal": "Walk-in freezer running warm again — lunch service is at risk. Someone here before 12, please.",
+        "budget": { "maxAmount": 500, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 8 },
+        "latestCompletionAt": "2026-08-27T12:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo", "temperature_reading"],
+        "autonomyMode": "DELEGATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "version": 7,
+      "createdAt": "2026-08-27T09:40:00Z",
+      "updatedAt": "2026-08-27T09:43:35Z"
+    },
+    "events": [
+      { "id": "seed-mission-awaiting-approval-01-ev-01", "missionId": "seed-mission-awaiting-approval-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Freezer warm again — someone before 12" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-01", "createdAt": "2026-08-27T09:40:00Z" },
+      { "id": "seed-mission-awaiting-approval-01-ev-02", "missionId": "seed-mission-awaiting-approval-01", "type": "MANDATE_EXTRACTED", "actor": "DEMAND_AGENT", "payload": { "budget": 500, "currency": "GBP", "area": "N1", "category": "commercial_refrigeration" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-02", "createdAt": "2026-08-27T09:40:18Z" },
+      { "id": "seed-mission-awaiting-approval-01-ev-03", "missionId": "seed-mission-awaiting-approval-01", "type": "MANDATE_CONFIRMED", "actor": "BUYER", "payload": { "max": 500, "area": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-03", "createdAt": "2026-08-27T09:40:45Z" },
+      { "id": "seed-mission-awaiting-approval-01-ev-04", "missionId": "seed-mission-awaiting-approval-01", "type": "SOURCING_STARTED", "actor": "DEMAND_AGENT", "payload": { "district": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-04", "createdAt": "2026-08-27T09:41:00Z" },
+      { "id": "seed-mission-awaiting-approval-01-ev-05", "missionId": "seed-mission-awaiting-approval-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "calloutId": "seed-callout-awaiting-approval-01-rapid" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-05", "createdAt": "2026-08-27T09:41:10Z" },
+      { "id": "seed-mission-awaiting-approval-01-ev-06", "missionId": "seed-mission-awaiting-approval-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "Capital Kitchen Services (Synthetic)", "calloutId": "seed-callout-awaiting-approval-01-capital" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-06", "createdAt": "2026-08-27T09:41:20Z" },
+      { "id": "seed-mission-awaiting-approval-01-ev-07", "missionId": "seed-mission-awaiting-approval-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "East London Catering Technicians (Synthetic)", "calloutId": "seed-callout-awaiting-approval-01-east" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-07", "createdAt": "2026-08-27T09:41:30Z" },
+      { "id": "seed-mission-awaiting-approval-01-ev-08", "missionId": "seed-mission-awaiting-approval-01", "type": "SUPPLIERS_SOURCED", "actor": "DEMAND_AGENT", "payload": "Asked 3 suppliers (3 simulated)", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-08", "createdAt": "2026-08-27T09:41:35Z" },
+      { "id": "seed-mission-awaiting-approval-01-ev-09", "missionId": "seed-mission-awaiting-approval-01", "type": "OFFER_RECEIVED", "actor": "sup_capital_kitchen", "payload": { "supplierId": "sup_capital_kitchen", "price": 420, "currency": "GBP", "availability": "Tomorrow morning" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-09", "createdAt": "2026-08-27T09:42:20Z" },
+      { "id": "seed-mission-awaiting-approval-01-ev-10", "missionId": "seed-mission-awaiting-approval-01", "type": "OFFER_RECEIVED", "actor": "sup_east_catering", "payload": { "supplierId": "sup_east_catering", "price": 465, "currency": "GBP", "availability": "Tomorrow afternoon" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-10", "createdAt": "2026-08-27T09:42:50Z" },
+      { "id": "seed-mission-awaiting-approval-01-ev-11", "missionId": "seed-mission-awaiting-approval-01", "type": "OFFER_RECEIVED", "actor": "sup_rapid_coldcare", "payload": { "supplierId": "sup_rapid_coldcare", "price": 560, "currency": "GBP", "availability": "Today, within 90 minutes" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-11", "createdAt": "2026-08-27T09:43:10Z" },
+      { "id": "seed-mission-awaiting-approval-01-ev-12", "missionId": "seed-mission-awaiting-approval-01", "type": "POLICY_ESCALATE", "actor": "POLICY_ENGINE", "payload": { "reason": "Only quote that makes the noon deadline is £560 — £60 over the £500 ceiling. Needs your call." }, "policyResult": "ESCALATE", "idempotencyKey": "seed-mission-awaiting-approval-01-ev-12", "createdAt": "2026-08-27T09:43:35Z" }
+    ],
+    "offers": [
+      { "id": "seed-offer-awaiting-approval-01-capital", "missionId": "seed-mission-awaiting-approval-01", "supplierAgentId": "sup_capital_kitchen", "calloutId": "seed-callout-awaiting-approval-01-capital", "price": 420, "currency": "GBP", "availability": "Tomorrow morning", "terms": "Under budget — but not before the noon deadline.", "score": 0.79, "explanation": "In budget. Misses the deadline.", "evidence": ["safe_contractor_approved"], "status": "SUBMITTED", "createdAt": "2026-08-27T09:42:20Z", "simulated": true },
+      { "id": "seed-offer-awaiting-approval-01-east", "missionId": "seed-mission-awaiting-approval-01", "supplierAgentId": "sup_east_catering", "calloutId": "seed-callout-awaiting-approval-01-east", "price": 465, "currency": "GBP", "availability": "Tomorrow afternoon", "terms": "Under budget — but not before the noon deadline.", "score": 0.74, "explanation": "In budget. Misses the deadline.", "evidence": ["nvq_level_3_technicians"], "status": "SUBMITTED", "createdAt": "2026-08-27T09:42:50Z", "simulated": true },
+      { "id": "seed-offer-awaiting-approval-01-rapid", "missionId": "seed-mission-awaiting-approval-01", "supplierAgentId": "sup_rapid_coldcare", "calloutId": "seed-callout-awaiting-approval-01-rapid", "price": 560, "currency": "GBP", "availability": "Today, within 90 minutes", "terms": "Makes the noon deadline. £60 over your £500 ceiling.", "score": 0.93, "explanation": "Blocked by your rules — we will not book this unless you approve.", "evidence": ["f_gas_certified", "refcom_registered"], "status": "BLOCKED", "createdAt": "2026-08-27T09:43:10Z", "simulated": true }
+    ]
+  },
+  {
+    "mission": {
+      "id": "seed-mission-committed-01",
+      "goal": "Prep fridge thermostat stuck — running at 10°C right before deliveries.",
+      "status": "COMMITTED",
+      "mandate": {
+        "goal": "Prep fridge thermostat stuck — running at 10°C right before deliveries.",
+        "budget": { "maxAmount": 500, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 8 },
+        "latestCompletionAt": "2026-08-27T18:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo", "temperature_reading"],
+        "autonomyMode": "DELEGATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "selectedSupplierId": "sup_rapid_coldcare",
+      "version": 8,
+      "createdAt": "2026-08-27T08:05:00Z",
+      "updatedAt": "2026-08-27T08:09:10Z"
+    },
+    "events": [
+      { "id": "seed-mission-committed-01-ev-01", "missionId": "seed-mission-committed-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Prep fridge stuck at 10°C" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-01", "createdAt": "2026-08-27T08:05:00Z" },
+      { "id": "seed-mission-committed-01-ev-02", "missionId": "seed-mission-committed-01", "type": "MANDATE_EXTRACTED", "actor": "DEMAND_AGENT", "payload": { "budget": 500, "currency": "GBP", "area": "N1", "category": "commercial_refrigeration" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-02", "createdAt": "2026-08-27T08:05:20Z" },
+      { "id": "seed-mission-committed-01-ev-03", "missionId": "seed-mission-committed-01", "type": "MANDATE_CONFIRMED", "actor": "BUYER", "payload": { "max": 500, "area": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-03", "createdAt": "2026-08-27T08:05:50Z" },
+      { "id": "seed-mission-committed-01-ev-04", "missionId": "seed-mission-committed-01", "type": "SOURCING_STARTED", "actor": "DEMAND_AGENT", "payload": { "district": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-04", "createdAt": "2026-08-27T08:06:05Z" },
+      { "id": "seed-mission-committed-01-ev-05", "missionId": "seed-mission-committed-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "calloutId": "seed-callout-committed-01-rapid" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-05", "createdAt": "2026-08-27T08:06:15Z" },
+      { "id": "seed-mission-committed-01-ev-06", "missionId": "seed-mission-committed-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "Capital Kitchen Services (Synthetic)", "calloutId": "seed-callout-committed-01-capital" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-06", "createdAt": "2026-08-27T08:06:25Z" },
+      { "id": "seed-mission-committed-01-ev-07", "missionId": "seed-mission-committed-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "East London Catering Technicians (Synthetic)", "calloutId": "seed-callout-committed-01-east" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-07", "createdAt": "2026-08-27T08:06:35Z" },
+      { "id": "seed-mission-committed-01-ev-08", "missionId": "seed-mission-committed-01", "type": "SUPPLIERS_SOURCED", "actor": "DEMAND_AGENT", "payload": "Asked 3 suppliers (3 simulated)", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-08", "createdAt": "2026-08-27T08:06:40Z" },
+      { "id": "seed-mission-committed-01-ev-09", "missionId": "seed-mission-committed-01", "type": "OFFER_RECEIVED", "actor": "sup_capital_kitchen", "payload": { "supplierId": "sup_capital_kitchen", "price": 420, "currency": "GBP", "availability": "Tomorrow morning" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-09", "createdAt": "2026-08-27T08:07:30Z" },
+      { "id": "seed-mission-committed-01-ev-10", "missionId": "seed-mission-committed-01", "type": "OFFER_RECEIVED", "actor": "sup_east_catering", "payload": { "supplierId": "sup_east_catering", "price": 465, "currency": "GBP", "availability": "Today, within 4 hours" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-10", "createdAt": "2026-08-27T08:08:00Z" },
+      { "id": "seed-mission-committed-01-ev-11", "missionId": "seed-mission-committed-01", "type": "OFFER_RECEIVED", "actor": "sup_rapid_coldcare", "payload": { "supplierId": "sup_rapid_coldcare", "price": 480, "currency": "GBP", "availability": "Today, within 2 hours" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-11", "createdAt": "2026-08-27T08:08:25Z" },
+      { "id": "seed-mission-committed-01-ev-12", "missionId": "seed-mission-committed-01", "type": "OFFERS_RANKED", "actor": "DEMAND_AGENT", "payload": { "count": 3, "best": "sup_rapid_coldcare" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-12", "createdAt": "2026-08-27T08:08:40Z" },
+      { "id": "seed-mission-committed-01-ev-13", "missionId": "seed-mission-committed-01", "type": "OFFER_ACCEPTED", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "price": 480, "currency": "GBP" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-13", "createdAt": "2026-08-27T08:08:55Z" },
+      { "id": "seed-mission-committed-01-ev-14", "missionId": "seed-mission-committed-01", "type": "COMMITTED", "actor": "DEMAND_AGENT", "payload": { "engineer": "London Rapid ColdCare (Synthetic)", "price": 480, "currency": "GBP" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-committed-01-ev-14", "createdAt": "2026-08-27T08:09:10Z" }
+    ],
+    "offers": [
+      { "id": "seed-offer-committed-01-capital", "missionId": "seed-mission-committed-01", "supplierAgentId": "sup_capital_kitchen", "calloutId": "seed-callout-committed-01-capital", "price": 420, "currency": "GBP", "availability": "Tomorrow morning", "terms": "Cheaper, but not same day.", "score": 0.83, "explanation": "Under budget. Cannot make today.", "evidence": ["safe_contractor_approved"], "status": "REJECTED", "createdAt": "2026-08-27T08:07:30Z", "simulated": true },
+      { "id": "seed-offer-committed-01-east", "missionId": "seed-mission-committed-01", "supplierAgentId": "sup_east_catering", "calloutId": "seed-callout-committed-01-east", "price": 465, "currency": "GBP", "availability": "Today, within 4 hours", "terms": "Same day, slower window.", "score": 0.78, "explanation": "In budget and same day, but the slower window.", "evidence": ["nvq_level_3_technicians"], "status": "REJECTED", "createdAt": "2026-08-27T08:08:00Z", "simulated": true },
+      { "id": "seed-offer-committed-01-rapid", "missionId": "seed-mission-committed-01", "supplierAgentId": "sup_rapid_coldcare", "calloutId": "seed-callout-committed-01-rapid", "price": 480, "currency": "GBP", "availability": "Today, within 2 hours", "terms": "Emergency callout. Photo of the gauge when done.", "score": 0.91, "explanation": "In N1, same day, under your £500 ceiling.", "evidence": ["f_gas_certified", "refcom_registered"], "status": "ACCEPTED", "createdAt": "2026-08-27T08:08:25Z", "simulated": true }
+    ]
+  },
+  {
+    "mission": {
+      "id": "seed-mission-in-progress-01",
+      "goal": "Freezer door was left open overnight — now icing up and won't hold temperature.",
+      "status": "IN_PROGRESS",
+      "mandate": {
+        "goal": "Freezer door was left open overnight — now icing up and won't hold temperature.",
+        "budget": { "maxAmount": 550, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 8 },
+        "latestCompletionAt": "2026-08-27T17:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo", "temperature_reading"],
+        "autonomyMode": "DELEGATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "selectedSupplierId": "sup_rapid_coldcare",
+      "version": 9,
+      "createdAt": "2026-08-27T07:36:00Z",
+      "updatedAt": "2026-08-27T07:41:20Z"
+    },
+    "events": [
+      { "id": "seed-mission-in-progress-01-ev-01", "missionId": "seed-mission-in-progress-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Freezer iced up after open door overnight" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-01", "createdAt": "2026-08-27T07:36:00Z" },
+      { "id": "seed-mission-in-progress-01-ev-02", "missionId": "seed-mission-in-progress-01", "type": "MANDATE_EXTRACTED", "actor": "DEMAND_AGENT", "payload": { "budget": 550, "currency": "GBP", "area": "N1", "category": "commercial_refrigeration" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-02", "createdAt": "2026-08-27T07:36:20Z" },
+      { "id": "seed-mission-in-progress-01-ev-03", "missionId": "seed-mission-in-progress-01", "type": "MANDATE_CONFIRMED", "actor": "BUYER", "payload": { "max": 550, "area": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-03", "createdAt": "2026-08-27T07:36:50Z" },
+      { "id": "seed-mission-in-progress-01-ev-04", "missionId": "seed-mission-in-progress-01", "type": "SOURCING_STARTED", "actor": "DEMAND_AGENT", "payload": { "district": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-04", "createdAt": "2026-08-27T07:37:05Z" },
+      { "id": "seed-mission-in-progress-01-ev-05", "missionId": "seed-mission-in-progress-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "calloutId": "seed-callout-in-progress-01-rapid" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-05", "createdAt": "2026-08-27T07:37:15Z" },
+      { "id": "seed-mission-in-progress-01-ev-06", "missionId": "seed-mission-in-progress-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "Capital Kitchen Services (Synthetic)", "calloutId": "seed-callout-in-progress-01-capital" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-06", "createdAt": "2026-08-27T07:37:25Z" },
+      { "id": "seed-mission-in-progress-01-ev-07", "missionId": "seed-mission-in-progress-01", "type": "SUPPLIERS_SOURCED", "actor": "DEMAND_AGENT", "payload": "Asked 2 suppliers (2 simulated)", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-07", "createdAt": "2026-08-27T07:37:30Z" },
+      { "id": "seed-mission-in-progress-01-ev-08", "missionId": "seed-mission-in-progress-01", "type": "OFFER_RECEIVED", "actor": "sup_rapid_coldcare", "payload": { "supplierId": "sup_rapid_coldcare", "price": 510, "currency": "GBP", "availability": "Today, within 2 hours" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-08", "createdAt": "2026-08-27T07:38:40Z" },
+      { "id": "seed-mission-in-progress-01-ev-09", "missionId": "seed-mission-in-progress-01", "type": "OFFER_RECEIVED", "actor": "sup_capital_kitchen", "payload": { "supplierId": "sup_capital_kitchen", "price": 440, "currency": "GBP", "availability": "Tomorrow morning" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-09", "createdAt": "2026-08-27T07:39:10Z" },
+      { "id": "seed-mission-in-progress-01-ev-10", "missionId": "seed-mission-in-progress-01", "type": "OFFERS_RANKED", "actor": "DEMAND_AGENT", "payload": { "count": 2, "best": "sup_rapid_coldcare" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-10", "createdAt": "2026-08-27T07:39:25Z" },
+      { "id": "seed-mission-in-progress-01-ev-11", "missionId": "seed-mission-in-progress-01", "type": "OFFER_ACCEPTED", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "price": 510, "currency": "GBP" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-11", "createdAt": "2026-08-27T07:39:40Z" },
+      { "id": "seed-mission-in-progress-01-ev-12", "missionId": "seed-mission-in-progress-01", "type": "COMMITTED", "actor": "DEMAND_AGENT", "payload": { "engineer": "London Rapid ColdCare (Synthetic)", "price": 510, "currency": "GBP" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-12", "createdAt": "2026-08-27T07:39:55Z" },
+      { "id": "seed-mission-in-progress-01-ev-13", "missionId": "seed-mission-in-progress-01", "type": "WORK_DISPATCHED", "actor": "SUPPLIER_AGENT", "payload": { "eta": "On site within the hour", "engineer": "London Rapid ColdCare (Synthetic)" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-in-progress-01-ev-13", "createdAt": "2026-08-27T07:41:20Z" }
+    ],
+    "offers": [
+      { "id": "seed-offer-in-progress-01-rapid", "missionId": "seed-mission-in-progress-01", "supplierAgentId": "sup_rapid_coldcare", "calloutId": "seed-callout-in-progress-01-rapid", "price": 510, "currency": "GBP", "availability": "Today, within 2 hours", "terms": "De-ice, check the seal, gauge photo when holding temperature.", "score": 0.9, "explanation": "Same day, inside your £550 ceiling.", "evidence": ["f_gas_certified", "refcom_registered"], "status": "ACCEPTED", "createdAt": "2026-08-27T07:38:40Z", "simulated": true },
+      { "id": "seed-offer-in-progress-01-capital", "missionId": "seed-mission-in-progress-01", "supplierAgentId": "sup_capital_kitchen", "calloutId": "seed-callout-in-progress-01-capital", "price": 440, "currency": "GBP", "availability": "Tomorrow morning", "terms": "Cheaper, but not same day.", "score": 0.81, "explanation": "Under budget. Cannot make today.", "evidence": ["safe_contractor_approved"], "status": "REJECTED", "createdAt": "2026-08-27T07:39:10Z", "simulated": true }
+    ]
+  },
+  {
+    "mission": {
+      "id": "seed-mission-evidence-01",
+      "goal": "Cold room fan rattling and temperatures drifting up through lunch.",
+      "status": "EVIDENCE_PENDING",
+      "mandate": {
+        "goal": "Cold room fan rattling and temperatures drifting up through lunch.",
+        "budget": { "maxAmount": 450, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 8 },
+        "latestCompletionAt": "2026-08-26T18:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo", "temperature_reading"],
+        "autonomyMode": "DELEGATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "selectedSupplierId": "sup_capital_kitchen",
+      "version": 10,
+      "createdAt": "2026-08-26T16:22:00Z",
+      "updatedAt": "2026-08-26T16:29:10Z"
+    },
+    "events": [
+      { "id": "seed-mission-evidence-01-ev-01", "missionId": "seed-mission-evidence-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Cold room fan rattling, temperature drifting" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-01", "createdAt": "2026-08-26T16:22:00Z" },
+      { "id": "seed-mission-evidence-01-ev-02", "missionId": "seed-mission-evidence-01", "type": "MANDATE_EXTRACTED", "actor": "DEMAND_AGENT", "payload": { "budget": 450, "currency": "GBP", "area": "N1", "category": "commercial_refrigeration" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-02", "createdAt": "2026-08-26T16:22:20Z" },
+      { "id": "seed-mission-evidence-01-ev-03", "missionId": "seed-mission-evidence-01", "type": "MANDATE_CONFIRMED", "actor": "BUYER", "payload": { "max": 450, "area": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-03", "createdAt": "2026-08-26T16:22:50Z" },
+      { "id": "seed-mission-evidence-01-ev-04", "missionId": "seed-mission-evidence-01", "type": "SOURCING_STARTED", "actor": "DEMAND_AGENT", "payload": { "district": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-04", "createdAt": "2026-08-26T16:23:05Z" },
+      { "id": "seed-mission-evidence-01-ev-05", "missionId": "seed-mission-evidence-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "Capital Kitchen Services (Synthetic)", "calloutId": "seed-callout-evidence-01-capital" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-05", "createdAt": "2026-08-26T16:23:15Z" },
+      { "id": "seed-mission-evidence-01-ev-06", "missionId": "seed-mission-evidence-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "East London Catering Technicians (Synthetic)", "calloutId": "seed-callout-evidence-01-east" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-06", "createdAt": "2026-08-26T16:23:25Z" },
+      { "id": "seed-mission-evidence-01-ev-07", "missionId": "seed-mission-evidence-01", "type": "SUPPLIERS_SOURCED", "actor": "DEMAND_AGENT", "payload": "Asked 2 suppliers (2 simulated)", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-07", "createdAt": "2026-08-26T16:23:30Z" },
+      { "id": "seed-mission-evidence-01-ev-08", "missionId": "seed-mission-evidence-01", "type": "OFFER_RECEIVED", "actor": "sup_capital_kitchen", "payload": { "supplierId": "sup_capital_kitchen", "price": 445, "currency": "GBP", "availability": "Today, within 3 hours" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-08", "createdAt": "2026-08-26T16:24:40Z" },
+      { "id": "seed-mission-evidence-01-ev-09", "missionId": "seed-mission-evidence-01", "type": "OFFER_RECEIVED", "actor": "sup_east_catering", "payload": { "supplierId": "sup_east_catering", "price": 430, "currency": "GBP", "availability": "Tomorrow morning" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-09", "createdAt": "2026-08-26T16:25:10Z" },
+      { "id": "seed-mission-evidence-01-ev-10", "missionId": "seed-mission-evidence-01", "type": "OFFERS_RANKED", "actor": "DEMAND_AGENT", "payload": { "count": 2, "best": "sup_capital_kitchen" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-10", "createdAt": "2026-08-26T16:25:25Z" },
+      { "id": "seed-mission-evidence-01-ev-11", "missionId": "seed-mission-evidence-01", "type": "OFFER_ACCEPTED", "actor": "DEMAND_AGENT", "payload": { "supplier": "Capital Kitchen Services (Synthetic)", "price": 445, "currency": "GBP" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-11", "createdAt": "2026-08-26T16:25:40Z" },
+      { "id": "seed-mission-evidence-01-ev-12", "missionId": "seed-mission-evidence-01", "type": "COMMITTED", "actor": "DEMAND_AGENT", "payload": { "engineer": "Capital Kitchen Services (Synthetic)", "price": 445, "currency": "GBP" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-12", "createdAt": "2026-08-26T16:25:55Z" },
+      { "id": "seed-mission-evidence-01-ev-13", "missionId": "seed-mission-evidence-01", "type": "WORK_DISPATCHED", "actor": "SUPPLIER_AGENT", "payload": { "eta": "On site within 3 hours", "engineer": "Capital Kitchen Services (Synthetic)" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-13", "createdAt": "2026-08-26T16:27:20Z" },
+      { "id": "seed-mission-evidence-01-ev-14", "missionId": "seed-mission-evidence-01", "type": "EVIDENCE_REQUESTED", "actor": "DEMAND_AGENT", "payload": "Waiting for completion report and photo evidence", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-evidence-01-ev-14", "createdAt": "2026-08-26T16:29:10Z" }
+    ],
+    "offers": [
+      { "id": "seed-offer-evidence-01-capital", "missionId": "seed-mission-evidence-01", "supplierAgentId": "sup_capital_kitchen", "calloutId": "seed-callout-evidence-01-capital", "price": 445, "currency": "GBP", "availability": "Today, within 3 hours", "terms": "Fan motor swap, gauge photo when holding temperature.", "score": 0.88, "explanation": "Same day, inside your £450 ceiling.", "evidence": ["safe_contractor_approved"], "status": "ACCEPTED", "createdAt": "2026-08-26T16:24:40Z", "simulated": true },
+      { "id": "seed-offer-evidence-01-east", "missionId": "seed-mission-evidence-01", "supplierAgentId": "sup_east_catering", "calloutId": "seed-callout-evidence-01-east", "price": 430, "currency": "GBP", "availability": "Tomorrow morning", "terms": "Cheaper, but not same day.", "score": 0.8, "explanation": "Under budget. Cannot make today.", "evidence": ["nvq_level_3_technicians"], "status": "REJECTED", "createdAt": "2026-08-26T16:25:10Z", "simulated": true }
+    ]
+  },
+  {
+    "mission": {
+      "id": "seed-mission-verifying-01",
+      "goal": "Under-counter fridge compressor cutting out mid-service.",
+      "status": "VERIFYING",
+      "mandate": {
+        "goal": "Under-counter fridge compressor cutting out mid-service.",
+        "budget": { "maxAmount": 500, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 8 },
+        "latestCompletionAt": "2026-08-27T15:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo", "temperature_reading"],
+        "autonomyMode": "DELEGATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "selectedSupplierId": "sup_east_catering",
+      "version": 11,
+      "createdAt": "2026-08-27T07:12:00Z",
+      "updatedAt": "2026-08-27T09:18:45Z"
+    },
+    "events": [
+      { "id": "seed-mission-verifying-01-ev-01", "missionId": "seed-mission-verifying-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Under-counter fridge compressor cutting out" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-01", "createdAt": "2026-08-27T07:12:00Z" },
+      { "id": "seed-mission-verifying-01-ev-02", "missionId": "seed-mission-verifying-01", "type": "MANDATE_EXTRACTED", "actor": "DEMAND_AGENT", "payload": { "budget": 500, "currency": "GBP", "area": "N1", "category": "commercial_refrigeration" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-02", "createdAt": "2026-08-27T07:12:20Z" },
+      { "id": "seed-mission-verifying-01-ev-03", "missionId": "seed-mission-verifying-01", "type": "MANDATE_CONFIRMED", "actor": "BUYER", "payload": { "max": 500, "area": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-03", "createdAt": "2026-08-27T07:12:50Z" },
+      { "id": "seed-mission-verifying-01-ev-04", "missionId": "seed-mission-verifying-01", "type": "SOURCING_STARTED", "actor": "DEMAND_AGENT", "payload": { "district": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-04", "createdAt": "2026-08-27T07:13:05Z" },
+      { "id": "seed-mission-verifying-01-ev-05", "missionId": "seed-mission-verifying-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "calloutId": "seed-callout-verifying-01-rapid" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-05", "createdAt": "2026-08-27T07:13:15Z" },
+      { "id": "seed-mission-verifying-01-ev-06", "missionId": "seed-mission-verifying-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "East London Catering Technicians (Synthetic)", "calloutId": "seed-callout-verifying-01-east" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-06", "createdAt": "2026-08-27T07:13:25Z" },
+      { "id": "seed-mission-verifying-01-ev-07", "missionId": "seed-mission-verifying-01", "type": "SUPPLIERS_SOURCED", "actor": "DEMAND_AGENT", "payload": "Asked 2 suppliers (2 simulated)", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-07", "createdAt": "2026-08-27T07:13:30Z" },
+      { "id": "seed-mission-verifying-01-ev-08", "missionId": "seed-mission-verifying-01", "type": "OFFER_RECEIVED", "actor": "sup_east_catering", "payload": { "supplierId": "sup_east_catering", "price": 475, "currency": "GBP", "availability": "Today, within 3 hours" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-08", "createdAt": "2026-08-27T07:14:20Z" },
+      { "id": "seed-mission-verifying-01-ev-09", "missionId": "seed-mission-verifying-01", "type": "OFFER_RECEIVED", "actor": "sup_rapid_coldcare", "payload": { "supplierId": "sup_rapid_coldcare", "price": 495, "currency": "GBP", "availability": "Today, within 2 hours" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-09", "createdAt": "2026-08-27T07:14:50Z" },
+      { "id": "seed-mission-verifying-01-ev-10", "missionId": "seed-mission-verifying-01", "type": "OFFERS_RANKED", "actor": "DEMAND_AGENT", "payload": { "count": 2, "best": "sup_east_catering" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-10", "createdAt": "2026-08-27T07:15:05Z" },
+      { "id": "seed-mission-verifying-01-ev-11", "missionId": "seed-mission-verifying-01", "type": "OFFER_ACCEPTED", "actor": "DEMAND_AGENT", "payload": { "supplier": "East London Catering Technicians (Synthetic)", "price": 475, "currency": "GBP" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-11", "createdAt": "2026-08-27T07:15:20Z" },
+      { "id": "seed-mission-verifying-01-ev-12", "missionId": "seed-mission-verifying-01", "type": "COMMITTED", "actor": "DEMAND_AGENT", "payload": { "engineer": "East London Catering Technicians (Synthetic)", "price": 475, "currency": "GBP" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-12", "createdAt": "2026-08-27T07:15:35Z" },
+      { "id": "seed-mission-verifying-01-ev-13", "missionId": "seed-mission-verifying-01", "type": "WORK_DISPATCHED", "actor": "SUPPLIER_AGENT", "payload": { "eta": "On site within 3 hours", "engineer": "East London Catering Technicians (Synthetic)" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-13", "createdAt": "2026-08-27T07:17:00Z" },
+      { "id": "seed-mission-verifying-01-ev-14", "missionId": "seed-mission-verifying-01", "type": "EVIDENCE_REQUESTED", "actor": "DEMAND_AGENT", "payload": "Waiting for completion report and photo evidence", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-14", "createdAt": "2026-08-27T09:05:00Z" },
+      { "id": "seed-mission-verifying-01-ev-15", "missionId": "seed-mission-verifying-01", "type": "EVIDENCE_SUBMITTED", "actor": "SUPPLIER_AGENT", "payload": { "milestoneId": "seed-ms-verifying-01", "note": "Replaced the start relay — gauge photo attached, holding at 4°C" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-verifying-01-ev-15", "createdAt": "2026-08-27T09:18:45Z" }
+    ],
+    "offers": [
+      { "id": "seed-offer-verifying-01-east", "missionId": "seed-mission-verifying-01", "supplierAgentId": "sup_east_catering", "calloutId": "seed-callout-verifying-01-east", "price": 475, "currency": "GBP", "availability": "Today, within 3 hours", "terms": "Start relay replacement. Gauge photo when holding temperature.", "score": 0.89, "explanation": "Same day, inside your £500 ceiling.", "evidence": ["nvq_level_3_technicians"], "status": "ACCEPTED", "createdAt": "2026-08-27T07:14:20Z", "simulated": true },
+      { "id": "seed-offer-verifying-01-rapid", "missionId": "seed-mission-verifying-01", "supplierAgentId": "sup_rapid_coldcare", "calloutId": "seed-callout-verifying-01-rapid", "price": 495, "currency": "GBP", "availability": "Today, within 2 hours", "terms": "Quicker window, slightly dearer.", "score": 0.87, "explanation": "Same day, near the top of your ceiling.", "evidence": ["f_gas_certified", "refcom_registered"], "status": "REJECTED", "createdAt": "2026-08-27T07:14:50Z", "simulated": true }
+    ]
+  },
+  {
+    "mission": {
+      "id": "seed-mission-completed-01",
+      "goal": "Walk-in freezer running warm — weekend roast prep starts at 6am, need it sorted today.",
+      "status": "COMPLETED",
+      "mandate": {
+        "goal": "Walk-in freezer running warm — weekend roast prep starts at 6am, need it sorted today.",
+        "budget": { "maxAmount": 500, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 8 },
+        "latestCompletionAt": "2026-08-26T18:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo", "temperature_reading"],
+        "autonomyMode": "DELEGATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "selectedSupplierId": "sup_rapid_coldcare",
+      "version": 12,
+      "createdAt": "2026-08-26T10:32:00Z",
+      "updatedAt": "2026-08-26T14:05:00Z"
+    },
+    "events": [
+      { "id": "seed-mission-completed-01-ev-01", "missionId": "seed-mission-completed-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Freezer warm — prep starts 6am" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-01", "createdAt": "2026-08-26T10:32:00Z" },
+      { "id": "seed-mission-completed-01-ev-02", "missionId": "seed-mission-completed-01", "type": "MANDATE_EXTRACTED", "actor": "DEMAND_AGENT", "payload": { "budget": 500, "currency": "GBP", "area": "N1", "category": "commercial_refrigeration" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-02", "createdAt": "2026-08-26T10:32:20Z" },
+      { "id": "seed-mission-completed-01-ev-03", "missionId": "seed-mission-completed-01", "type": "MANDATE_CONFIRMED", "actor": "BUYER", "payload": { "max": 500, "area": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-03", "createdAt": "2026-08-26T10:32:55Z" },
+      { "id": "seed-mission-completed-01-ev-04", "missionId": "seed-mission-completed-01", "type": "SOURCING_STARTED", "actor": "DEMAND_AGENT", "payload": { "district": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-04", "createdAt": "2026-08-26T10:33:10Z" },
+      { "id": "seed-mission-completed-01-ev-05", "missionId": "seed-mission-completed-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "calloutId": "seed-callout-completed-01-rapid" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-05", "createdAt": "2026-08-26T10:33:20Z" },
+      { "id": "seed-mission-completed-01-ev-06", "missionId": "seed-mission-completed-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "Capital Kitchen Services (Synthetic)", "calloutId": "seed-callout-completed-01-capital" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-06", "createdAt": "2026-08-26T10:33:30Z" },
+      { "id": "seed-mission-completed-01-ev-07", "missionId": "seed-mission-completed-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "East London Catering Technicians (Synthetic)", "calloutId": "seed-callout-completed-01-east" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-07", "createdAt": "2026-08-26T10:33:40Z" },
+      { "id": "seed-mission-completed-01-ev-08", "missionId": "seed-mission-completed-01", "type": "SUPPLIERS_SOURCED", "actor": "DEMAND_AGENT", "payload": "Asked 3 suppliers (3 simulated)", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-08", "createdAt": "2026-08-26T10:33:45Z" },
+      { "id": "seed-mission-completed-01-ev-09", "missionId": "seed-mission-completed-01", "type": "OFFER_RECEIVED", "actor": "sup_capital_kitchen", "payload": { "supplierId": "sup_capital_kitchen", "price": 420, "currency": "GBP", "availability": "Tomorrow morning" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-09", "createdAt": "2026-08-26T10:34:30Z" },
+      { "id": "seed-mission-completed-01-ev-10", "missionId": "seed-mission-completed-01", "type": "OFFER_RECEIVED", "actor": "sup_east_catering", "payload": { "supplierId": "sup_east_catering", "price": 465, "currency": "GBP", "availability": "Today, within 4 hours" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-10", "createdAt": "2026-08-26T10:35:00Z" },
+      { "id": "seed-mission-completed-01-ev-11", "missionId": "seed-mission-completed-01", "type": "OFFER_RECEIVED", "actor": "sup_rapid_coldcare", "payload": { "supplierId": "sup_rapid_coldcare", "price": 480, "currency": "GBP", "availability": "Today, within 2 hours" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-11", "createdAt": "2026-08-26T10:35:25Z" },
+      { "id": "seed-mission-completed-01-ev-12", "missionId": "seed-mission-completed-01", "type": "OFFERS_RANKED", "actor": "DEMAND_AGENT", "payload": { "count": 3, "best": "sup_rapid_coldcare" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-12", "createdAt": "2026-08-26T10:35:40Z" },
+      { "id": "seed-mission-completed-01-ev-13", "missionId": "seed-mission-completed-01", "type": "OFFER_ACCEPTED", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "price": 480, "currency": "GBP" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-13", "createdAt": "2026-08-26T10:35:55Z" },
+      { "id": "seed-mission-completed-01-ev-14", "missionId": "seed-mission-completed-01", "type": "COMMITTED", "actor": "DEMAND_AGENT", "payload": { "engineer": "London Rapid ColdCare (Synthetic)", "price": 480, "currency": "GBP" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-14", "createdAt": "2026-08-26T10:36:10Z" },
+      { "id": "seed-mission-completed-01-ev-15", "missionId": "seed-mission-completed-01", "type": "WORK_DISPATCHED", "actor": "SUPPLIER_AGENT", "payload": { "eta": "On site within 2 hours", "engineer": "London Rapid ColdCare (Synthetic)" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-15", "createdAt": "2026-08-26T10:37:30Z" },
+      { "id": "seed-mission-completed-01-ev-16", "missionId": "seed-mission-completed-01", "type": "EVIDENCE_REQUESTED", "actor": "DEMAND_AGENT", "payload": "Waiting for completion report and photo evidence", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-16", "createdAt": "2026-08-26T11:58:00Z" },
+      { "id": "seed-mission-completed-01-ev-17", "missionId": "seed-mission-completed-01", "type": "EVIDENCE_SUBMITTED", "actor": "SUPPLIER_AGENT", "payload": { "milestoneId": "seed-ms-completed-01", "note": "Compressor relay replaced — gauge photo holding at 3°C" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-17", "createdAt": "2026-08-26T12:38:00Z" },
+      { "id": "seed-mission-completed-01-ev-18", "missionId": "seed-mission-completed-01", "type": "EVIDENCE_VERIFIED", "actor": "DEMAND_AGENT", "payload": { "photo": "gauge at 3°C" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-18", "createdAt": "2026-08-26T12:39:30Z" },
+      { "id": "seed-mission-completed-01-ev-19", "missionId": "seed-mission-completed-01", "type": "MISSION_COMPLETED", "actor": "DEMAND_AGENT", "payload": "All milestones verified successfully", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-19", "createdAt": "2026-08-26T12:40:00Z" },
+      { "id": "seed-mission-completed-01-ev-20", "missionId": "seed-mission-completed-01", "type": "RECEIPT_ISSUED", "actor": "DEMAND_AGENT", "payload": { "receiptId": "seed-mission-completed-01" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-20", "createdAt": "2026-08-26T12:40:30Z" },
+      { "id": "seed-mission-completed-01-ev-21", "missionId": "seed-mission-completed-01", "type": "FEEDBACK_RECORDED", "actor": "BUYER", "payload": { "rating": 5 }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-completed-01-ev-21", "createdAt": "2026-08-26T14:05:00Z" }
+    ],
+    "offers": [
+      { "id": "seed-offer-completed-01-capital", "missionId": "seed-mission-completed-01", "supplierAgentId": "sup_capital_kitchen", "calloutId": "seed-callout-completed-01-capital", "price": 420, "currency": "GBP", "availability": "Tomorrow morning", "terms": "Cheaper, but not before prep.", "score": 0.83, "explanation": "Under budget. Cannot make today.", "evidence": ["safe_contractor_approved"], "status": "REJECTED", "createdAt": "2026-08-26T10:34:30Z", "simulated": true },
+      { "id": "seed-offer-completed-01-east", "missionId": "seed-mission-completed-01", "supplierAgentId": "sup_east_catering", "calloutId": "seed-callout-completed-01-east", "price": 465, "currency": "GBP", "availability": "Today, within 4 hours", "terms": "Same day, slower window.", "score": 0.78, "explanation": "In budget and same day, but the slower window.", "evidence": ["nvq_level_3_technicians"], "status": "REJECTED", "createdAt": "2026-08-26T10:35:00Z", "simulated": true },
+      { "id": "seed-offer-completed-01-rapid", "missionId": "seed-mission-completed-01", "supplierAgentId": "sup_rapid_coldcare", "calloutId": "seed-callout-completed-01-rapid", "price": 480, "currency": "GBP", "availability": "Today, within 2 hours", "terms": "Emergency callout. Photo of the gauge when done.", "score": 0.91, "explanation": "In N1, same day, under your £500 ceiling.", "evidence": ["f_gas_certified", "refcom_registered"], "status": "ACCEPTED", "createdAt": "2026-08-26T10:35:25Z", "simulated": true }
+    ],
+    "receipt": {
+      "id": "seed-mission-completed-01",
+      "missionId": "seed-mission-completed-01",
+      "summary": "Walk-in freezer back to 3°C before the weekend roast prep.",
+      "agreedTerms": "London Rapid ColdCare replaced the compressor relay, stayed on site until the gauge held at 3°C, and left photo evidence. Paid £480 of a £500 ceiling.",
+      "milestones": ["Booked", "On site", "Photo checked"],
+      "evidenceLabels": ["Completion photo", "Temperature reading 3°C", "Within the £500 ceiling", "Gemini AI verification pass"],
+      "redactedEvidence": {
+        "kitchen": "A café in N1",
+        "engineer": "London Rapid ColdCare",
+        "paid": "£480"
+      },
+      "shareToken": "receipt_token_seed-mission-completed-01",
+      "humanReviewed": false,
+      "createdAt": "2026-08-26T12:40:30Z"
+    },
+    "feedback": {
+      "id": "primary",
+      "missionId": "seed-mission-completed-01",
+      "supplierId": "sup_rapid_coldcare",
+      "rating": 5,
+      "comment": "Fixed before prep. No stock lost. Would book again.",
+      "createdAt": "2026-08-26T14:05:00Z"
+    }
+  },
+  {
+    "mission": {
+      "id": "seed-mission-escalated-01",
+      "goal": "Freezer alarm keeps going off — first search found nobody, needs another run.",
+      "status": "ESCALATED",
+      "mandate": {
+        "goal": "Freezer alarm keeps going off — first search found nobody, needs another run.",
+        "budget": { "maxAmount": 600, "currency": "GBP" },
+        "serviceCategory": "commercial_refrigeration",
+        "serviceArea": { "postalDistrict": "N1", "radiusKm": 3 },
+        "latestCompletionAt": "2026-08-27T14:00:00Z",
+        "allowedActions": ["SOURCE", "COMPARE", "COMMIT"],
+        "requiredEvidence": ["completion_photo", "temperature_reading"],
+        "autonomyMode": "DELEGATE",
+        "expiresAt": "2026-08-31T23:59:00Z"
+      },
+      "buyerId": "buyer_london_cafe_1",
+      "version": 5,
+      "createdAt": "2026-08-27T06:48:00Z",
+      "updatedAt": "2026-08-27T06:58:30Z"
+    },
+    "events": [
+      { "id": "seed-mission-escalated-01-ev-01", "missionId": "seed-mission-escalated-01", "type": "MISSION_CREATED", "actor": "BUYER", "payload": { "note": "Freezer alarm going off — urgent" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-escalated-01-ev-01", "createdAt": "2026-08-27T06:48:00Z" },
+      { "id": "seed-mission-escalated-01-ev-02", "missionId": "seed-mission-escalated-01", "type": "MANDATE_EXTRACTED", "actor": "DEMAND_AGENT", "payload": { "budget": 600, "currency": "GBP", "area": "N1", "category": "commercial_refrigeration" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-escalated-01-ev-02", "createdAt": "2026-08-27T06:48:20Z" },
+      { "id": "seed-mission-escalated-01-ev-03", "missionId": "seed-mission-escalated-01", "type": "MANDATE_CONFIRMED", "actor": "BUYER", "payload": { "max": 600, "area": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-escalated-01-ev-03", "createdAt": "2026-08-27T06:48:50Z" },
+      { "id": "seed-mission-escalated-01-ev-04", "missionId": "seed-mission-escalated-01", "type": "SOURCING_STARTED", "actor": "DEMAND_AGENT", "payload": { "district": "N1" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-escalated-01-ev-04", "createdAt": "2026-08-27T06:49:05Z" },
+      { "id": "seed-mission-escalated-01-ev-05", "missionId": "seed-mission-escalated-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "London Rapid ColdCare (Synthetic)", "calloutId": "seed-callout-escalated-01-rapid" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-escalated-01-ev-05", "createdAt": "2026-08-27T06:49:15Z" },
+      { "id": "seed-mission-escalated-01-ev-06", "missionId": "seed-mission-escalated-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "Capital Kitchen Services (Synthetic)", "calloutId": "seed-callout-escalated-01-capital" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-escalated-01-ev-06", "createdAt": "2026-08-27T06:49:25Z" },
+      { "id": "seed-mission-escalated-01-ev-07", "missionId": "seed-mission-escalated-01", "type": "CALLOUT_SENT", "actor": "DEMAND_AGENT", "payload": { "supplier": "East London Catering Technicians (Synthetic)", "calloutId": "seed-callout-escalated-01-east" }, "policyResult": "ALLOW", "idempotencyKey": "seed-mission-escalated-01-ev-07", "createdAt": "2026-08-27T06:49:35Z" },
+      { "id": "seed-mission-escalated-01-ev-08", "missionId": "seed-mission-escalated-01", "type": "CALLOUT_DECLINED", "actor": "sup_capital_kitchen", "payload": "Fully booked until Friday", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-escalated-01-ev-08", "createdAt": "2026-08-27T06:52:10Z" },
+      { "id": "seed-mission-escalated-01-ev-09", "missionId": "seed-mission-escalated-01", "type": "CALLOUT_DECLINED", "actor": "sup_east_catering", "payload": "No cover inside a 3km radius today", "policyResult": "ALLOW", "idempotencyKey": "seed-mission-escalated-01-ev-09", "createdAt": "2026-08-27T06:54:40Z" },
+      { "id": "seed-mission-escalated-01-ev-10", "missionId": "seed-mission-escalated-01", "type": "CALLOUT_EXPIRED", "actor": "DEMAND_AGENT", "payload": { "supplierId": "sup_rapid_coldcare", "calloutId": "seed-callout-escalated-01-rapid" }, "policyResult": "ESCALATE", "idempotencyKey": "seed-mission-escalated-01-ev-10", "createdAt": "2026-08-27T06:58:15Z" },
+      { "id": "seed-mission-escalated-01-ev-11", "missionId": "seed-mission-escalated-01", "type": "NO_QUOTES", "actor": "DEMAND_AGENT", "payload": "Every supplier declined or timed out - no quotes received", "policyResult": "ESCALATE", "idempotencyKey": "seed-mission-escalated-01-ev-11", "createdAt": "2026-08-27T06:58:30Z" }
+    ],
+    "offers": []
+  }
+]

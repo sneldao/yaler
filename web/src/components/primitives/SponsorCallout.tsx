@@ -17,11 +17,58 @@ import { LoaderGrid } from './LoaderGrid';
 
 export type SponsorId = 'gemini' | 'vapi' | 'exa' | 'apify' | 'elevenlabs';
 
+/**
+ * Inline SVG monogram per sponsor — simple geometric marks in currentColor.
+ * No background-images, no external URLs, no <img> requests.
+ */
+export function SponsorMark({ id, className = 'w-4 h-4' }: { id: SponsorId; className?: string }) {
+  switch (id) {
+    case 'gemini':
+      // Four-point sparkle
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
+          <path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z" />
+        </svg>
+      );
+    case 'vapi':
+      // Voice bars
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
+          <rect x="5" y="9" width="2.6" height="6" rx="1.3" />
+          <rect x="10.7" y="4" width="2.6" height="16" rx="1.3" />
+          <rect x="16.4" y="9" width="2.6" height="6" rx="1.3" />
+        </svg>
+      );
+    case 'exa':
+      // Search lens
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+          <circle cx="10.5" cy="10.5" r="6" />
+          <path d="M15 15l5 5" />
+        </svg>
+      );
+    case 'apify':
+      // Hexagon
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
+          <path d="M12 2.5l8 4.5v9l-8 4.5-8-4.5v-9z" />
+        </svg>
+      );
+    case 'elevenlabs':
+      // Twin bars ("11")
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
+          <rect x="7" y="4" width="3.4" height="16" rx="1" />
+          <rect x="13.6" y="4" width="3.4" height="16" rx="1" />
+        </svg>
+      );
+  }
+}
+
 type Status = 'working' | 'done' | 'error' | 'skipped';
 
 interface SponsorMeta {
   name: string;
-  short: string;
   color: string;
   bg: string;
   border: string;
@@ -31,7 +78,6 @@ interface SponsorMeta {
 const SPONSORS: Record<SponsorId, SponsorMeta> = {
   gemini: {
     name: 'Gemini',
-    short: 'G',
     color: 'text-blue-600',
     bg: 'bg-blue-50',
     border: 'border-blue-200',
@@ -39,7 +85,6 @@ const SPONSORS: Record<SponsorId, SponsorMeta> = {
   },
   vapi: {
     name: 'Vapi',
-    short: 'V',
     color: 'text-purple-600',
     bg: 'bg-purple-50',
     border: 'border-purple-200',
@@ -47,7 +92,6 @@ const SPONSORS: Record<SponsorId, SponsorMeta> = {
   },
   exa: {
     name: 'Exa',
-    short: 'E',
     color: 'text-emerald-600',
     bg: 'bg-emerald-50',
     border: 'border-emerald-200',
@@ -55,7 +99,6 @@ const SPONSORS: Record<SponsorId, SponsorMeta> = {
   },
   apify: {
     name: 'Apify',
-    short: 'A',
     color: 'text-orange-600',
     bg: 'bg-orange-50',
     border: 'border-orange-200',
@@ -63,7 +106,6 @@ const SPONSORS: Record<SponsorId, SponsorMeta> = {
   },
   elevenlabs: {
     name: 'ElevenLabs',
-    short: '11',
     color: 'text-pink-600',
     bg: 'bg-pink-50',
     border: 'border-pink-200',
@@ -94,9 +136,9 @@ export default function SponsorCallout({ sponsor, status, label, detail, compact
 
   return (
     <div className={`paper-card rounded-xl p-3.5 flex items-start gap-3 animate-pop-in border-l-2 ${meta.border.replace('border-', 'border-l-')}`}>
-      {/* Sponsor badge */}
-      <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${meta.bg} ${meta.border} border shrink-0`}>
-        <span className={`font-display text-sm font-bold ${meta.color}`}>{meta.short}</span>
+      {/* Sponsor badge — inline SVG mark, zero network requests */}
+      <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${meta.bg} ${meta.border} ${meta.color} border shrink-0`}>
+        <SponsorMark id={sponsor} />
       </div>
 
       {/* Content */}

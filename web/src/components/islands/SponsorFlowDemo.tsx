@@ -85,7 +85,7 @@ const CYCLE_MS = 2200;
  * voice recording rather than random noise. Same visual language as the
  * playing indicator in HearReceipt.
  */
-function Waveform({ colorClass, bars = 10, height = 14 }: { colorClass: string; bars?: number; height?: number }) {
+function Waveform({ colorClass, bars = 10, height = 14, animated = true }: { colorClass: string; bars?: number; height?: number; animated?: boolean }) {
   const pattern = [0.5, 1, 0.7, 0.9, 0.4, 1.1, 0.65, 0.85, 0.55, 1];
   return (
     <span className="flex items-center gap-[2px]" aria-hidden>
@@ -95,7 +95,7 @@ function Waveform({ colorClass, bars = 10, height = 14 }: { colorClass: string; 
           className={`w-[2.5px] rounded-full bg-current ${colorClass}`}
           style={{
             height: height * pattern[i % pattern.length],
-            animation: `eq-bounce 900ms ease-in-out ${i * 65}ms infinite`,
+            animation: animated ? `eq-bounce 900ms ease-in-out ${i * 65}ms infinite` : undefined,
             transformOrigin: 'center',
           }}
         />
@@ -106,13 +106,24 @@ function Waveform({ colorClass, bars = 10, height = 14 }: { colorClass: string; 
 
 export default function SponsorFlowDemo() {
   const [idx, setIdx] = useState(0);
+  const [reduced, setReduced] = useState(false);
+
+  // Track the motion preference — auto-cycling is decorative.
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReduced(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
+    if (reduced) return; // no auto-cycle — every sponsor stays reachable via the chips
     const t = setInterval(() => {
       setIdx((i) => (i + 1) % FLOW.length);
     }, CYCLE_MS);
     return () => clearInterval(t);
-  }, []);
+  }, [reduced]);
 
   const current = FLOW[idx];
   const completed = FLOW.slice(0, idx);
@@ -150,9 +161,12 @@ export default function SponsorFlowDemo() {
               const isActive = i === idx;
               const isDone = i < idx;
               return (
-                <span
+                <button
                   key={s.id}
-                  className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full border transition-all duration-500 ${
+                  type="button"
+                  onClick={() => setIdx(i)}
+                  aria-pressed={isActive}
+                  className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full border transition-all duration-500 cursor-pointer ${
                     isActive
                       ? `${s.bg} ${s.border} ${s.color} font-medium scale-110`
                       : isDone
@@ -166,7 +180,7 @@ export default function SponsorFlowDemo() {
                     }`}
                   />
                   {s.name}
-                </span>
+                </button>
               );
             })}
           </div>
@@ -195,7 +209,7 @@ export default function SponsorFlowDemo() {
           {/* Waveform stripe — only during the Vapi (voice) step */}
           {current.id === 'vapi' && (
             <div className="shrink-0 self-center pt-0.5">
-              <Waveform colorClass="text-purple-600" />
+              <Waveform colorClass="text-purple-600" animated={!reduced} />
             </div>
           )}
         </div>

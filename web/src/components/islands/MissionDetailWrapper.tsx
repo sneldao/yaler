@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { type Mission, getMission, listMissions } from '../../lib/api';
+import { type Event, type Mission, getEvents, getMission } from '../../lib/api';
+import { listMissionsCached, onMissionsChanged } from '../../lib/cache';
+import { statusLabel } from '../../lib/copy';
 import MandateEditor from './MandateEditor';
-import MissionTimeline from './MissionTimeline';
+import MissionTimeline, { ToolTraceRail } from './MissionTimeline';
 import OfferComparison from './OfferComparison';
+import AgentStatusStrip from './AgentStatusStrip';
+import { SkeletonTimelineRows } from '../primitives/Skeleton';
 
 interface Props {
   initialMissionId?: string;
@@ -26,7 +30,7 @@ function LiveWatchBar({ mission }: { mission: Mission }) {
     return () => clearInterval(t);
   }, [active]);
 
-  const elapsedMs = Math.max(0, new Date(mission.createdAt).getTime() - now);
+  const elapsedMs = Math.max(0, now - new Date(mission.createdAt).getTime());
   const elapsedMin = Math.floor(elapsedMs / 60000);
   const elapsedSec = Math.floor((elapsedMs % 60000) / 1000);
   const elapsedLabel = elapsedMin > 0
@@ -93,23 +97,28 @@ function LiveWatchBar({ mission }: { mission: Mission }) {
 /**
  * LiveStrip — honest social proof: shows other real jobs currently in
  * flight on the roster (fetched from listMissions, not a synthetic
- * ticker). Only renders when there is at least one other active job.
+ * ticker). Silent when there is nothing to show — a missing card reads
+ * as a quieter product than a dashed "no jobs" placeholder.
  */
 function LiveStrip({ mission }: { mission: Mission }) {
   const [others, setOthers] = useState<Mission[]>([]);
-  const fetched = useRef(false);
 
   useEffect(() => {
-    if (fetched.current) return;
-    fetched.current = true;
-    listMissions()
-      .then((list) => {
-        const activeOthers = (Array.isArray(list) ? list : [])
-          .filter(m => m.id !== mission.id)
-          .filter(m => m.status !== 'COMPLETED' && m.status !== 'CANCELLED');
-        setOthers(activeOthers.slice(0, 3));
-      })
-      .catch(() => setOthers([]));
+    let live = true;
+    const load = () =>
+      listMissionsCached()
+        .then((list) => {
+          if (!live) return;
+          const activeOthers = (Array.isArray(list) ? list : [])
+            .filter(m => m.id !== mission.id)
+            .filter(m => m.status !== 'COMPLETED' && m.status !== 'CANCELLED');
+          setOthers(activeOthers.slice(0, 3));
+        })
+        .catch(() => { if (live) setOthers([]); });
+    load();
+    // Another tab started or finished a job — refresh immediately.
+    const off = onMissionsChanged(load);
+    return () => { live = false; off(); };
   }, [mission.id]);
 
   if (others.length === 0) return null;
@@ -141,11 +150,88 @@ function LiveStrip({ mission }: { mission: Mission }) {
   );
 }
 
+/**
+ * LifecycleScrubber — a 4px sticky strip under the header with a dot at each
+ * lifecycle state (DRAFT → SOURCING → COMMITTED → IN_PROGRESS → COMPLETED).
+ * On long missions it keeps "where are we" visible while you scroll. The
+ * whole strip is a polite status region so state transitions are announced.
+ */
+const LIFECYCLE = ['DRAFT', 'SOURCING', 'COMMITTED', 'IN_PROGRESS', 'COMPLETED'] as const;
+const LIFECYCLE_LABELS: Record<string, string> = {
+  DRAFT: 'Details',
+  SOURCING: 'Finding engineers',
+  COMMITTED: 'Booked',
+  IN_PROGRESS: 'On site',
+  COMPLETED: 'Done',
+};
+
+function lifecycleIndex(status?: string): number {
+  switch (status) {
+    case 'DRAFT':
+    case 'MANDATE_CONFIRMED':
+      return 0;
+    case 'SOURCING':
+    case 'OFFERS_RECEIVED':
+    case 'NEGOTIATING':
+      return 1;
+    case 'COMMITTED':
+    case 'AWAITING_APPROVAL':
+    case 'ESCALATED':
+      return 2;
+    case 'IN_PROGRESS':
+    case 'EVIDENCE_PENDING':
+    case 'VERIFYING':
+      return 3;
+    case 'COMPLETED':
+      return 4;
+    default:
+      return 0;
+  }
+}
+
+function LifecycleScrubber({ mission }: { mission: Mission }) {
+  const idx = lifecycleIndex(mission.status);
+  // The dots and bar are decorative — the textual status already lives in
+  // AgentStatusStrip and StatusBadge, and state transitions are announced
+  // by the parent via the sr-only status region. Putting aria-live here
+  // would cause screen readers to repeat the stage on every poll tick.
+  return (
+    <div
+      className="sticky top-12 sm:top-16 z-40 -mx-4 sm:-mx-5 px-4 sm:px-5 py-1.5 bg-paper/90 backdrop-blur-sm"
+      aria-hidden
+    >
+      <div className="relative h-1 rounded-full bg-paper-inset">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-mandate/30 transition-[width] duration-500 ease-yaler"
+          style={{ width: `${(idx / (LIFECYCLE.length - 1)) * 100}%` }}
+        />
+        {LIFECYCLE.map((state, i) => (
+          <span
+            key={state}
+            title={LIFECYCLE_LABELS[state]}
+            className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full transition-all duration-300 ${
+              i === idx
+                ? 'w-2.5 h-2.5 bg-mandate ring-2 ring-mandate/25'
+                : i < idx
+                  ? 'w-1.5 h-1.5 bg-mandate/60'
+                  : 'w-1.5 h-1.5 bg-ink/15'
+            }`}
+            style={{ left: `${(i / (LIFECYCLE.length - 1)) * 100}%` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function MissionDetailWrapper({ initialMissionId }: Props) {
   const [id, setId] = useState(initialMissionId || 'demo');
   const [mission, setMission] = useState<Mission | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const prevStatusRef = useRef<string | undefined>(undefined);
+  const [statusAnnouncement, setStatusAnnouncement] = useState('');
 
   // Resolve the real mission ID from the URL after hydration, not during
   // render. Reading window.location during render causes a hydration
@@ -161,11 +247,28 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
     }
   }, []);
 
-  const load = useCallback(async (id: string): Promise<Mission | null> => {
-    const data = await getMission(id);
+  const load = useCallback(async (missionId: string): Promise<Mission | null> => {
+    const [data, evs] = await Promise.all([
+      getMission(missionId),
+      getEvents(missionId).catch(() => null),
+    ]);
     setMission(data);
+    if (evs) setEvents(evs);
     return data;
   }, []);
+
+  // Announce state transitions to screen readers (3.4) — e.g. moving to
+  // COMPLETED reads "Job completed, receipt ready."
+  useEffect(() => {
+    const curr = mission?.status;
+    if (!curr) return;
+    const prev = prevStatusRef.current;
+    prevStatusRef.current = curr;
+    if (!prev || prev === curr) return;
+    setStatusAnnouncement(
+      curr === 'COMPLETED' ? 'Job completed, receipt ready.' : `Job update: ${statusLabel(curr)}.`,
+    );
+  }, [mission?.status]);
 
   // Polling config — backoff until the mission is in a long-running state,
   // then stop; only restart on terminal states or when a user navigates
@@ -230,12 +333,17 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
 
   if (loading) {
     return (
-      <div className="paper-card rounded-2xl p-8 text-center space-y-3 animate-pop-in">
-        <div className="flex justify-center">
-          <span className="receipt-punch" />
+      <div className="space-y-4 animate-fade-up">
+        <div className="paper-card rounded-2xl p-5 sm:p-7 space-y-4">
+          <div className="space-y-2">
+            <div className="h-5 w-28 rounded-full bg-paper-inset" />
+            <div className="h-8 w-3/4 rounded-lg bg-paper-inset" />
+            <div className="h-3 w-1/2 rounded-lg bg-paper-inset" />
+          </div>
         </div>
-        <p className="font-display text-xl text-ink">Opening the job…</p>
-        <p className="text-xs text-ink-muted">This should only take a moment.</p>
+        <div className="paper-card rounded-2xl p-5 sm:p-6">
+          <SkeletonTimelineRows count={5} />
+        </div>
       </div>
     );
   }
@@ -253,8 +361,20 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
     );
   }
 
+  const offerCount = events.filter((e) => e.type === 'OFFER_RECEIVED' || e.type === 'QUOTE_RECEIVED').length;
+  const lastEventAt = events.length
+    ? events.reduce((a, b) => (new Date(a.createdAt) > new Date(b.createdAt) ? a : b)).createdAt
+    : undefined;
+
   return (
     <div className="space-y-6 animate-fade-up">
+      {/* State transitions announced to screen readers (3.4) */}
+      <div className="sr-only" role="status" aria-live="polite">
+        {statusAnnouncement}
+      </div>
+
+      <LifecycleScrubber mission={mission} />
+
       {(mission.status === 'DRAFT' ? (
         <MandateEditor
           initialMission={mission}
@@ -262,9 +382,17 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
         />
       ) : (
         <>
+          <AgentStatusStrip mission={mission} offerCount={offerCount} lastEventAt={lastEventAt} />
+          <div className="sticky top-16 sm:top-20 z-30 -my-3">
+            <ToolTraceRail events={events} />
+          </div>
           <LiveWatchBar mission={mission} />
-          <MissionTimeline missionId={mission.id} />
-          <OfferComparison missionId={mission.id} missionStatus={mission.status} />
+          <MissionTimeline mission={mission} events={events} />
+          <OfferComparison
+            missionId={mission.id}
+            missionStatus={mission.status}
+            budgetMax={mission.mandate?.budget?.maxAmount}
+          />
         </>
       ))}
       {(mission.status !== 'DRAFT' && (

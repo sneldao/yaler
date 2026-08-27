@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import type Phaser from 'phaser';
 
 interface GameResult {
   elapsed: number;
@@ -15,15 +16,40 @@ export default function KitchenGame() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
     let destroyed = false;
+    let started = false;
 
-    import('./config').then(({ createGame }) => {
-      if (destroyed) return;
-      const game = createGame(containerRef.current!);
-      gameRef.current = game;
-      setStatus('playing');
-    });
+    // Phaser + the scene only ever load through this dynamic import, so they
+    // never land in the initial bundle — and the heavy chunk isn't fetched
+    // until the game scrolls near the viewport.
+    const start = () => {
+      if (started || destroyed) return;
+      started = true;
+      import('./config').then(({ createGame }) => {
+        if (destroyed) return;
+        const game = createGame(container);
+        gameRef.current = game;
+        setStatus('playing');
+      });
+    };
+
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            observer?.disconnect();
+            start();
+          }
+        },
+        { rootMargin: '240px' },
+      );
+      observer.observe(container);
+    } else {
+      start();
+    }
 
     const handleComplete = (e: Event) => {
       const detail = (e as CustomEvent).detail as GameResult;
@@ -34,6 +60,7 @@ export default function KitchenGame() {
 
     return () => {
       destroyed = true;
+      observer?.disconnect();
       window.removeEventListener('yaler:game-complete', handleComplete);
       if (gameRef.current) {
         gameRef.current.destroy(true);

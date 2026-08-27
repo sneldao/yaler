@@ -1,0 +1,35 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Page not found — Yaler"
+  description="That page isn't on the wall. Here's the way back."
+>
+  <div class="flex items-center justify-center py-10 sm:py-16">
+    <div class="paper-card rounded-2xl w-full max-w-md overflow-hidden animate-pop-in">
+      <!-- Punched ticket-top motif -->
+      <div class="flex items-center px-6 pt-5" aria-hidden="true">
+        <span class="receipt-punch"></span>
+        <span class="receipt-perf flex-1 mx-3 rounded-full"></span>
+        <span class="receipt-punch"></span>
+      </div>
+
+      <div class="p-6 sm:p-8 pt-5 text-center space-y-4">
+        <p class="text-xs uppercase tracking-[0.2em] text-ink-muted">404 — nothing pinned here</p>
+        <h1 class="font-display text-4xl sm:text-5xl text-ink">Lost in London.</h1>
+        <p class="text-sm text-ink-muted leading-relaxed">
+          Let me look around — meanwhile, here's the way back.
+        </p>
+
+        <nav class="flex flex-col gap-2 pt-2" aria-label="Where to next">
+          <a href="/" class="btn-primary">Home</a>
+          <a href="/rehearsal" class="btn-secondary">Try the rehearsal</a>
+          <a href="/story" class="text-sm text-ink-muted hover:text-ink transition-colors py-2">
+            See how it works
+          </a>
+        </nav>
+      </div>
+    </div>
+  </div>
+</Layout>

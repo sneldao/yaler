@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Props {
   thumbnailUrl?: string;
@@ -17,14 +17,57 @@ export default function FullscreenClipModal({
   receiptDetails = ['Commercial fridge compressor replaced', 'Two-hour emergency callout', 'Six-month parts warranty'],
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    // Remember what opened the modal so focus returns there on close.
+    triggerRef.current = document.activeElement as HTMLElement | null;
+
+    // Lock body scroll while open.
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Initial focus lands on the Close button.
+    closeRef.current?.focus();
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const sheet = sheetRef.current;
+      if (!sheet) return;
+      // Focus trap — Tab/Shift+Tab cycles only inside the modal.
+      const focusable = Array.from(
+        sheet.querySelectorAll<HTMLElement>('button, a[href], input, [tabindex]:not([tabindex="-1"])'),
+      ).filter((el) => !el.hasAttribute('disabled'));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey) {
+        if (active === first || !sheet.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !sheet.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      const trigger = triggerRef.current;
+      if (trigger && document.contains(trigger)) trigger.focus();
+      triggerRef.current = null;
+    };
   }, [isOpen]);
 
   return (
@@ -52,12 +95,17 @@ export default function FullscreenClipModal({
           onClick={() => setIsOpen(false)}
         >
           <div
+            ref={sheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
             className="receipt-sheet max-w-lg w-full relative"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="receipt-perf" />
             <div className="p-6 space-y-5">
               <button
+                ref={closeRef}
                 type="button"
                 onClick={() => setIsOpen(false)}
                 className="absolute top-5 right-5 text-ink-muted hover:text-ink text-sm"

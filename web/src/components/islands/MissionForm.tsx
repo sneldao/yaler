@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { navigate } from 'astro:transitions/client';
 import { createMission } from '../../lib/api';
+import { broadcastMissionsChanged } from '../../lib/cache';
 import { loadSavedMandate } from '../../lib/rehearsal';
 import { LoaderGrid } from '../primitives/LoaderGrid';
 import SponsorCallout from '../primitives/SponsorCallout';
@@ -13,6 +14,7 @@ export default function MissionForm() {
   const [goal, setGoal] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [showSamples, setShowSamples] = useState(false);
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -50,8 +52,8 @@ export default function MissionForm() {
 
   const presets = [
     { title: 'Fridge down before lunch', text: "My commercial fridge is down, need repair before lunch, budget £500, we're in N1.", badge: 'N1 · £500' },
-    { title: 'Hood clean before inspection', text: 'Extraction hood cleaning required before food safety inspection tomorrow, budget £350 in E1.', badge: 'E1 · £350' },
-    { title: 'Walk-in freezer warning', text: 'Walk-in freezer temperature warning 6C, urgent technician callout needed in SW1, budget £600.', badge: 'SW1 · £600' },
+    { title: 'Hood clean before inspection', text: "Hood extraction needs a deep clean before our food safety inspection Thursday, can go to £350, we're E1.", badge: 'E1 · £350' },
+    { title: 'Walk-in freezer running warm', text: 'Walk-in freezer is running warm at 6 degrees, need someone today, budget £600, SW1.', badge: 'SW1 · £600' },
   ];
 
   const typePreset = (text: string) => {
@@ -70,13 +72,21 @@ export default function MissionForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!goal.trim()) return;
+    if (!goal.trim()) {
+      // Nudge instead of failing silently — the button stays disabled, so
+      // this fires on Enter / any implicit submission.
+      setAttemptedSubmit(true);
+      return;
+    }
 
+    setAttemptedSubmit(false);
     setLoading(true);
     setError(null);
     playUiSound('ping');
     try {
       const mission = await createMission(goal);
+      // Let other tabs' pulses refresh before we leave the page.
+      broadcastMissionsChanged();
       navigate(`/missions/${mission.id}`);
     } catch (err: any) {
       setError(err.message || 'Could not create the job.');
@@ -143,7 +153,11 @@ export default function MissionForm() {
       </Suspense>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <label htmlFor="mission-goal-input" className="sr-only">
+          Describe the job — what's broken, your budget, and your postcode area
+        </label>
         <textarea
+          id="mission-goal-input"
           ref={textareaRef}
           value={goal}
           onChange={(e) => setGoal(e.target.value)}
@@ -152,6 +166,12 @@ export default function MissionForm() {
           className="field-input text-base leading-relaxed"
           disabled={loading}
         />
+
+        {attemptedSubmit && !goal.trim() && (
+          <p className="text-xs text-mandate leading-relaxed animate-pop-in" role="status">
+            Tell us what's broken first — one sentence is enough, e.g. 'Fridge down, need repair before lunch, budget £500, N1.'
+          </p>
+        )}
 
         {loading && (
           <SponsorCallout
@@ -163,8 +183,33 @@ export default function MissionForm() {
         )}
 
         {error && (
-          <div className="p-3 bg-escalate-light border border-escalate/25 text-escalate rounded-xl text-sm">
-            {error}
+          <div className="p-4 bg-escalate-light border border-escalate/25 rounded-xl space-y-3 animate-pop-in" role="alert">
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-escalate">That didn't go through</p>
+              <p className="text-sm text-escalate">{error}</p>
+              <p className="text-xs text-escalate/80 leading-relaxed">
+                Usually the backend is still waking up, or the note didn't include a budget/area we could read.
+              </p>
+              <p className="text-xs text-escalate/80 leading-relaxed">
+                Try again in a few seconds — or start from a sample job and edit it to fit.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setAttemptedSubmit(false);
+                  typePreset(presets[0].text);
+                }}
+                className="btn-primary text-sm py-2.5 flex-1"
+              >
+                Use a sample job
+              </button>
+              <a href="/rehearsal" className="btn-secondary text-sm py-2.5 text-center flex-1">
+                Try the rehearsal instead
+              </a>
+            </div>
           </div>
         )}
 
@@ -172,18 +217,20 @@ export default function MissionForm() {
           <button
             type="button"
             onClick={() => setShowSamples((s) => !s)}
+            aria-expanded={showSamples}
+            aria-controls="sample-jobs"
             className="text-xs text-ink-muted hover:text-ink transition-colors"
           >
             {showSamples ? 'Hide sample jobs' : 'Use a sample job'}
           </button>
           {showSamples && (
-            <div className="grid grid-cols-1 gap-2 mt-2 animate-pop-in">
+            <div id="sample-jobs" className="grid grid-cols-1 gap-2 mt-2 animate-pop-in">
               {presets.map((p) => (
                 <button
                   key={p.title}
                   type="button"
                   onClick={() => typePreset(p.text)}
-                  className="text-left bg-paper hover:bg-paper-inset border border-ink/10 rounded-xl p-3 transition-colors flex items-center justify-between gap-3"
+                  className="cursor-pointer text-left bg-paper hover:bg-paper-inset border border-ink/10 rounded-xl p-3 transition-colors flex items-center justify-between gap-3"
                 >
                   <div>
                     <div className="text-sm font-medium text-ink">{p.title}</div>
@@ -196,17 +243,25 @@ export default function MissionForm() {
           )}
         </div>
 
-        <button
-          type="submit"
-          disabled={loading || !goal.trim()}
-          className="btn-primary w-full"
+        {/* The wrapper catches clicks while the button is disabled (empty
+            goal) so we can nudge helpfully instead of ignoring the tap. */}
+        <div
+          onClick={() => {
+            if (!loading && !goal.trim()) setAttemptedSubmit(true);
+          }}
         >
-          {loading ? (
-            <><LoaderGrid /><span>Reading your note...</span></>
-          ) : (
-            <span>Continue</span>
-          )}
-        </button>
+          <button
+            type="submit"
+            disabled={loading || !goal.trim()}
+            className={`btn-primary w-full${!loading && !goal.trim() ? ' pointer-events-none' : ''}`}
+          >
+            {loading ? (
+              <><LoaderGrid /><span>Reading your note...</span></>
+            ) : (
+              <span>Continue</span>
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );

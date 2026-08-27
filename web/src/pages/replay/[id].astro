@@ -1,0 +1,46 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ReplayPlayer from '../../components/islands/ReplayPlayer';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+// Pre-render one replay page per seed mission so judges can deep-link any of
+// them on static hosts. The `?id=` query-string fallback in ReplayPlayer is
+// still useful for any mission created at runtime that isn't in this list.
+//
+// `getStaticPaths` runs in an isolated module context — top-level frontmatter
+// bindings aren't visible inside it — so the path-resolution logic lives
+// directly inside the function.
+export function getStaticPaths() {
+  const filePath = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    '../../../../seed/missions.json',
+  );
+  const ids = new Set<string>();
+  // Always include the two sentinel IDs ReplayPlayer treats as fallbacks:
+  //   - `demo` → default when no id is provided at all
+  //   - `1`    → legacy short-form
+  ids.add('demo');
+  ids.add('1');
+  try {
+    const raw = readFileSync(filePath, 'utf-8');
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      for (const b of parsed) {
+        const id = b?.mission?.id;
+        if (typeof id === 'string' && id.length > 0) ids.add(id);
+      }
+    }
+  } catch {
+    // Seed file missing or malformed — the two sentinels above still work.
+  }
+  return Array.from(ids).map((id) => ({ params: { id } }));
+}
+
+const { id } = Astro.params;
+---
+
+<Layout title="Replay — Yaler">
+  <ReplayPlayer client:load initialMissionId={id} />
+</Layout>
