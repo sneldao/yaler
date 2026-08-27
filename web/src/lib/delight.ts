@@ -91,6 +91,7 @@ export function markTooltipSeen(id: string): void {
 /** Trigger a confetti burst (CSS-only, self-cleaning) */
 export function celebrate(element?: HTMLElement | null): void {
   if (typeof window === 'undefined') return;
+  playHaptic('success');
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const container = element || document.body;
@@ -116,6 +117,7 @@ export function celebrate(element?: HTMLElement | null): void {
 /** Trigger a screen shake (over-budget stop) */
 export function shake(element?: HTMLElement | null): void {
   if (typeof window === 'undefined') return;
+  playHaptic('error');
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const target = element || document.body;
@@ -130,6 +132,43 @@ export function stamp(element: HTMLElement | null): void {
 
   element.classList.add('stamp-verified');
   setTimeout(() => element.classList.remove('stamp-verified'), 600);
+}
+
+// ─── Haptics ───────────────────────────────────────────────
+
+/**
+ * Vibration patterns per UI event. Kept short — a notification buzz on
+ * a phone should be a whisper, not an alarm. Ignored entirely on
+ * desktop (no vibrate support) and when the user has asked the OS to
+ * calm things down.
+ */
+const HAPTIC_PATTERNS: Record<'ding' | 'paper' | 'ping' | 'stop' | 'success' | 'error', number | number[]> = {
+  ding: 12,
+  paper: 8,
+  ping: 16,
+  stop: [20, 40, 20],
+  success: [10, 30, 25],
+  error: [35, 30, 35],
+};
+
+export function playHaptic(event: keyof typeof HAPTIC_PATTERNS): void {
+  if (typeof window === 'undefined') return;
+  if (!('vibrate' in navigator)) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (localStorage.getItem('yaler_haptics_enabled') === 'false') return;
+  try {
+    navigator.vibrate(HAPTIC_PATTERNS[event]);
+  } catch { /* vibration refused (no gesture, unsupported) */ }
+}
+
+export function areHapticsEnabled(): boolean {
+  if (typeof window === 'undefined') return true;
+  return localStorage.getItem('yaler_haptics_enabled') !== 'false';
+}
+
+export function setHapticsEnabled(enabled: boolean): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('yaler_haptics_enabled', String(enabled));
 }
 
 // ─── Sound (kitchen mode) ──────────────────────────────────
@@ -153,6 +192,9 @@ function ensureAudioCtx(): AudioContext {
 }
 
 export function playUiSound(type: 'ding' | 'paper' | 'ping' | 'stop'): void {
+  // Haptics fire regardless of kitchen mode — sound is opt-in because it's
+  // audible to bystanders; a 12ms buzz on the owner's own phone isn't.
+  playHaptic(type);
   if (!isKitchenModeEnabled()) return;
   try {
     const ctx = ensureAudioCtx();

@@ -1162,12 +1162,12 @@ func (h *Handler) HandleSubmitCalloutOffer(w http.ResponseWriter, r *http.Reques
 // A mission escalated by the sweeper (every callout declined or expired,
 // no quotes) comes back through MANDATE_CONFIRMED, which makes the worker
 // re-run sourcing and mint fresh callouts.
+//
+// Deliberately NOT ops-guarded: retrying your own stalled job is a buyer
+// action, same threat model as /start and /approve (mission-ID-scoped,
+// unauthenticated demo surface). Ops keeps the guarded supplier-onboard
+// and callout-offer endpoints.
 func (h *Handler) HandleResumeMission(w http.ResponseWriter, r *http.Request) {
-	if !h.opsAuthorized(r) {
-		writeError(w, http.StatusUnauthorized, "Ops token required")
-		return
-	}
-
 	id := r.PathValue("id")
 	ctx := r.Context()
 	m, err := h.store.GetMission(ctx, id)

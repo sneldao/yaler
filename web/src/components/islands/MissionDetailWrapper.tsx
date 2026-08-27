@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { type Event, type Mission, getEvents, getMission } from '../../lib/api';
+import { type Event, type Mission, getEvents, getMission, resumeMission } from '../../lib/api';
 import { listMissionsCached, onMissionsChanged } from '../../lib/cache';
 import { statusLabel } from '../../lib/copy';
+import { playHaptic } from '../../lib/delight';
 import MandateEditor from './MandateEditor';
 import MissionTimeline, { ToolTraceRail } from './MissionTimeline';
 import OfferComparison from './OfferComparison';
@@ -224,6 +225,74 @@ function LifecycleScrubber({ mission }: { mission: Mission }) {
   );
 }
 
+/**
+ * EscalatedRetry — buyer-facing recovery for a stalled job. When every
+ * supplier declines or times out, the mission lands in ESCALATED and the
+ * only escape hatch used to be the ops console. This card puts the same
+ * "re-run sourcing" move in the buyer's hands: fresh callouts go out to
+ * the current roster and the mission re-enters SOURCING.
+ */
+function EscalatedRetry({ mission, onResumed }: { mission: Mission; onResumed: (m: Mission) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const retry = async () => {
+    setBusy(true);
+    setError('');
+    playHaptic('ping');
+    try {
+      const next = await resumeMission(mission.id);
+      onResumed(next);
+      playHaptic('success');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not re-run sourcing');
+      playHaptic('error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="paper-card rounded-2xl p-5 space-y-3 border-l-2 border-l-escalate animate-pop-in">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-ink">Nobody quoted this one</p>
+          <p className="text-xs text-ink-muted mt-1 leading-relaxed">
+            Every engineer we asked declined or timed out. This happens — usually the
+            job is outside the usual district or the budget is tight. We can send fresh
+            calls to the whole roster again.
+          </p>
+        </div>
+        <span className="text-[10px] text-escalate font-medium whitespace-nowrap shrink-0">Stalled</span>
+      </div>
+      <div className="receipt-perf" />
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={retry}
+          disabled={busy}
+          className="btn-primary inline-flex items-center gap-2 disabled:opacity-60"
+        >
+          {busy ? (
+            <>
+              <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M21 12a9 9 0 1 1-6.2-8.56" strokeLinecap="round" />
+              </svg>
+              Sending fresh calls…
+            </>
+          ) : (
+            <>Re-run sourcing</>
+          )}
+        </button>
+        <a href="/missions/new" className="text-xs text-ink-muted hover:text-mandate transition-colors">
+          Or start a similar job
+        </a>
+      </div>
+      {error && <p className="text-[11px] text-escalate">{error}</p>}
+    </div>
+  );
+}
+
 export default function MissionDetailWrapper({ initialMissionId }: Props) {
   const [id, setId] = useState(initialMissionId || 'demo');
   const [mission, setMission] = useState<Mission | null>(null);
@@ -382,6 +451,9 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
         />
       ) : (
         <>
+          {mission.status === 'ESCALATED' && (
+            <EscalatedRetry mission={mission} onResumed={(next) => setMission(next)} />
+          )}
           <AgentStatusStrip mission={mission} offerCount={offerCount} lastEventAt={lastEventAt} />
           <div className="sticky top-16 sm:top-20 z-30 -my-3">
             <ToolTraceRail events={events} />
