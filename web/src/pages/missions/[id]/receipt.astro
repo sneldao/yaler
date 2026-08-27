@@ -100,6 +100,15 @@ const ogDescription = receipt
 
             <HearReceipt client:load receipt={receipt} />
 
+            <!-- Powered-by strip — every shared receipt recruits. Stays on
+                 the sheet so a screenshot carries the brand. -->
+            <div class="border-t border-ink/10 pt-4 flex items-center justify-between gap-3" data-no-print>
+              <p class="text-[10px] uppercase tracking-[0.14em] text-ink-muted">
+                Powered by <span class="font-semibold text-ink tracking-[0.14em]">YALER</span>
+              </p>
+              <p class="text-[10px] text-ink-muted">Booked, checked and receipted autonomously</p>
+            </div>
+
             <!-- Print button (desktop only) -->
             <button
               type="button"
@@ -120,18 +129,39 @@ const ogDescription = receipt
         <!-- Share + viral hooks -->
         <ShareReceipt client:load receiptId={id} summary={receipt.summary} shareToken={receipt.shareToken} />
 
-        <!-- Post-completion loop: next job -->
+        <!-- Recipient landing — someone who was SENT this receipt gets
+             context + a CTA, so the share page is not a dead end. -->
+        <div class="paper-card rounded-2xl p-5 sm:p-6 space-y-3 border-l-2 border-l-mandate/40">
+          <p class="text-[11px] uppercase tracking-[0.14em] text-mandate font-medium">Received this receipt?</p>
+          <h3 class="font-display text-xl text-ink">This is what a Yaler job looks like</h3>
+          <p class="text-sm text-ink-muted leading-relaxed">
+            An agent found the engineer, held the line on the budget, checked the photo evidence, and
+            issued this receipt — while the owner got on with lunch service. Your kitchen can run the
+            same play.
+          </p>
+          <a href="/" class="btn-primary text-sm text-center py-2.5 w-full inline-flex justify-center">
+            Get your own verified receipt →
+          </a>
+        </div>
+
+        <!-- Repeat booking — the path from emergency to routine. -->
         <div class="paper-card rounded-2xl p-5 sm:p-6 space-y-4">
           <h3 class="font-display text-xl text-ink">Something else broken?</h3>
           <p class="text-sm text-ink-muted leading-relaxed">
             Same rules, new job. We'll reuse your saved mandate — budget, area, and autonomy mode stay the same.
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <a href="/missions/new" class="btn-primary text-sm text-center py-2.5">
-              Start another job
+            <a
+              href={`/missions/new?goal=${encodeURIComponent(`${receipt.summary} — again, please.`)}`}
+              class="btn-primary text-sm text-center py-2.5"
+            >
+              Book the same again
             </a>
-            <a href="/" class="btn-secondary text-sm text-center py-2.5">
-              Back home
+            <a
+              href={`/missions/new?goal=${encodeURIComponent('Quarterly kitchen equipment check — fridge seals, extraction filters, freezer temps. Budget £300.')}`}
+              class="btn-secondary text-sm text-center py-2.5"
+            >
+              Schedule a quarterly check
             </a>
           </div>
         </div>

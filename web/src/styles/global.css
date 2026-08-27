@@ -4,15 +4,62 @@
 
 @layer base {
   :root {
-    --ink: #12212b;
-    --ink-muted: #5c5348;
-    --paper: #f4efe6;
-    --paper-raised: #fffaf3;
-    --paper-inset: #e8e1d4;
-    --mandate: #2a6f6a;
-    --escalate: #c45c26;
-    --line: rgba(18, 33, 43, 0.12);
+    /* Raw RGB channels — the single source of truth for the palette.
+       Tailwind colours (tailwind.config.mjs) and the semantic aliases
+       below both derive from these, so opacity modifiers keep working.
+       Light theme = the original paper & ink hexes. */
+    --ink-rgb: 18 33 43;
+    --ink-muted-rgb: 92 83 72;
+    --paper-rgb: 244 239 230;
+    --paper-raised-rgb: 255 250 243;
+    --paper-inset-rgb: 232 225 212;
+    --mandate-rgb: 42 111 106;
+    --mandate-light-rgb: 228 240 239;
+    --escalate-rgb: 196 92 38;
+    --escalate-light-rgb: 248 230 218;
+
+    /* Semantic aliases — kept so every existing var(--x) usage follows the theme. */
+    --ink: rgb(var(--ink-rgb));
+    --ink-muted: rgb(var(--ink-muted-rgb));
+    --paper: rgb(var(--paper-rgb));
+    --paper-raised: rgb(var(--paper-raised-rgb));
+    --paper-inset: rgb(var(--paper-inset-rgb));
+    --mandate: rgb(var(--mandate-rgb));
+    --escalate: rgb(var(--escalate-rgb));
+
+    --line: rgb(var(--ink-rgb) / 0.12);
+    --shadow-rgb: 18 33 43;
+    --highlight-inset: rgba(255, 255, 255, 0.65);
+    --highlight-inset-strong: rgba(255, 255, 255, 0.7);
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
+
+    color-scheme: light;
+  }
+
+  /* ── Dark: the same product at night ─────────────────────────────
+     Deep ink-wash grounds (not generic grey/black), warm off-white ink;
+     mandate teal and escalate orange are brightened to keep ≥4.5:1
+     contrast against the dark ground. The *-light tokens are
+     pre-composited "translucent wash over paper" surfaces because RGB
+     channels can't carry their own alpha. Applied to <html> by the
+     inline head script + ThemeToggle island (localStorage 'yaler-theme'). */
+  .dark {
+    --ink-rgb: 232 226 218;
+    --ink-muted-rgb: 158 148 138;
+    --paper-rgb: 13 22 29;
+    --paper-raised-rgb: 20 32 40;
+    --paper-inset-rgb: 28 40 49;
+    --mandate-rgb: 79 158 150;
+    --mandate-light-rgb: 23 42 47;
+    --escalate-rgb: 219 130 80;
+    --escalate-light-rgb: 44 38 37;
+
+    --line: rgb(var(--ink-rgb) / 0.16);
+    --shadow-rgb: 0 0 0;
+    --highlight-inset: rgba(255, 255, 255, 0.05);
+    --highlight-inset-strong: rgba(255, 255, 255, 0.08);
+
+    color-scheme: dark;
   }
 
   html {
@@ -65,8 +112,8 @@
 }
 
 @keyframes pulse-border {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(196, 92, 38, 0); }
-  50% { box-shadow: 0 0 0 3px rgba(196, 92, 38, 0.25); }
+  0%, 100% { box-shadow: 0 0 0 0 rgb(var(--escalate-rgb) / 0); }
+  50% { box-shadow: 0 0 0 3px rgb(var(--escalate-rgb) / 0.25); }
 }
 
 @keyframes receipt-slice-in {
@@ -88,7 +135,7 @@
 }
 
 .animate-shimmer-text {
-  background: linear-gradient(90deg, #5c5348 30%, #12212b 50%, #5c5348 70%);
+  background: linear-gradient(90deg, rgb(var(--ink-muted-rgb)) 30%, rgb(var(--ink-rgb)) 50%, rgb(var(--ink-muted-rgb)) 70%);
   background-size: 200% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -121,8 +168,8 @@
       0deg,
       transparent,
       transparent 47px,
-      rgba(18, 33, 43, 0.35) 47px,
-      rgba(18, 33, 43, 0.35) 48px
+      rgb(var(--ink-rgb) / 0.35) 47px,
+      rgb(var(--ink-rgb) / 0.35) 48px
     );
   background-size: 100% 48px;
 }
@@ -130,7 +177,7 @@
 .paper-card {
   background: var(--paper-raised);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 10px 28px -18px rgba(18, 33, 43, 0.28);
+  box-shadow: 0 1px 0 var(--highlight-inset) inset, 0 10px 28px -18px rgb(var(--shadow-rgb) / 0.28);
 }
 
 .paper-card-hover {
@@ -138,15 +185,15 @@
 }
 
 .paper-card-hover:hover {
-  border-color: rgba(42, 111, 106, 0.35);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 14px 32px -18px rgba(18, 33, 43, 0.28);
+  border-color: rgb(var(--mandate-rgb) / 0.35);
+  box-shadow: 0 1px 0 var(--highlight-inset-strong) inset, 0 14px 32px -18px rgb(var(--shadow-rgb) / 0.28);
 }
 
 /* Keep old class names as aliases so leftover markup still reads as paper. */
 .glass-panel {
   background: var(--paper-raised);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 10px 28px -18px rgba(18, 33, 43, 0.28);
+  box-shadow: 0 1px 0 var(--highlight-inset) inset, 0 10px 28px -18px rgb(var(--shadow-rgb) / 0.28);
 }
 
 .glass-panel-hover {
@@ -154,14 +201,27 @@
 }
 
 .glass-panel-hover:hover {
-  border-color: rgba(42, 111, 106, 0.35);
+  border-color: rgb(var(--mandate-rgb) / 0.35);
 }
 
+/* A receipt is a physical artifact — it stays warm light paper even in dark
+   mode. Scoping the channel vars into the subtree flips every Tailwind
+   colour inside (text-ink, bg-paper, …) back to the light palette. */
 .receipt-sheet {
-  background: var(--paper);
+  background: #f4efe6;
   border: 1px solid rgba(18, 33, 43, 0.14);
   box-shadow: 0 18px 40px -24px rgba(18, 33, 43, 0.35);
   animation: receipt-slice-in 400ms var(--ease) both;
+}
+
+.dark .receipt-sheet {
+  --ink-rgb: 18 33 43;
+  --ink-muted-rgb: 92 83 72;
+  --paper-rgb: 244 239 230;
+  --paper-raised-rgb: 255 250 243;
+  --paper-inset-rgb: 232 225 212;
+  --mandate-rgb: 42 111 106;
+  --line: rgba(18, 33, 43, 0.12);
 }
 
 .receipt-punch {
@@ -316,7 +376,7 @@
   z-index: 100;
   background: var(--paper-raised);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 10px 28px -18px rgba(18, 33, 43, 0.28);
+  box-shadow: 0 1px 0 var(--highlight-inset) inset, 0 10px 28px -18px rgb(var(--shadow-rgb) / 0.28);
   border-radius: 9999px;
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
@@ -341,7 +401,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(18, 33, 43, 0.18);
+  background: rgb(var(--ink-rgb) / 0.18);
   border-radius: 9999px;
 }
 

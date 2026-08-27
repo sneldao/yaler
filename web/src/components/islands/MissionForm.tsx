@@ -12,11 +12,15 @@ import { getJourneyStage, playUiSound } from '../../lib/delight';
 const SpeakNote = lazy(() => import('../primitives/SpeakNote'));
 
 export default function MissionForm() {
+  // Journey stage drives both the starter prompt and whether samples are
+  // open by default (ChatGPT-style: starter prompts appear automatically for
+  // new users, collapse for returning ones).
+  const stage = typeof window !== 'undefined' ? getJourneyStage() : 'new';
   const [goal, setGoal] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
-  const [showSamples, setShowSamples] = useState(false);
+  const [showSamples, setShowSamples] = useState(stage === 'new');
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [district, setDistrict] = useState('N1');
@@ -39,8 +43,17 @@ export default function MissionForm() {
     return () => { if (typingRef.current) clearInterval(typingRef.current); };
   }, []);
 
-  // Smart pre-fill from context
+  // Smart pre-fill from context: explicit ?goal= link (book-again) beats
+  // saved rules, beats the game handoff, beats the time-aware starter.
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromLink = params.get('goal');
+    if (fromLink && fromLink.trim()) {
+      setGoal(fromLink.trim());
+      setSavedHint('Pre-filled from your last receipt. Edit anything that changed.');
+      return;
+    }
+
     const saved = loadSavedMandate();
     if (saved) {
       setGoal(`${saved.goalHint}, budget £${saved.budget}, we're in ${saved.postalDistrict}.`);
@@ -49,13 +62,28 @@ export default function MissionForm() {
     }
 
     // Check if coming from the game
-    const params = new URLSearchParams(window.location.search);
     const fromGame = params.get('from');
     if (fromGame === 'game') {
       setGoal("My commercial fridge is down, need repair before lunch, budget £500, we're in N1.");
       setSavedHint('Pre-filled from the game. Edit to match your real situation.');
+      return;
     }
-  }, []);
+
+    // Starter prompt — never a blank textarea for a brand-new user. Seeded by
+    // time of day and the district they picked, so it reads as their kitchen,
+    // not our demo script.
+    if (stage === 'new') {
+      const hour = new Date().getHours();
+      const starter =
+        hour < 11
+          ? `My commercial fridge is down, need repair before lunch, budget £500, we're in ${district}.`
+          : hour < 16
+            ? `Walk-in freezer is running warm, need someone this afternoon, budget £600, ${district}.`
+            : `Extraction hood is due a deep clean before tomorrow's service, budget £350, we're ${district}.`;
+      setGoal(starter);
+      setSavedHint('A starting point in your district — edit it or clear it.');
+    }
+  }, [district, stage]);
 
   // Auto-focus textarea when confirmed
   useEffect(() => {
@@ -109,8 +137,6 @@ export default function MissionForm() {
       setLoading(false);
     }
   };
-
-  const stage = typeof window !== 'undefined' ? getJourneyStage() : 'new';
 
   // Confirmation gate — replaced the <details> element
   if (!confirmed) {
