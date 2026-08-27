@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 interface Props {
   receiptId: string;
@@ -17,7 +17,7 @@ export default function ShareReceipt({ receiptId, summary, shareToken }: Props) 
 
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${receiptUrl}`)}`;
 
-  const copyLink = async () => {
+  const copyLink = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(receiptUrl);
       setCopied(true);
@@ -33,7 +33,28 @@ export default function ShareReceipt({ receiptId, summary, shareToken }: Props) 
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     }
-  };
+  }, [receiptUrl]);
+
+  // "S" hotkey — while the share card is on screen, pressing S copies the link.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 's' || e.repeat) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return; // don't hijack typing
+      }
+      void copyLink();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [copyLink]);
 
   const nativeShare = async () => {
     if (navigator.share) {
@@ -46,7 +67,22 @@ export default function ShareReceipt({ receiptId, summary, shareToken }: Props) 
   };
 
   return (
-    <div className="paper-card rounded-2xl p-5 space-y-3">
+    <div className="paper-card relative rounded-2xl p-5 space-y-3">
+      {/* Thumbtack — the card reads as pinned to the kitchen wall */}
+      <div aria-hidden="true" className="absolute -top-[5px] left-1/2 -translate-x-1/2 flex flex-col items-center">
+        <span
+          className="block h-2.5 w-2.5 rounded-full"
+          style={{
+            background:
+              'radial-gradient(circle at 35% 30%, rgba(255, 250, 243, 0.9), rgba(18, 33, 43, 0.2) 55%, rgba(18, 33, 43, 0.35))',
+            boxShadow: '0 1px 2px rgba(18, 33, 43, 0.25)',
+          }}
+        />
+        <span
+          className="mt-[1px] block h-px w-4"
+          style={{ background: 'linear-gradient(to right, transparent, rgba(18, 33, 43, 0.15), transparent)' }}
+        />
+      </div>
       <div className="flex items-center justify-between">
         <p className="text-[11px] uppercase tracking-wider text-ink-muted">Share this receipt</p>
         {shareToken && (
@@ -59,26 +95,37 @@ export default function ShareReceipt({ receiptId, summary, shareToken }: Props) 
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <button
-          type="button"
-          onClick={copyLink}
-          className="btn-secondary text-sm py-2.5 flex items-center justify-center gap-2"
-        >
-          {copied ? (
-            <>
-              <span className="text-mandate">✓</span>
-              Copied
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <rect x="9" y="9" width="13" height="13" rx="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-              Copy link
-            </>
-          )}
-        </button>
+        <div className="group relative">
+          <button
+            type="button"
+            onClick={copyLink}
+            className="btn-secondary text-sm py-2.5 flex items-center justify-center gap-2 w-full"
+          >
+            {copied ? (
+              <>
+                <span className="text-mandate">✓</span>
+                Copied
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+                Copy link
+                <kbd className="hidden sm:inline-block rounded border border-ink/15 bg-paper-inset px-1 py-px font-mono text-[9px] leading-none text-ink-muted">S</kbd>
+              </>
+            )}
+          </button>
+          {/* Peek at the URL on hover/focus without committing to the copy */}
+          <span
+            role="tooltip"
+            title={receiptUrl}
+            className="paper-card pointer-events-none invisible absolute left-1/2 top-full z-20 mt-1.5 block w-max max-w-[220px] -translate-x-1/2 truncate rounded-lg px-2.5 py-1.5 font-mono text-[11px] text-ink-muted opacity-0 transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+          >
+            {receiptUrl}
+          </span>
+        </div>
 
         <a
           href={whatsappUrl}

@@ -31,6 +31,11 @@ export default {
         paper: '0 1px 0 rgba(255,255,255,0.65) inset, 0 10px 28px -18px rgba(18, 33, 43, 0.28)',
         receipt: '0 18px 40px -24px rgba(18, 33, 43, 0.35)',
       },
+      // ring-mandate already generates via colors.mandate.DEFAULT (verified);
+      // pinned explicitly so the focus-ring colour can't drift.
+      ringColor: {
+        mandate: '#2A6F6A',
+      },
       transitionTimingFunction: {
         yaler: 'cubic-bezier(0.23, 1, 0.32, 1)',
       },

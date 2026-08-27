@@ -121,6 +121,7 @@ export class KitchenScene extends Phaser.Scene {
   private tapTarget: { x: number; y: number } | null = null;
   private stepTimer = 0;
   private startTime = 0;
+  private reducedMotion = false;
   private eventTimes: number[] = [];
   private decisions: string[] = [];
   private totalCost = 0;
@@ -135,6 +136,10 @@ export class KitchenScene extends Phaser.Scene {
   }
 
   create() {
+    // Continuous/decorative motion is gated on this throughout the scene;
+    // gameplay and every bit of content stay the same without it.
+    this.reducedMotion =
+      typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.startTime = this.time.now;
     this.phase = 'intro';
     this.eventIdx = 0;
@@ -261,16 +266,18 @@ export class KitchenScene extends Phaser.Scene {
     this.playerSprite = this.add.image(this.player.x, this.player.y, 'player_sprite');
     this.playerSprite.setDepth(5);
 
-    // Walk bob tween (paused, started when moving)
-    this.tweens.add({
-      targets: this.playerSprite,
-      y: '-=1.5',
-      duration: 150,
-      yoyo: true,
-      repeat: -1,
-      paused: true,
-      key: 'playerBob',
-    });
+    // Walk bob tween (paused, started when moving) — skipped under reduced motion
+    if (!this.reducedMotion) {
+      this.tweens.add({
+        targets: this.playerSprite,
+        y: '-=1.5',
+        duration: 150,
+        yoyo: true,
+        repeat: -1,
+        paused: true,
+        key: 'playerBob',
+      });
+    }
   }
 
   private createEquipment() {
@@ -436,11 +443,15 @@ export class KitchenScene extends Phaser.Scene {
 
     const npc1 = this.add.image(13 * T + 12, 3 * T + 12, 'staff_sprite');
     npc1.setDepth(4).setAlpha(0.8);
-    this.tweens.add({ targets: npc1, y: 7 * T + 12, duration: 3500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     const npc2 = this.add.image(6 * T + 12, 8 * T + 12, 'staff_sprite');
     npc2.setDepth(4).setAlpha(0.8).setFlipX(true);
-    this.tweens.add({ targets: npc2, x: 14 * T + 12, duration: 4500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    // Continuous patrol loops — skipped under reduced motion; NPCs stay put.
+    if (!this.reducedMotion) {
+      this.tweens.add({ targets: npc1, y: 7 * T + 12, duration: 3500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.tweens.add({ targets: npc2, x: 14 * T + 12, duration: 4500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
   }
 
   // ─── Intro ───────────────────────────────────────────────
@@ -463,12 +474,22 @@ export class KitchenScene extends Phaser.Scene {
         fontSize: line.size,
         color: line.color,
         fontStyle: line.bold ? 'bold' : 'normal',
-      }).setOrigin(0.5).setDepth(31).setAlpha(0);
+      }).setOrigin(0.5).setDepth(31).setAlpha(this.reducedMotion ? 1 : 0);
       textObjs.push(t);
-      this.tweens.add({ targets: t, alpha: 1, duration: 400, delay: i * 200, ease: 'Power2' });
+      // Reduced motion: intro lines are simply there — no staggered fade.
+      if (!this.reducedMotion) {
+        this.tweens.add({ targets: t, alpha: 1, duration: 400, delay: i * 200, ease: 'Power2' });
+      }
     });
 
     const startGame = () => {
+      if (this.reducedMotion) {
+        bg.destroy();
+        textObjs.forEach((t) => t.destroy());
+        this.phase = 'idle';
+        this.triggerNextEvent();
+        return;
+      }
       this.tweens.add({
         targets: [bg, ...textObjs],
         alpha: 0,
@@ -515,8 +536,12 @@ export class KitchenScene extends Phaser.Scene {
     target.setStrokeStyle(2, 0xff0000, 0.8);
     icon.setVisible(true);
 
-    this.tweens.add({ targets: icon, alpha: { from: 1, to: 0.3 }, duration: 400, yoyo: true, repeat: -1 });
-    this.tweens.add({ targets: target, scaleX: { from: 1, to: 1.15 }, scaleY: { from: 1, to: 1.15 }, duration: 300, yoyo: true, repeat: -1 });
+    // Continuous alarm pulses — skipped under reduced motion; the static red
+    // fill and "!" icon still mark the breakdown.
+    if (!this.reducedMotion) {
+      this.tweens.add({ targets: icon, alpha: { from: 1, to: 0.3 }, duration: 400, yoyo: true, repeat: -1 });
+      this.tweens.add({ targets: target, scaleX: { from: 1, to: 1.15 }, scaleY: { from: 1, to: 1.15 }, duration: 300, yoyo: true, repeat: -1 });
+    }
 
     this.interactHint.setText(`! ${evt.label} is down`).setVisible(true);
 
@@ -728,30 +753,38 @@ export class KitchenScene extends Phaser.Scene {
     const target = this.targets[this.eventIdx];
     const icon = this.alarmIcons[this.eventIdx];
 
+    const onFixed = () => {
+      target.setFillStyle(C.fixed);
+      target.setStrokeStyle(2, 0x44cc88, 0.8);
+      icon.setText('✓').setColor('#44cc88').setAlpha(1);
+      this.tweens.killTweensOf(icon);
+
+      playDing();
+      this.engineer.setVisible(false);
+      this.engineerSprite.setVisible(false);
+      this.interactHint.setVisible(false);
+
+      this.eventTimes.push(Math.round((this.time.now - this.startTime) / 1000));
+
+      // Next event
+      this.phase = 'transition';
+      this.eventIdx++;
+      this.time.delayedCall(800, () => this.triggerNextEvent());
+    };
+
+    // Reduced motion: no flashing — mark fixed straight away.
+    if (this.reducedMotion) {
+      onFixed();
+      return;
+    }
+
     this.tweens.add({
       targets: this.engineerSprite,
       alpha: { from: 1, to: 0.4 },
       duration: 150,
       yoyo: true,
       repeat: 4,
-      onComplete: () => {
-        target.setFillStyle(C.fixed);
-        target.setStrokeStyle(2, 0x44cc88, 0.8);
-        icon.setText('✓').setColor('#44cc88').setAlpha(1);
-        this.tweens.killTweensOf(icon);
-
-        playDing();
-        this.engineer.setVisible(false);
-        this.engineerSprite.setVisible(false);
-        this.interactHint.setVisible(false);
-
-        this.eventTimes.push(Math.round((this.time.now - this.startTime) / 1000));
-
-        // Next event
-        this.phase = 'transition';
-        this.eventIdx++;
-        this.time.delayedCall(800, () => this.triggerNextEvent());
-      },
+      onComplete: onFixed,
     });
   }
 
@@ -803,13 +836,15 @@ export class KitchenScene extends Phaser.Scene {
     els.push(this.add.text(W/2, 142, 'Every step mapped to a real system.', { fontSize: '13px', color: '#12212b' }).setOrigin(0.5).setDepth(26));
     els.push(this.add.text(W/2, 158, '→ Try it with your real kitchen', { fontSize: '13px', color: '#2a6f6a', fontStyle: 'bold' }).setOrigin(0.5).setDepth(26));
 
-    // Animate in
-    bg.setAlpha(0).setPosition(160, 130);
-    this.tweens.add({ targets: bg, alpha: 0.97, y: H/2, duration: 500, ease: 'Back.easeOut' });
-    els.forEach((el, i) => {
-      el.setAlpha(0);
-      this.tweens.add({ targets: el, alpha: 1, duration: 300, delay: 400 + i * 80, ease: 'Power2' });
-    });
+    // Animate in — skipped under reduced motion; the summary renders in place.
+    if (!this.reducedMotion) {
+      bg.setAlpha(0).setPosition(160, 130);
+      this.tweens.add({ targets: bg, alpha: 0.97, y: H/2, duration: 500, ease: 'Back.easeOut' });
+      els.forEach((el, i) => {
+        el.setAlpha(0);
+        this.tweens.add({ targets: el, alpha: 1, duration: 300, delay: 400 + i * 80, ease: 'Power2' });
+      });
+    }
 
     // Dispatch to React
     this.time.delayedCall(2500, () => {

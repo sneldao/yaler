@@ -1,0 +1,17 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ReplayPlayer from '../../components/islands/ReplayPlayer';
+
+export function getStaticPaths() {
+  return [
+    { params: { id: 'demo' } },
+    { params: { id: '1' } },
+  ];
+}
+
+const { id } = Astro.params;
+---
+
+<Layout title="Replay — Yaler">
+  <ReplayPlayer client:load initialMissionId={id} />
+</Layout>

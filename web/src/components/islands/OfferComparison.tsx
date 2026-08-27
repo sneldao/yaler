@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   type CredentialCheck,
   type FoundEngineer,
   type Offer,
+  type Supplier,
   approveException,
   checkCredential,
   findNearby,
   getOffers,
+  listSuppliers,
 } from '../../lib/api';
-import { LoaderGrid } from '../primitives/LoaderGrid';
+import { SkeletonOfferCards } from '../primitives/Skeleton';
 import SponsorCallout from '../primitives/SponsorCallout';
-import { formatMoney, supplierLabel } from '../../lib/copy';
+import { EMPTY_STATE_COPY, formatMoney, supplierLabel } from '../../lib/copy';
 
 interface Props {
   missionId?: string;
@@ -20,6 +22,116 @@ interface Props {
   onBooked?: (offer: Offer) => void;
   district?: string;
   category?: string;
+  /** Buyer ceiling — drives the "Within mandate" confidence sub-score. */
+  budgetMax?: number;
+}
+
+/**
+ * Confidence is three sub-signals, not just price:
+ *  - Within Mandate: how far the price sits under the buyer's ceiling.
+ *  - Verified Business: the Companies House check result.
+ *  - Past Reliability: the supplier's earned reliability score (0–1 → %).
+ * The weighted aggregate (0–100) drives the ordering of the cards — it is
+ * literally why the agent ranks one quote above another.
+ */
+interface Confidence {
+  mandate: number;
+  mandateNote: string;
+  verified: number;
+  verifiedNote: string;
+  reliability: number;
+  reliabilityNote: string;
+  aggregate: number;
+}
+
+function normalise(name?: string): string {
+  return (name || '').toLowerCase().replace(/^sup[_-]?/i, '').replace(/[^a-z0-9]/g, '');
+}
+
+function computeConfidence(
+  offer: Offer,
+  budgetMax: number | undefined,
+  cred: CredentialCheck | undefined,
+  suppliers: Supplier[],
+): Confidence {
+  // — Within mandate —
+  let mandate = 55;
+  let mandateNote = 'No ceiling on record — price unchecked against a budget.';
+  if (budgetMax && budgetMax > 0) {
+    if (offer.price <= budgetMax * 0.6) {
+      mandate = 100;
+      mandateNote = `${formatMoney(offer.price, offer.currency)} — comfortably inside your ${formatMoney(budgetMax)} ceiling.`;
+    } else if (offer.price <= budgetMax) {
+      mandate = Math.round(100 - ((offer.price - budgetMax * 0.6) / (budgetMax * 0.4)) * 45);
+      mandateNote = `${formatMoney(offer.price, offer.currency)} — inside your ${formatMoney(budgetMax)} ceiling, close to the top.`;
+    } else {
+      mandate = Math.max(0, Math.round(40 - ((offer.price - budgetMax) / budgetMax) * 100));
+      mandateNote = `${formatMoney(offer.price, offer.currency)} — over your ${formatMoney(budgetMax)} ceiling.`;
+    }
+  }
+
+  // — Verified business —
+  const verified = cred?.status === 'listed' ? 95 : cred ? 35 : 50;
+  const verifiedNote =
+    cred?.status === 'listed'
+      ? `${cred.register || 'Public register'} listed${cred.asOf ? ` · ${cred.asOf}` : ''}`
+      : cred
+        ? 'Not found on the public register.'
+        : 'Register check still running.';
+
+  // — Past reliability —
+  const needle = normalise(offer.supplierAgentId);
+  const sup = suppliers.find(
+    (s) => normalise(s.id) === needle || normalise(s.displayName) === needle,
+  );
+  const reliability = sup
+    ? Math.round(sup.reliabilityScore * 100)
+    : offer.simulated
+      ? 30
+      : 50;
+  const reliabilityNote = sup
+    ? `${reliability}% from ${sup.displayName}'s completed jobs and ratings.`
+    : offer.simulated
+      ? 'Simulated roster entry — no track record.'
+      : 'No track record on the roster yet.';
+
+  const aggregate = Math.round(mandate * 0.5 + verified * 0.25 + reliability * 0.25);
+  return { mandate, mandateNote, verified, verifiedNote, reliability, reliabilityNote, aggregate };
+}
+
+/** One sub-signal: a label, a tiny bar, and a hover tooltip with the raw signal. */
+function SubBar({ label, value, note }: { label: string; value: number; note: string }) {
+  return (
+    <span className="group/bar relative inline-flex flex-col gap-1" title={note} aria-label={`${label}: ${value} out of 100. ${note}`}>
+      <span className="text-[9px] uppercase tracking-wider text-ink-muted">{label}</span>
+      <span className="block h-1.5 w-14 rounded-full bg-paper-inset overflow-hidden">
+        <span
+          className={`block h-full rounded-full ${value >= 70 ? 'bg-mandate' : value >= 45 ? 'bg-ink-muted' : 'bg-escalate'}`}
+          style={{ width: `${Math.max(4, Math.min(100, value))}%` }}
+        />
+      </span>
+      {/* Tooltip — the raw signal, on hover/focus */}
+      <span className="pointer-events-none absolute left-0 top-full z-20 mt-1.5 hidden w-48 rounded-lg paper-card p-2 text-[10px] leading-snug text-ink group-hover/bar:block group-focus-within/bar:block">
+        {note}
+      </span>
+    </span>
+  );
+}
+
+function ConfidenceMeter({ confidence }: { confidence: Confidence }) {
+  return (
+    <div className="mt-3 flex items-end justify-between gap-3 border-t border-ink/5 pt-3">
+      <div className="flex items-start gap-3" role="group" aria-label={`Confidence ${confidence.aggregate} out of 100`}>
+        <SubBar label="Mandate" value={confidence.mandate} note={confidence.mandateNote} />
+        <SubBar label="Verified" value={confidence.verified} note={confidence.verifiedNote} />
+        <SubBar label="Reliable" value={confidence.reliability} note={confidence.reliabilityNote} />
+      </div>
+      <div className="text-right shrink-0" title="Confidence — weighted from mandate fit, business verification, and past reliability. Drives the ordering.">
+        <p className="font-display text-xl leading-none text-ink tabular-nums">{confidence.aggregate}</p>
+        <p className="text-[9px] uppercase tracking-wider text-ink-muted mt-0.5">confidence</p>
+      </div>
+    </div>
+  );
 }
 
 // States where the mission is past the booking decision and the confirm
@@ -42,11 +154,13 @@ export default function OfferComparison({
   onBooked,
   district = 'N1',
   category = 'commercial_refrigeration',
+  budgetMax,
 }: Props) {
   const initialSelected = rehearsal
     ? offersProp?.find((offer) => offer.status === 'BLOCKED')?.id ?? offersProp?.[0]?.id ?? null
     : offersProp?.[0]?.id ?? null;
   const [offers, setOffers] = useState<Offer[]>(offersProp ?? []);
+  const [loaded, setLoaded] = useState(!!offersProp || !missionId);
   const [selectedId, setSelectedId] = useState<string | null>(initialSelected);
   const [showCompare, setShowCompare] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -54,10 +168,12 @@ export default function OfferComparison({
   const [found, setFound] = useState<FoundEngineer[]>([]);
   const [credentials, setCredentials] = useState<Record<string, CredentialCheck>>({});
   const [checkingCreds, setCheckingCreds] = useState(false);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   useEffect(() => {
     if (offersProp) {
       setOffers(offersProp);
+      setLoaded(true);
       if (!selectedId) {
         const blockedId = rehearsal ? offersProp.find((offer) => offer.status === 'BLOCKED')?.id : undefined;
         setSelectedId(blockedId ?? offersProp[0]?.id ?? null);
@@ -70,12 +186,18 @@ export default function OfferComparison({
         setOffers(next);
         if (next[0]) setSelectedId(next[0].id);
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setLoaded(true));
   }, [missionId, offersProp]);
 
   useEffect(() => {
     findNearby(category, district).then(setFound).catch(() => setFound([]));
   }, [category, district]);
+
+  // Roster lookup for the Past Reliability sub-signal.
+  useEffect(() => {
+    listSuppliers().then(setSuppliers).catch(() => setSuppliers([]));
+  }, []);
 
   useEffect(() => {
     const names = offers.map((o) => o.supplierAgentId).filter(Boolean);
@@ -97,24 +219,47 @@ export default function OfferComparison({
     };
   }, [offers]);
 
+  // Confidence per offer; the aggregate drives the ordering.
+  const confidenceById = useMemo(() => {
+    const map = new Map<string, Confidence>();
+    for (const offer of offers) {
+      map.set(offer.id, computeConfidence(offer, budgetMax, credentials[offer.supplierAgentId], suppliers));
+    }
+    return map;
+  }, [offers, budgetMax, credentials, suppliers]);
+
+  const sortedOffers = useMemo(() => {
+    return [...offers].sort((a, b) => {
+      // Blocked quotes always sink below bookable ones.
+      const aBlocked = a.status === 'BLOCKED' ? 1 : 0;
+      const bBlocked = b.status === 'BLOCKED' ? 1 : 0;
+      if (aBlocked !== bBlocked) return aBlocked - bBlocked;
+      return (confidenceById.get(b.id)?.aggregate ?? 0) - (confidenceById.get(a.id)?.aggregate ?? 0);
+    });
+  }, [offers, confidenceById]);
+
+  // Skeletons, not spinners — ghosted offer cards while the first load runs.
+  if (!loaded) {
+    return <SkeletonOfferCards count={3} />;
+  }
+
   if (offers.length === 0) {
+    const enRoute = missionStatus === 'COMMITTED' || missionStatus === 'IN_PROGRESS';
+    const copy = enRoute ? EMPTY_STATE_COPY.engineerEnRoute : EMPTY_STATE_COPY.waitingForQuotes;
     return (
       <div className="paper-card rounded-2xl p-8 text-center space-y-3 animate-pop-in">
         <div className="flex justify-center">
           <span className="receipt-punch" />
         </div>
-        <h3 className="font-display text-xl text-ink">Asking nearby engineers</h3>
+        <h3 className="font-display text-xl text-ink">{copy.title}</h3>
         <p className="text-sm text-ink-muted max-w-md mx-auto leading-relaxed">
-          We’ll bring back quotes as they come in. You don’t need to stay on this page.
+          {copy.body}
         </p>
-        <div className="flex justify-center pt-1">
-          <LoaderGrid />
-        </div>
       </div>
     );
   }
 
-  const selected = offers.find((offer) => offer.id === selectedId) || offers[0];
+  const selected = sortedOffers.find((offer) => offer.id === selectedId) || sortedOffers[0];
 
   const blocked = selected?.status === 'BLOCKED';
   const isAlreadyBooked = !rehearsal && !!missionStatus && BOOKED_STATES.has(missionStatus);
@@ -167,7 +312,7 @@ export default function OfferComparison({
       </div>
 
       <div className="space-y-2">
-        {offers.map((offer, idx) => {
+        {sortedOffers.map((offer, idx) => {
           const isSelected = offer.id === selected.id;
           const isBlocked = offer.status === 'BLOCKED';
           const isSimulated = offer.simulated === true;
@@ -203,6 +348,10 @@ export default function OfferComparison({
                 </div>
                 <p className={`font-display text-2xl ${isSimulated ? 'text-ink-muted' : 'text-ink'}`}>{formatMoney(offer.price, offer.currency)}</p>
               </div>
+              {/* Confidence — why the agent ranks this quote where it does */}
+              {confidenceById.get(offer.id) && (
+                <ConfidenceMeter confidence={confidenceById.get(offer.id)!} />
+              )}
               {isSelected && offer.terms && (
                 <p className="text-sm text-ink-muted mt-3 border-t border-ink/10 pt-3">{offer.terms}</p>
               )}
@@ -234,14 +383,16 @@ export default function OfferComparison({
                 <th className="p-3 font-medium">Engineer</th>
                 <th className="p-3 font-medium">When</th>
                 <th className="p-3 font-medium">Price</th>
+                <th className="p-3 font-medium">Confidence</th>
               </tr>
             </thead>
             <tbody>
-              {offers.map((offer) => (
+              {sortedOffers.map((offer) => (
                 <tr key={offer.id} className="border-b border-ink/5 last:border-0">
                   <td className="p-3 text-ink">{supplierLabel(offer.supplierAgentId)}</td>
                   <td className="p-3 text-ink-muted">{offer.availability}</td>
                   <td className="p-3 font-medium">{formatMoney(offer.price, offer.currency)}</td>
+                  <td className="p-3 text-ink-muted tabular-nums">{confidenceById.get(offer.id)?.aggregate ?? '—'}/100</td>
                 </tr>
               ))}
             </tbody>

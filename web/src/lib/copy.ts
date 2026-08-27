@@ -1,5 +1,107 @@
 export type StatusTone = 'neutral' | 'progress' | 'success' | 'alert';
 
+/**
+ * Empty-state copy library — the single source of truth for "nothing here
+ * yet" moments. No inline empty-state strings in components; import these.
+ */
+export const EMPTY_STATE_COPY = {
+  waitingForQuotes: {
+    title: 'Waiting for the first quote…',
+    body: 'Nearby engineers have been asked. Quotes land here as they come back — you don’t need to stay on this page.',
+  },
+  engineerEnRoute: {
+    title: 'Engineer is en route…',
+    body: 'The booking is locked in. We’ll update this page the moment the engineer reports from site.',
+  },
+  comparingQuotes: (count: number, budget: string) =>
+    `Comparing ${count} quote${count === 1 ? '' : 's'} against your ${budget} budget…`,
+  verifyingPhotos: {
+    title: 'Verifying photos…',
+    body: 'The engineer sent photo evidence. We’re checking it against what was agreed before anything is marked done.',
+  },
+  standingBy: {
+    title: 'Standing by.',
+    body: 'Say or type when something breaks — we’ll take it from there.',
+  },
+  mandateExtracting: {
+    title: 'Mandate being extracted',
+    body: 'We’re reading your note and pulling out the budget, area, deadline and category. The rules appear here in a moment.',
+  },
+  noEventsYet: {
+    title: 'Nothing on the timeline yet',
+    body: 'As the agent works — asking engineers, checking rules, receiving quotes — each step is recorded here.',
+  },
+  noOtherJobs: {
+    title: 'No other jobs in flight right now',
+    body: 'When other kitchens put the agent to work, their live jobs show up here.',
+  },
+  opsQuiet: {
+    title: 'The desk is quiet',
+    body: 'When a mission asks engineers for quotes, callouts land here for the concierge desk to work.',
+  },
+} as const;
+
+/**
+ * Agent narrative — plain-English "what the agent is thinking right now".
+ * Used by the AgentStatusStrip so a live mission reads as a story, not a
+ * status badge.
+ */
+export function agentNarrative(status?: string, opts: { offerCount?: number; budgetMax?: number; currency?: string } = {}): string {
+  const budget = opts.budgetMax !== undefined ? formatMoney(opts.budgetMax, opts.currency || 'GBP') : undefined;
+  const n = opts.offerCount ?? 0;
+  switch (status) {
+    case 'DRAFT':
+      return 'Reading your note and pulling out the rules — budget, area, deadline.';
+    case 'MANDATE_CONFIRMED':
+      return 'Rules confirmed. Lining up the search for nearby engineers.';
+    case 'SOURCING':
+      return 'Asking verified engineers near you who can take the job…';
+    case 'OFFERS_RECEIVED':
+      return n > 0 && budget
+        ? `Comparing ${n} quote${n === 1 ? '' : 's'} against your ${budget} budget…`
+        : 'Weighing the quotes that came back against your rules…';
+    case 'NEGOTIATING':
+      return 'Checking whether a counter-offer keeps us inside your rules…';
+    case 'COMMITTED':
+      return 'Booking locked in. Confirming the engineer and the arrival window.';
+    case 'AWAITING_APPROVAL':
+      return 'Paused — one quote sits outside your rules. It needs your call.';
+    case 'IN_PROGRESS':
+      return 'Engineer is on the job. Listening for the completion update.';
+    case 'EVIDENCE_PENDING':
+      return 'Asking the engineer for photos of the finished work.';
+    case 'VERIFYING':
+      return 'Checking the photos against what was agreed…';
+    case 'COMPLETED':
+      return 'Done and verified. The receipt is on the wall.';
+    case 'ESCALATED':
+      return 'Every engineer declined or timed out. Working out the next move.';
+    default:
+      return 'Standing by — say or type when something breaks.';
+  }
+}
+
+/** True when the mission is idle — the agent has nothing in flight. */
+export function isIdleStatus(status?: string): boolean {
+  return !status || status === 'DRAFT' || status === 'COMPLETED' || status === 'CANCELLED';
+}
+
+/**
+ * Agent toolbelt — the canonical list of tools the agent can fire, in the
+ * order they tend to fire. The ToolTraceRail lights each chip as matching
+ * events land on the timeline.
+ */
+export const AGENT_TOOLS: { id: string; label: string; eventTypes: string[] }[] = [
+  { id: 'extract_mandate', label: 'extract_mandate', eventTypes: ['MANDATE_EXTRACTED', 'MISSION_CREATED'] },
+  { id: 'policy_check', label: 'policy_check', eventTypes: ['POLICY_CHECK', 'POLICY_ALLOW', 'POLICY_DENY', 'POLICY_ESCALATE', 'POLICY_BLOCKED', 'MANDATE_CONFIRMED', 'MANDATE_UPDATED'] },
+  { id: 'search_supplier_agents', label: 'search_supplier_agents', eventTypes: ['SOURCING_STARTED', 'SUPPLIERS_SOURCED', 'NO_SUPPLIERS', 'MISSION_RESUMED'] },
+  { id: 'request_offer', label: 'request_offer', eventTypes: ['CALLOUT_SENT', 'CALLOUT_DECLINED', 'CALLOUT_EXPIRED'] },
+  { id: 'compare_offers', label: 'compare_offers', eventTypes: ['OFFER_RECEIVED', 'QUOTE_RECEIVED', 'OFFERS_RECEIVED', 'OFFERS_RANKED', 'NEGOTIATING', 'NO_QUOTES'] },
+  { id: 'commit_booking', label: 'commit_booking', eventTypes: ['COMMITTED'] },
+  { id: 'record_evidence', label: 'record_evidence', eventTypes: ['EVIDENCE_SUBMITTED', 'EVIDENCE_VERIFIED'] },
+  { id: 'issue_receipt', label: 'issue_receipt', eventTypes: ['RECEIPT_ISSUED', 'COMPLETED'] },
+];
+
 const STATUS_LABELS: Record<string, string> = {
   DRAFT: 'Check the details',
   MANDATE_CONFIRMED: 'Ready',

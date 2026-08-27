@@ -1,21 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { listMissions, type Mission } from '../../lib/api';
+import { type Mission } from '../../lib/api';
+import { listMissionsCached, onMissionsChanged } from '../../lib/cache';
 import { statusLabel } from '../../lib/copy';
 
 /**
- * A small pill in the nav bar showing the current active mission status.
- * Polls every 5s for any non-terminal mission.
+ * A small pill in the nav bar showing the current active job:
+ * "N1 · In progress · 12m". Polls every 5s (deduped through the shared
+ * cache), refreshes instantly when another tab changes the mission list,
+ * and ticks the elapsed time every 30s.
  */
+
+function formatElapsed(createdAt: string, now: number): string {
+  const start = new Date(createdAt).getTime();
+  if (Number.isNaN(start)) return '';
+  const mins = Math.max(0, Math.floor((now - start) / 60000));
+  if (mins < 1) return '<1m';
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  const rem = mins % 60;
+  if (hours < 24) return rem ? `${hours}h ${rem}m` : `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
 
 export default function ActiveJobPill() {
   const [mission, setMission] = useState<Mission | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     let active = true;
 
     const check = async () => {
       try {
-        const missions = await listMissions();
+        const missions = await listMissionsCached();
         if (!active) return;
         // Find the most recent non-terminal mission
         const activeMission = missions.find(
@@ -29,16 +45,31 @@ export default function ActiveJobPill() {
 
     check();
     const interval = setInterval(check, 5000);
+    // Another tab created/changed a job — refresh right away (the broadcast
+    // has already invalidated the shared cache).
+    const unsubscribe = onMissionsChanged(() => {
+      check();
+    });
 
     return () => {
       active = false;
       clearInterval(interval);
+      unsubscribe();
     };
+  }, []);
+
+  // Elapsed-time ticker — cheap re-render every 30s.
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(tick);
   }, []);
 
   if (!mission) return null;
 
   const isUrgent = mission.status === 'AWAITING_APPROVAL' || mission.status === 'ESCALATED';
+  const district = mission.mandate?.serviceArea?.postalDistrict || 'Job';
+  const elapsed = formatElapsed(mission.createdAt, now);
+  const text = [district, statusLabel(mission.status), elapsed].filter(Boolean).join(' · ');
 
   return (
     <a
@@ -57,7 +88,8 @@ export default function ActiveJobPill() {
           isUrgent ? 'bg-escalate' : 'bg-mandate'
         }`} />
       </span>
-      <span className="font-medium truncate max-w-[120px]">{statusLabel(mission.status)}</span>
+      <span className="font-medium truncate max-w-[170px] sm:max-w-[220px]">{text}</span>
     </a>
   );
 }
+

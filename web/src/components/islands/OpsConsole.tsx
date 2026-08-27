@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import StatusBadge from '../primitives/StatusBadge';
 import { listCallouts, listMissions, listSuppliers, onboardSupplier, probeCredentialCheck, resumeMission, submitCalloutOffer, type Callout, type CredentialCheck, type Mission, type Supplier } from '../../lib/api';
-import { formatMoney } from '../../lib/copy';
+import { EMPTY_STATE_COPY, formatMoney } from '../../lib/copy';
 
 /**
  * OpsConsole — the concierge's cockpit (internal tool, linked from docs/SUPPLY-SIDE.md).
@@ -506,9 +506,9 @@ export default function OpsConsole() {
           <div className="flex justify-center">
             <span className="receipt-punch" />
           </div>
-          <p className="font-display text-xl text-ink">No jobs waiting on a quote</p>
+          <p className="font-display text-xl text-ink">{EMPTY_STATE_COPY.opsQuiet.title}</p>
           <p className="text-xs text-ink-muted max-w-sm mx-auto leading-relaxed">
-            When a mission reaches sourcing, its callouts appear here. This page refreshes itself every 10 seconds.
+            {EMPTY_STATE_COPY.opsQuiet.body}
           </p>
           <a href="/missions/new" className="btn-secondary text-xs py-2 px-3 inline-block">Start a job</a>
         </div>

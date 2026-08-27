@@ -52,7 +52,7 @@ export default function InlineEvidenceText({ prefixText, triggers, suffixText }:
                     {trig.previewType === 'image' && trig.contentUrl && (
                       <img
                         src={trig.contentUrl}
-                        alt={trig.label}
+                        alt={trig.label || 'Evidence photo'}
                         className="w-full h-32 object-cover rounded-lg"
                       />
                     )}

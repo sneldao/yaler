@@ -28,6 +28,14 @@
   .font-display {
     font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
   }
+
+  /* One strong, consistent 2px focus ring for every interactive element.
+     .field-input opts out of the outline (below) and uses a box-shadow ring
+     instead, so the border-radius reads cleanly. */
+  :focus-visible {
+    outline: 2px solid var(--mandate);
+    outline-offset: 2px;
+  }
 }
 
 @keyframes pop-in {
@@ -177,19 +185,25 @@
 /* The receipt prints out of a slot — slides down with a slight
    overshoot, like a thermal printer feeding paper. */
 @keyframes receipt-print {
+  /* clip-path is animated for the paper-feed wipe (Firefox 54+ supports it in
+     keyframes). -webkit-clip-path keeps older Safari on the same path; the
+     transform/opacity track is the plain fallback and always runs. */
   0% {
     opacity: 0;
     transform: translateY(-40px) scaleY(0.3);
+    -webkit-clip-path: inset(0 0 100% 0);
     clip-path: inset(0 0 100% 0);
   }
   60% {
     opacity: 1;
     transform: translateY(4px) scaleY(1.02);
+    -webkit-clip-path: inset(0 0 0 0);
     clip-path: inset(0 0 0 0);
   }
   100% {
     opacity: 1;
     transform: translateY(0) scaleY(1);
+    -webkit-clip-path: inset(0 0 0 0);
     clip-path: inset(0 0 0 0);
   }
 }
@@ -275,12 +289,46 @@
   @apply w-full bg-paper border border-ink/15 focus:border-mandate rounded-xl p-3.5 text-ink placeholder:text-ink-muted/70 focus:outline-none transition-colors duration-200;
 }
 
+.field-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--mandate);
+}
+
 .btn-primary {
   @apply inline-flex items-center justify-center gap-2 bg-mandate hover:bg-mandate/90 text-paper font-semibold rounded-xl px-4 py-3 transition-colors duration-200 disabled:opacity-40;
 }
 
 .btn-secondary {
   @apply inline-flex items-center justify-center gap-2 bg-paper-raised hover:bg-paper-inset text-ink border border-ink/10 font-medium rounded-xl px-4 py-2.5 transition-colors duration-200;
+}
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  box-shadow: 0 0 0 2px var(--mandate);
+}
+
+/* Skip-to-content — first focusable element in <body>. Off-screen until
+   keyboard focus, then a paper pill floating above the sticky header. */
+.skip-link {
+  position: absolute;
+  top: 0.75rem;
+  left: -9999px;
+  transform: translateY(-200%);
+  z-index: 100;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 10px 28px -18px rgba(18, 33, 43, 0.28);
+  border-radius: 9999px;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 160ms var(--ease);
+}
+
+.skip-link:focus {
+  left: 0.75rem;
+  transform: none;
 }
 
 ::-webkit-scrollbar {
@@ -338,6 +386,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   .kitchen-cutout { animation: none; }
+}
+
+/* Reduced-data: drop the SVG noise overlay (a data-heavy decorative
+   background). Layout is identical — the paper flat colour stays. */
+@media (prefers-reduced-data: reduce) {
+  .paper-grain {
+    background-image: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
