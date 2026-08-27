@@ -64,13 +64,22 @@ type Mandate struct {
 // role-aware handoff. Observed facts stay separate from inferences so a
 // likely diagnosis is never presented as a confirmed repair.
 type DiagnosticBrief struct {
-	ReportedSummary string            `json:"reportedSummary" firestore:"reportedSummary"`
-	Known           []string          `json:"known" firestore:"known"`
-	LikelyAreas     []string          `json:"likelyAreas" firestore:"likelyAreas"`
-	ToConfirm       []string          `json:"toConfirm" firestore:"toConfirm"`
-	EvidenceNeeded  []string          `json:"evidenceNeeded" firestore:"evidenceNeeded"`
-	Confidence      string            `json:"confidence" firestore:"confidence"`
-	DiagnosticMedia []DiagnosticMedia `json:"diagnosticMedia,omitempty" firestore:"diagnosticMedia,omitempty"`
+	ReportedSummary  string             `json:"reportedSummary" firestore:"reportedSummary"`
+	Known            []string           `json:"known" firestore:"known"`
+	LikelyAreas      []string           `json:"likelyAreas" firestore:"likelyAreas"`
+	ToConfirm        []string           `json:"toConfirm" firestore:"toConfirm"`
+	EvidenceNeeded   []string           `json:"evidenceNeeded" firestore:"evidenceNeeded"`
+	Confidence       string             `json:"confidence" firestore:"confidence"`
+	DiagnosticMedia  []DiagnosticMedia  `json:"diagnosticMedia,omitempty" firestore:"diagnosticMedia,omitempty"`
+	ExtractedSignals []DiagnosticSignal `json:"extractedSignals,omitempty" firestore:"extractedSignals,omitempty"`
+}
+
+// DiagnosticSignal is a bounded observation extracted from a report or image.
+type DiagnosticSignal struct {
+	Label      string `json:"label" firestore:"label"`
+	Value      string `json:"value" firestore:"value"`
+	Source     string `json:"source" firestore:"source"`
+	Confidence string `json:"confidence" firestore:"confidence"`
 }
 
 // DiagnosticMedia is manager-supplied context captured before dispatch.
@@ -225,6 +234,7 @@ type TaskPayload struct {
 	IdempotencyKey  string `json:"idempotencyKey"`
 	AttemptCount    int    `json:"attemptCount"`
 	Deadline        string `json:"deadline"`
+	TaskType        string `json:"taskType,omitempty"` // MISSION_STEP or DIAGNOSTIC_ANALYSIS
 }
 
 // Action represents a proposed operational action subject to policy validation.

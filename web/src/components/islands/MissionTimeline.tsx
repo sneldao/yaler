@@ -60,6 +60,18 @@ function DiagnosticBriefCard({ brief }: { brief: NonNullable<Mission['diagnostic
       </summary>
       <div className="px-3 pb-3 space-y-2.5 border-t border-ink/10 pt-2.5">
         <p className="text-xs text-ink-muted">{brief.reportedSummary}</p>
+        {brief.extractedSignals && brief.extractedSignals.length > 0 && (
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-ink-muted mb-1">Signals</p>
+            <div className="flex flex-wrap gap-1.5">
+              {brief.extractedSignals.map((signal) => (
+                <span key={`${signal.label}-${signal.value}`} className="text-[10px] bg-paper border border-ink/10 rounded-full px-2 py-1 text-ink">
+                  {signal.label}: {signal.value} <span className="text-ink-muted">· {signal.confidence}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
         {sections.map(([label, items]) => items.length > 0 && (
           <div key={label}>
             <p className="text-[10px] uppercase tracking-wider text-ink-muted mb-1">{label}</p>
@@ -68,6 +80,9 @@ function DiagnosticBriefCard({ brief }: { brief: NonNullable<Mission['diagnostic
             </ul>
           </div>
         ))}
+        {brief.diagnosticMedia && brief.diagnosticMedia.length > 0 && (
+          <p className="text-[10px] text-ink-muted">Photos attached · image analysis will appear when available</p>
+        )}
         {brief.diagnosticMedia && brief.diagnosticMedia.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1">
             {brief.diagnosticMedia.map((media) => (

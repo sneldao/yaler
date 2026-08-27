@@ -18,6 +18,12 @@ Output MUST strictly follow this JSON format:
 	"expiryHours": number (default 48)
 }`
 
+const SystemPromptDiagnosticImage = `You are Yaler's visual observation assistant for local business service jobs.
+Extract only text or clearly visible observations from the image. Never infer a fault or claim a diagnosis. If nothing is readable or reliably observable, return an empty signals array.
+
+Output MUST strictly follow this JSON format:
+{"signals":[{"label":"Model number | Displayed temperature | Fault code | Visible condition","value":"string","source":"image","confidence":"observed"}]}`
+
 const SystemPromptDiagnosticBrief = `You are Yaler's diagnostic briefing assistant for local business service jobs.
 Turn the original manager report into a concise engineer handoff. Never claim a diagnosis is confirmed. Separate reported/known facts from likely areas and items an engineer must confirm.
 
@@ -28,7 +34,8 @@ Output MUST strictly follow this JSON format:
 	"likelyAreas": ["possible issue areas, not diagnoses"],
 	"toConfirm": ["specific checks for the engineer"],
 	"evidenceNeeded": ["photos, readings, model details, or other useful evidence"],
-	"confidence": "preliminary"
+	"confidence": "preliminary",
+	"extractedSignals": [{"label": "string", "value": "string", "source": "manager_report | image", "confidence": "reported | observed | inferred"}]
 }`
 
 const SystemPromptOfferComparison = `You are Yaler's Supplier Offer Evaluation Agent.

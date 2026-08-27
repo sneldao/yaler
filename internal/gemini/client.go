@@ -34,12 +34,13 @@ type CounterofferDraft struct {
 }
 
 type DiagnosticBriefResult struct {
-	ReportedSummary string   `json:"reportedSummary"`
-	Known           []string `json:"known"`
-	LikelyAreas     []string `json:"likelyAreas"`
-	ToConfirm       []string `json:"toConfirm"`
-	EvidenceNeeded  []string `json:"evidenceNeeded"`
-	Confidence      string   `json:"confidence"`
+	ReportedSummary  string                    `json:"reportedSummary"`
+	Known            []string                  `json:"known"`
+	LikelyAreas      []string                  `json:"likelyAreas"`
+	ToConfirm        []string                  `json:"toConfirm"`
+	EvidenceNeeded   []string                  `json:"evidenceNeeded"`
+	Confidence       string                    `json:"confidence"`
+	ExtractedSignals []domain.DiagnosticSignal `json:"extractedSignals"`
 }
 
 type EvidenceExtractionResult struct {
@@ -156,6 +157,37 @@ func (c *Client) ExtractMandate(ctx context.Context, goal string) (*domain.Manda
 	}, nil
 }
 
+func (c *Client) AnalyzeDiagnosticImage(ctx context.Context, imageBytes []byte, mimeType string, label string) ([]domain.DiagnosticSignal, error) {
+	if len(imageBytes) == 0 || c.genaiClient == nil {
+		return nil, nil
+	}
+	if len(imageBytes) > 10<<20 {
+		return nil, fmt.Errorf("diagnostic image exceeds 10MB limit")
+	}
+	if mimeType == "" {
+		mimeType = "image/jpeg"
+	}
+	prompt := fmt.Sprintf("Analyze this manager-supplied diagnostic image labelled %q. Extract only directly readable or visibly observable signals such as model number, displayed temperature, or fault code. Do not diagnose. Return JSON.", label)
+	part := genai.NewPartFromBytes(imageBytes, mimeType)
+	resp, err := c.genaiClient.Models.GenerateContent(ctx, c.modelName, []*genai.Content{{Parts: []*genai.Part{genai.NewPartFromText(prompt), part}}}, &genai.GenerateContentConfig{SystemInstruction: &genai.Content{Parts: []*genai.Part{genai.NewPartFromText(SystemPromptDiagnosticImage)}}, ResponseMIMEType: "application/json", MaxOutputTokens: 512})
+	if err != nil {
+		return nil, err
+	}
+	var raw struct {
+		Signals []domain.DiagnosticSignal `json:"signals"`
+	}
+	if err := json.Unmarshal([]byte(resp.Text()), &raw); err != nil {
+		return nil, err
+	}
+	for i := range raw.Signals {
+		raw.Signals[i].Source = "image"
+		if raw.Signals[i].Confidence == "" {
+			raw.Signals[i].Confidence = "observed"
+		}
+	}
+	return raw.Signals, nil
+}
+
 func (c *Client) ExtractDiagnosticBrief(ctx context.Context, goal string, mandate domain.Mandate) (*domain.DiagnosticBrief, error) {
 	if len(goal) > 2000 {
 		goal = goal[:2000]
@@ -179,24 +211,38 @@ func (c *Client) ExtractDiagnosticBrief(ctx context.Context, goal string, mandat
 		raw.Confidence = "preliminary"
 	}
 	return &domain.DiagnosticBrief{
-		ReportedSummary: raw.ReportedSummary,
-		Known:           raw.Known,
-		LikelyAreas:     raw.LikelyAreas,
-		ToConfirm:       raw.ToConfirm,
-		EvidenceNeeded:  raw.EvidenceNeeded,
-		Confidence:      raw.Confidence,
+		ReportedSummary:  raw.ReportedSummary,
+		Known:            raw.Known,
+		LikelyAreas:      raw.LikelyAreas,
+		ToConfirm:        raw.ToConfirm,
+		EvidenceNeeded:   raw.EvidenceNeeded,
+		Confidence:       raw.Confidence,
+		ExtractedSignals: raw.ExtractedSignals,
 	}, nil
 }
 
 func fallbackDiagnosticBrief(goal string, mandate domain.Mandate) *domain.DiagnosticBrief {
 	return &domain.DiagnosticBrief{
-		ReportedSummary: goal,
-		Known:           []string{"Issue reported by the business manager"},
-		LikelyAreas:     []string{"Fault category requires engineer assessment"},
-		ToConfirm:       []string{"Equipment model, symptoms, and safe access on site"},
-		EvidenceNeeded:  mandate.RequiredEvidence,
-		Confidence:      "preliminary",
+		ReportedSummary:  goal,
+		Known:            []string{"Issue reported by the business manager"},
+		LikelyAreas:      []string{"Fault category requires engineer assessment"},
+		ToConfirm:        []string{"Equipment model, symptoms, and safe access on site"},
+		EvidenceNeeded:   mandate.RequiredEvidence,
+		Confidence:       "preliminary",
+		ExtractedSignals: extractDiagnosticSignals(goal),
 	}
+}
+
+func extractDiagnosticSignals(goal string) []domain.DiagnosticSignal {
+	lower := strings.ToLower(goal)
+	var signals []domain.DiagnosticSignal
+	if strings.Contains(lower, "degree") || strings.Contains(lower, "°") {
+		signals = append(signals, domain.DiagnosticSignal{Label: "Reported temperature", Value: goal, Source: "manager_report", Confidence: "reported"})
+	}
+	if strings.Contains(lower, "error") || strings.Contains(lower, "fault code") {
+		signals = append(signals, domain.DiagnosticSignal{Label: "Fault code mentioned", Value: "See original report", Source: "manager_report", Confidence: "reported"})
+	}
+	return signals
 }
 
 func (c *Client) CompareOffers(ctx context.Context, mandate domain.Mandate, offers []*domain.Offer, suppliers []*domain.Supplier) (*RankingResult, error) {

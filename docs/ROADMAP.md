@@ -119,7 +119,7 @@ The `.kiro/` directory must demonstrate meaningful spec-driven development:
 - Multiple mission categories beyond refrigeration.
 - **Adaptive diagnostic briefs:** generate role-aware manager summaries and engineer handoffs that separate reported facts, likely issue areas, and on-site checks.
 - **Guided diagnostic capture:** optional labelled photos for the full unit, display/error code, and model plate are attached before dispatch.
-- **Research-assisted diagnosis:** source-backed model, error-code, parts, and certification context presented as concise, confidence-labelled notes—not confirmed diagnoses.
+- **Research-assisted diagnosis:** source-backed model, error-code, parts, and certification context presented as concise, confidence-labelled notes—not confirmed diagnoses. Image analysis now has a local Gemini path for readable model, temperature, and fault-code signals; durable production storage remains required.
 - Voice already covers speak-in and hear-the-receipt. Horizon 2 is outbound milestone calls / SMS, not first capture.
 - A2A-compatible external agent endpoints for third-party supplier agents.
 - Mobile-first supplier evidence submission.

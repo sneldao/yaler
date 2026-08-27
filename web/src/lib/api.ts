@@ -27,6 +27,13 @@ export interface DiagnosticMedia {
   label: string;
 }
 
+export interface DiagnosticSignal {
+  label: string;
+  value: string;
+  source: string;
+  confidence: string;
+}
+
 export interface DiagnosticBrief {
   reportedSummary: string;
   known: string[];
@@ -35,6 +42,7 @@ export interface DiagnosticBrief {
   evidenceNeeded: string[];
   confidence: string;
   diagnosticMedia?: DiagnosticMedia[];
+  extractedSignals?: DiagnosticSignal[];
 }
 
 export interface Mission {

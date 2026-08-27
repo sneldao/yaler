@@ -79,6 +79,9 @@ export default function EvidenceForm({ missionId }: Props) {
             <p className="text-ink-muted">{mission.diagnosticBrief.reportedSummary}</p>
             {mission.diagnosticBrief.known.length > 0 && <p><span className="text-ink-muted">Known:</span> {mission.diagnosticBrief.known.join(' · ')}</p>}
             {mission.diagnosticBrief.likelyAreas.length > 0 && <p><span className="text-ink-muted">Possible:</span> {mission.diagnosticBrief.likelyAreas.join(' · ')}</p>}
+            {mission.diagnosticBrief.extractedSignals && mission.diagnosticBrief.extractedSignals.length > 0 && (
+              <p><span className="text-ink-muted">Signals:</span> {mission.diagnosticBrief.extractedSignals.map((signal) => `${signal.label}: ${signal.value} (${signal.confidence})`).join(' · ')}</p>
+            )}
             {mission.diagnosticBrief.toConfirm.length > 0 && <p><span className="text-ink-muted">Confirm:</span> {mission.diagnosticBrief.toConfirm.join(' · ')}</p>}
             {mission.diagnosticBrief.diagnosticMedia && mission.diagnosticBrief.diagnosticMedia.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-1">

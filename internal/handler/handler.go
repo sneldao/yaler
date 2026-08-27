@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -198,6 +199,13 @@ func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 
 	// Record Mission Created Event
 	h.recordEvent(ctx, missionID, "MISSION_CREATED", "BUYER", req.Goal, "ALLOW", "")
+	if len(req.DiagnosticMedia) > 0 {
+		_ = h.taskClient.EnqueueTask(ctx, domain.TaskPayload{
+			MissionID: missionID, StepID: "DIAGNOSTIC_ANALYSIS", TaskType: "DIAGNOSTIC_ANALYSIS",
+			ExpectedVersion: m.Version, IdempotencyKey: missionID + "_diagnostic_analysis", AttemptCount: 1,
+			Deadline: time.Now().Add(5 * time.Minute).Format(time.RFC3339),
+		})
+	}
 
 	writeJSON(w, http.StatusCreated, m)
 }
@@ -699,6 +707,36 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("[Worker] Executing step for Mission %s in status %s", m.ID, m.Status)
+
+	if payload.TaskType == "DIAGNOSTIC_ANALYSIS" {
+		brief := m.DiagnosticBrief
+		var analyzed []domain.DiagnosticSignal
+		for _, media := range brief.DiagnosticMedia {
+			path := filepath.Join("uploads", filepath.Base(media.URL))
+			imageBytes, readErr := os.ReadFile(path)
+			if readErr != nil {
+				continue
+			}
+			signals, analyzeErr := h.geminiClient.AnalyzeDiagnosticImage(ctx, imageBytes, "image/jpeg", media.Label)
+			if analyzeErr != nil {
+				continue
+			}
+			analyzed = append(analyzed, signals...)
+		}
+		if len(analyzed) > 0 {
+			brief.ExtractedSignals = append(brief.ExtractedSignals, analyzed...)
+			m.DiagnosticBrief = brief
+			m.Version++
+			m.UpdatedAt = time.Now().UTC()
+			if err := h.store.UpdateMission(ctx, m); err == nil {
+				h.recordEvent(ctx, m.ID, "DIAGNOSTIC_ANALYSIS_COMPLETED", "DEMAND_AGENT", analyzed, "ALLOW", payload.IdempotencyKey)
+			}
+		} else {
+			h.recordEvent(ctx, m.ID, "DIAGNOSTIC_ANALYSIS_PENDING", "DEMAND_AGENT", "No readable image signals extracted", "ALLOW", payload.IdempotencyKey)
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"status": "analysis_complete", "missionId": m.ID})
+		return
+	}
 
 	errMsg := ""
 
@@ -1809,7 +1847,7 @@ func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	if len(header.Filename) > 0 {
 		ext = header.Filename
 	}
-	filename := fmt.Sprintf("proof_%d_%s", time.Now().UnixNano(), ext)
+	filename := fmt.Sprintf("proof_%d.%s", time.Now().UnixNano(), strings.TrimPrefix(filepath.Ext(ext), "."))
 	filePath := fmt.Sprintf("./uploads/%s", filename)
 
 	out, err := os.Create(filePath)

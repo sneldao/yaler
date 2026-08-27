@@ -174,6 +174,7 @@ missions/{missionId}
   version
   diagnosticBrief        # reported summary, known facts, likely areas, checks, confidence
   diagnosticBrief.diagnosticMedia  # optional labelled manager photos
+  diagnosticBrief.extractedSignals # bounded image/report observations with source + confidence
 
 missions/{missionId}/offers/{offerId}
   supplierAgentId
@@ -291,9 +292,11 @@ Pub/Sub is not required for the MVP. Add it only when one event needs to fan out
 
 ## Diagnostic context and evidence
 
-A mission may carry a `diagnosticBrief` generated from the manager's original report. It separates `known` facts, `likelyAreas`, and `toConfirm` checks, with a `confidence` label. `diagnosticMedia` is optional manager context, with each item labelled by capture intent (`unit`, `display`, or `model_plate`) and stored as a URL reference.
+A mission may carry a `diagnosticBrief` generated from the manager's original report. It separates `known` facts, `likelyAreas`, and `toConfirm` checks, with a `confidence` label. `diagnosticMedia` is optional manager context, with each item labelled by capture intent (`unit`, `display`, or `model_plate`) and stored as a URL reference. `extractedSignals` carries bounded observations such as a reported temperature or fault-code mention, including source and confidence; it does not assert a diagnosis.
 
 The UI keeps this brief collapsed by default and exposes it to both roles: managers can review what Yaler heard before dispatch, while engineers can use it as a starting handoff. Likely areas are never treated as confirmed diagnosis.
+
+When diagnostic media is present, mission creation queues a `DIAGNOSTIC_ANALYSIS` task. The worker reads the local upload reference and, when Gemini is configured, extracts only visibly readable signals. The analysis is non-blocking and records `DIAGNOSTIC_ANALYSIS_COMPLETED` or `DIAGNOSTIC_ANALYSIS_PENDING` events. Local filesystem retrieval is suitable for development only; production requires durable object storage accessible to the worker.
 
 For the Kiro kernel, store completion evidence as Firestore metadata: supplier text, source labels, and an optional labelled fixture reference. Cloud Storage for photos or documents is the Horizon 2 path; the current upload route supports the guided diagnostic capture wedge. Future image interpretation should preserve source and confidence and remain advisory until qualified human confirmation.
 

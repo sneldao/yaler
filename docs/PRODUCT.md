@@ -73,9 +73,9 @@ When useful, managers can attach guided photos before dispatch:
 - Display / error — capture temperatures or fault codes.
 - Model plate — identify compatible parts and service documentation.
 
-These inputs are contextual aids, not proof of a diagnosis. Yaler preserves the distinction between reported, observed, inferred, and confirmed information. Likely issue areas remain suggestions until an appropriately qualified engineer verifies them.
+These inputs are contextual aids, not proof of a diagnosis. Yaler preserves the distinction between reported, observed, inferred, and confirmed information. Extracted signals such as a mentioned temperature or fault code retain their source and confidence label. Likely issue areas remain suggestions until an appropriately qualified engineer verifies them.
 
-The service can progressively add source-backed research—model identification, error-code context, manufacturer documentation, likely parts, and certification requirements—while showing the source and confidence. Research should produce a short engineer-ready brief, not an unqualified repair instruction.
+The service can progressively add source-backed research—model identification, error-code context, manufacturer documentation, likely parts, and certification requirements—while showing the source and confidence. Research should produce a short engineer-ready brief, not an unqualified repair instruction. Current image analysis is deliberately limited to readable/visible signals and remains advisory.
 
 ## Core workflow
 
