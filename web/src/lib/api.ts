@@ -92,7 +92,7 @@ export interface Supplier {
   source?: string;
 }
 
-export type CalloutStatus = 'SENT' | 'OFFERED' | 'DECLINED' | 'EXPIRED';
+export type CalloutStatus = 'SENT' | 'OFFERED' | 'DECLINED' | 'EXPIRED' | 'CANCELLED';
 
 export interface Callout {
   id: string;
