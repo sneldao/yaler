@@ -49,7 +49,13 @@ interface BreakdownEvent {
   /** £/second the till bleeds while this is down. */
   bleed: number;
   bleedLabel: string;
+  /** Manual mode: lump-sum extra loss for the afternoon the visit eats. */
+  waitLoss: number;
   agentSteps: string[];
+  /** Manual mode: the phone shuffle, one line per beat. */
+  phoneSteps: string[];
+  /** Manual mode: what the quote lands on when you chase it by phone. */
+  phoneCost: number;
   receipt: string;
 }
 
@@ -62,6 +68,7 @@ const EVENTS: BreakdownEvent[] = [
     cost: 420, budget: 500,
     type: 'auto',
     bleed: 6, bleedLabel: 'food spoiling',
+    waitLoss: 210,
     agentSteps: [
       'Searching N1 engineers…',
       '3 quotes in',
@@ -69,6 +76,14 @@ const EVENTS: BreakdownEvent[] = [
       'Booked Rapid ColdCare',
       'Dispatched',
     ],
+    phoneSteps: [
+      '☎ ColdCare: on hold… (pos 4)',
+      '☎ "Visit? Maybe Thursday"',
+      '☎ Ring two more…',
+      'Quote: £495 — you take it',
+      'Earliest: 3pm today',
+    ],
+    phoneCost: 495,
     receipt: 'Commercial fridge repair',
   },
   {
@@ -79,12 +94,20 @@ const EVENTS: BreakdownEvent[] = [
     cost: 580, budget: 500,
     type: 'approval',
     bleed: 4, bleedLabel: 'smoke · covers leaving',
+    waitLoss: 150,
     agentSteps: [
       'Searching N1 specialists…',
       '2 quotes in',
       '£580 > £500 ✗',
       'OVER BUDGET — your call',
     ],
+    phoneSteps: [
+      '☎ Two hood specialists…',
+      '☎ One voicemail, one busy',
+      'Quote: £720 — over budget',
+      'No time to shop — accept',
+    ],
+    phoneCost: 720,
     receipt: 'Extraction hood service',
   },
   {
@@ -95,6 +118,7 @@ const EVENTS: BreakdownEvent[] = [
     cost: 650, budget: 500,
     type: 'escalation',
     bleed: 5, bleedLabel: 'hobs locked · orders lost',
+    waitLoss: 160,
     agentSteps: [
       'Searching gas engineers…',
       'REGULATED: Gas Safety',
@@ -102,11 +126,20 @@ const EVENTS: BreakdownEvent[] = [
       'Escalate: Gas Safe only',
       'GasCert London ✓',
     ],
+    phoneSteps: [
+      '☎ Needs Gas Safe…',
+      '☎ Registered engineers busy',
+      '☎ 6th call: "can do later"',
+      'Quote: £765 — verified by ear',
+      'Booked for the afternoon',
+    ],
+    phoneCost: 765,
     receipt: 'Gas line repair (Gas Safe)',
   },
 ];
 
 type Phase = 'intro' | 'idle' | 'alarm' | 'walking' | 'agent' | 'decision' | 'arriving' | 'fixing' | 'transition' | 'summary';
+export type GameMode = 'yaler' | 'manual';
 
 export class KitchenScene extends Phaser.Scene {
   // Core objects
@@ -139,15 +172,21 @@ export class KitchenScene extends Phaser.Scene {
   private bleedLabel = '';
   private totalLosses = 0;
   private cashAcc = 0;
+  private shiftMinutes = 0;
+  private callsMade = 0;
 
   // UI
   private interactHint!: Phaser.GameObjects.Text;
   private shiftLabel!: Phaser.GameObjects.Text;
   private cashText!: Phaser.GameObjects.Text;
+  private clockText?: Phaser.GameObjects.Text;
   private overlayContainer!: Phaser.GameObjects.Container;
 
-  constructor() {
+  private gameMode: GameMode;
+
+  constructor(mode: GameMode = 'yaler') {
     super({ key: 'KitchenScene' });
+    this.gameMode = mode;
   }
 
   create() {
@@ -166,6 +205,8 @@ export class KitchenScene extends Phaser.Scene {
     this.bleedLabel = '';
     this.totalLosses = 0;
     this.cashAcc = 0;
+    this.shiftMinutes = 0;
+    this.callsMade = 0;
 
     this.buildKitchen();
     this.createPlayer();
@@ -247,19 +288,32 @@ export class KitchenScene extends Phaser.Scene {
     if (this.phase === 'intro' || this.phase === 'summary') return;
     const dt = delta / 1000;
     this.cashAcc += delta;
-    if (this.bleedRate > 0) {
-      const loss = this.bleedRate * dt;
+    // Manual mode bleeds harder: staff are pulled off service to make calls.
+    const rate = this.bleedRate * (this.gameMode === 'manual' ? 1.5 : 1);
+    if (rate > 0) {
+      const loss = rate * dt;
       this.cash -= loss;
       this.totalLosses += loss;
     } else {
-      this.cash += 3 * dt; // breakfast covers, ~£180/hr compressed
+      this.cash += (this.gameMode === 'manual' ? 2 : 3) * dt;
+    }
+    // Manual mode runs a compressed shift clock — the point of the mode.
+    if (this.gameMode === 'manual' && this.clockText) {
+      this.shiftMinutes += (this.bleedRate > 0 ? 8 : 2) * dt;
     }
     if (this.cashAcc >= 150) {
       this.cashAcc = 0;
-      if (this.bleedRate > 0) {
+      if (rate > 0) {
         this.cashText.setText(`Till £${Math.round(this.cash)} · ${this.bleedLabel}`).setColor('#ff6b6b');
       } else {
-        this.cashText.setText(`Till £${Math.round(this.cash)}`).setColor('#4ade80');
+        this.cashText.setText(`Till £${Math.round(this.cash)}`).setColor(this.gameMode === 'manual' ? '#fbbf24' : '#4ade80');
+      }
+      if (this.clockText) {
+        const total = 6 * 60 + 47 + Math.floor(this.shiftMinutes);
+        const h24 = Math.floor(total / 60) % 24;
+        const m = total % 60;
+        const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+        this.clockText.setText(`${h12}:${String(m).padStart(2, '0')}${h24 < 12 ? 'am' : 'pm'} — shift running long`);
       }
     }
   }
@@ -410,6 +464,15 @@ export class KitchenScene extends Phaser.Scene {
       fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
     }).setOrigin(1, 0).setDepth(15);
 
+    // Manual mode: compressed shift clock under the till.
+    if (this.gameMode === 'manual') {
+      this.clockText = this.add.text(W - 6, 24, '6:47am', {
+        fontSize: '9px', color: '#ffffffaa',
+        backgroundColor: '#00000066', padding: { x: 5, y: 2 },
+        fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
+      }).setOrigin(1, 0).setDepth(15);
+    }
+
     this.overlayContainer = this.add.container(W / 2, H / 2).setDepth(20).setVisible(false);
   }
 
@@ -516,15 +579,24 @@ export class KitchenScene extends Phaser.Scene {
     // High-contrast, generously sized text: this card is read on phones
     // where the 480×270 canvas scales DOWN, and pixelArt nearest-neighbour
     // upscaling makes small text crunchy. resolution: 2 keeps glyphs crisp.
-    const lines = [
-      { text: 'CAFÉ NOOR — Dalston, N1', y: 52, size: '14px', color: '#4fd1c5', bold: true },
-      { text: 'Tuesday, 6:47am', y: 74, size: '11px', color: '#ffffff', bold: false },
-      { text: 'The breakfast rush starts in 13 minutes.', y: 92, size: '10px', color: '#f0f0f4', bold: false },
-      { text: 'Three things are going to break today.', y: 109, size: '10px', color: '#f0f0f4', bold: false },
-      { text: 'Walk to each one. Yaler handles the rest.', y: 126, size: '10px', color: '#f0f0f4', bold: false },
-      { text: 'WASD / tap to move · Space / tap to interact', y: 148, size: '9px', color: '#c8c8d4', bold: false },
-      { text: 'tap anywhere to start', y: 168, size: '11px', color: '#4fd1c5', bold: true },
-    ];
+    const lines = this.gameMode === 'manual'
+      ? [
+          { text: 'SAME TUESDAY — NO YALER', y: 56, size: '14px', color: '#ff8a7a', bold: true },
+          { text: 'Tuesday, 6:47am', y: 78, size: '11px', color: '#ffffff', bold: false },
+          { text: 'The agent stays home. You are the phone system now.', y: 98, size: '10px', color: '#f0f0f4', bold: false },
+          { text: 'Walk to each breakdown. Call around. Wait.', y: 116, size: '10px', color: '#f0f0f4', bold: false },
+          { text: 'The clock runs fast — that is the point.', y: 138, size: '9px', color: '#c8c8d4', bold: false },
+          { text: 'tap anywhere to start the longest morning of your life', y: 162, size: '11px', color: '#ff8a7a', bold: true },
+        ]
+      : [
+          { text: 'CAFÉ NOOR — Dalston, N1', y: 52, size: '14px', color: '#4fd1c5', bold: true },
+          { text: 'Tuesday, 6:47am', y: 74, size: '11px', color: '#ffffff', bold: false },
+          { text: 'The breakfast rush starts in 13 minutes.', y: 92, size: '10px', color: '#f0f0f4', bold: false },
+          { text: 'Three things are going to break today.', y: 109, size: '10px', color: '#f0f0f4', bold: false },
+          { text: 'Walk to each one. Yaler handles the rest.', y: 126, size: '10px', color: '#f0f0f4', bold: false },
+          { text: 'WASD / tap to move · Space / tap to interact', y: 148, size: '9px', color: '#c8c8d4', bold: false },
+          { text: 'tap anywhere to start', y: 168, size: '11px', color: '#4fd1c5', bold: true },
+        ];
 
     const textObjs: Phaser.GameObjects.Text[] = [];
     lines.forEach((line, i) => {
@@ -648,6 +720,10 @@ export class KitchenScene extends Phaser.Scene {
 
   private runAgent() {
     const evt = EVENTS[this.eventIdx];
+    if (this.gameMode === 'manual') {
+      this.runPhoneCall(evt);
+      return;
+    }
 
     const bg = this.add.rectangle(0, 0, 260, 128, 0x12212b, 0.95);
     bg.setStrokeStyle(1, evt.type === 'escalation' ? C.escalate : C.mandate, 0.6);
@@ -709,6 +785,50 @@ export class KitchenScene extends Phaser.Scene {
         this.totalCost += evt.cost;
         this.dispatchEngineer();
       }
+    });
+  }
+
+  /** Manual mode: no agent — the player endures the phone shuffle. */
+  private runPhoneCall(evt: BreakdownEvent) {
+    this.phase = 'agent';
+
+    const bg = this.add.rectangle(0, 0, 260, 128, 0x12212b, 0.95);
+    bg.setStrokeStyle(1, C.escalate, 0.6);
+    this.overlayContainer.removeAll(true);
+    this.overlayContainer.add(bg);
+    this.overlayContainer.setVisible(true);
+
+    const title = this.add.text(0, -52, 'YOU, ON THE PHONE', {
+      fontSize: '11px', color: '#c45c26', fontStyle: 'bold',
+      fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
+    }).setOrigin(0.5);
+    this.overlayContainer.add(title);
+
+    evt.phoneSteps.forEach((text, idx) => {
+      this.time.delayedCall(idx * 1300, () => {
+        if (!this.overlayContainer.visible) return;
+
+        if (text.startsWith('☎')) {
+          this.callsMade++;
+          playStep();
+        }
+        const isQuote = text.startsWith('Quote');
+        const color = isQuote ? '#ffcc66' : '#e8e8f0';
+
+        this.overlayContainer.add(this.add.text(-118, -34 + idx * 14, text, {
+          fontSize: '10px', color, wordWrap: { width: 226 },
+          fontFamily: 'system-ui, -apple-system, sans-serif', resolution: 2,
+        }));
+
+        if (isQuote) playAlarm();
+      });
+    });
+
+    this.time.delayedCall(evt.phoneSteps.length * 1300 + 400, () => {
+      this.overlayContainer.setVisible(false);
+      this.decisions.push('manual');
+      this.totalCost += evt.phoneCost;
+      this.dispatchEngineer();
     });
   }
 
@@ -810,13 +930,21 @@ export class KitchenScene extends Phaser.Scene {
   private dispatchEngineer() {
     this.phase = 'arriving';
     const target = this.targets[this.eventIdx];
+    const evt = EVENTS[this.eventIdx];
+    if (this.gameMode === 'manual') {
+      // The afternoon the visit eats — a compressed lump on top of the bleed.
+      this.cash -= evt.waitLoss;
+      this.totalLosses += evt.waitLoss;
+    }
     this.engineer.setPosition(10 * T + 12, 10 * T);
     this.engineer.setVisible(false); // keep rect hidden, show sprite
     this.engineerSprite.setPosition(this.engineer.x, this.engineer.y - 4);
     this.engineerSprite.setVisible(true);
     this.engineerSprite.setAlpha(1);
 
-    this.interactHint.setText('Engineer arriving...').setVisible(true);
+    this.interactHint.setText(
+      this.gameMode === 'manual' ? 'Booked — "sometime this afternoon"…' : 'Engineer arriving...',
+    ).setVisible(true);
 
     this.tweens.add({
       targets: [this.engineer, this.engineerSprite],
@@ -876,6 +1004,10 @@ export class KitchenScene extends Phaser.Scene {
   // ─── Summary ─────────────────────────────────────────────
 
   private showSummary() {
+    if (this.gameMode === 'manual') {
+      this.showManualSummary();
+      return;
+    }
     this.phase = 'summary';
     const totalTime = Math.round((this.time.now - this.startTime) / 1000);
     playPaper();
@@ -922,17 +1054,8 @@ export class KitchenScene extends Phaser.Scene {
     const withoutTotal = this.add.text(rx, 140, '£0', {
       fontSize: '15px', color: '#c45c26', fontStyle: 'bold', fontFamily: FONT, resolution: 2,
     }).setOrigin(0.5).setDepth(26);
-    const countUp = (label: Phaser.GameObjects.Text, target: number, duration: number, delay: number) => {
-      const fmt = (v: number) => `£${Math.round(v).toLocaleString('en-GB')}`;
-      if (this.reducedMotion) { label.setText(fmt(target)); return; }
-      const counter = { v: 0 };
-      this.tweens.add({
-        targets: counter, v: target, duration, delay, ease: 'Linear',
-        onUpdate: () => label.setText(fmt(counter.v)),
-      });
-    };
-    countUp(withTotal, withYaler, 1800, 400);
-    countUp(withoutTotal, withoutYaler, 3600, 800);
+    this.countUpTo(withTotal, withYaler, 1800, 400);
+    this.countUpTo(withoutTotal, withoutYaler, 3600, 800);
 
     // Governance note
     const note = rerouted
@@ -962,8 +1085,90 @@ export class KitchenScene extends Phaser.Scene {
     // Dispatch to React — after the totals race finishes so it's actually seen.
     this.time.delayedCall(4600, () => {
       window.dispatchEvent(new CustomEvent('yaler:game-complete', {
-        detail: { elapsed: totalTime, stars, totalCost: this.totalCost, decisions: this.decisions },
+        detail: { elapsed: totalTime, stars, totalCost: this.totalCost, decisions: this.decisions, mode: 'yaler', totalAllIn: withYaler, calls: 0 },
       }));
+    });
+  }
+
+  /** Manual-mode ledger: your phone shift vs the agent shift you skipped. */
+  private showManualSummary() {
+    this.phase = 'summary';
+    const totalTime = Math.round((this.time.now - this.startTime) / 1000);
+    playPaper();
+
+    const shiftHrs = Math.floor(this.shiftMinutes / 60);
+    const shiftMins = Math.round(this.shiftMinutes % 60);
+    const allIn = this.totalCost + Math.round(this.totalLosses);
+
+    const bg = this.add.rectangle(W / 2, H / 2, 400, 238, 0xfafaf8, 0.97).setDepth(25);
+    bg.setStrokeStyle(1, C.escalate, 0.4);
+
+    const FONT = 'system-ui, -apple-system, sans-serif';
+    const els: Phaser.GameObjects.Text[] = [];
+    const add = (x: number, y: number, text: string, style: Phaser.Types.GameObjects.Text.TextStyle) => {
+      els.push(this.add.text(x, y, text, { fontFamily: FONT, resolution: 2, ...style }).setOrigin(0.5).setDepth(26));
+    };
+
+    add(W / 2, 30, 'PHONE SHIFT COMPLETE', { fontSize: '13px', color: '#c45c26', fontStyle: 'bold' });
+    add(W / 2, 44, 'Café Noor — the long way round', { fontSize: '9px', color: '#888888' });
+    add(W / 2, 60, '☆☆☆', { fontSize: '13px', color: '#aaaaaa' });
+
+    // Your morning by phone, vs the morning you skipped.
+    const lx = 150, rx = 330;
+    this.add.rectangle(W / 2, 108, 1, 76, 0xdddddd).setDepth(26);
+    add(lx, 78, 'YOUR PHONE SHIFT', { fontSize: '10px', color: '#c45c26', fontStyle: 'bold' });
+    add(rx, 78, 'WITH YALER*', { fontSize: '10px', color: '#2a6f6a', fontStyle: 'bold' });
+    add(lx, 93, `${shiftHrs}h ${shiftMins}m of shift`, { fontSize: '9px', color: '#444444' });
+    add(rx, 93, 'a 96-second shift', { fontSize: '9px', color: '#444444' });
+    add(lx, 106, `${this.callsMade} calls chased`, { fontSize: '9px', color: '#444444' });
+    add(rx, 106, '0 calls', { fontSize: '9px', color: '#444444' });
+    add(lx, 119, `£${Math.round(this.totalLosses)} spoiled & lost`, { fontSize: '9px', color: '#444444' });
+    add(rx, 119, 'full service kept', { fontSize: '9px', color: '#444444' });
+
+    const phoneTotal = this.add.text(lx, 140, '£0', {
+      fontSize: '15px', color: '#c45c26', fontStyle: 'bold', fontFamily: FONT, resolution: 2,
+    }).setOrigin(0.5).setDepth(26);
+    const agentTotal = this.add.text(rx, 140, '£0', {
+      fontSize: '15px', color: '#2a6f6a', fontStyle: 'bold', fontFamily: FONT, resolution: 2,
+    }).setOrigin(0.5).setDepth(26);
+    this.countUpTo(phoneTotal, allIn, 3200, 400);
+    this.countUpTo(agentTotal, 1530, 1200, 800);
+
+    add(W / 2, 164, 'You spent the breakfast rush on hold.', { fontSize: '10px', color: '#c45c26', fontStyle: 'bold' });
+    add(W / 2, 184, 'Same kitchen. Same three breakdowns. One of these mornings had an agent.', { fontSize: '8px', color: '#888888', wordWrap: { width: 370 } });
+    add(W / 2, 202, '→ Hand it to the agent', { fontSize: '11px', color: '#2a6f6a', fontStyle: 'bold' });
+    add(W / 2, 218, '*the first shift — repairs £1,530, all-in with walking pace', { fontSize: '8px', color: '#aaaaaa' });
+
+    if (!this.reducedMotion) {
+      bg.setAlpha(0).setPosition(160, 130);
+      this.tweens.add({ targets: bg, alpha: 0.97, y: H / 2, duration: 500, ease: 'Back.easeOut' });
+      els.forEach((el, i) => {
+        el.setAlpha(0);
+        this.tweens.add({ targets: el, alpha: 1, duration: 300, delay: 400 + i * 60, ease: 'Power2' });
+      });
+      phoneTotal.setAlpha(0);
+      agentTotal.setAlpha(0);
+      this.tweens.add({ targets: [phoneTotal, agentTotal], alpha: 1, duration: 300, delay: 800 });
+    } else {
+      phoneTotal.setText(`£${allIn.toLocaleString('en-GB')}`);
+      agentTotal.setText('£1,530');
+    }
+
+    this.time.delayedCall(4200, () => {
+      window.dispatchEvent(new CustomEvent('yaler:game-complete', {
+        detail: { elapsed: totalTime, stars: 0, totalCost: this.totalCost, decisions: this.decisions, mode: 'manual', totalAllIn: allIn, calls: this.callsMade },
+      }));
+    });
+  }
+
+  /** Animated £ counter — lands instantly under reduced motion. */
+  private countUpTo(label: Phaser.GameObjects.Text, target: number, duration: number, delay: number) {
+    const fmt = (v: number) => `£${Math.round(v).toLocaleString('en-GB')}`;
+    if (this.reducedMotion) { label.setText(fmt(target)); return; }
+    const counter = { v: 0 };
+    this.tweens.add({
+      targets: counter, v: target, duration, delay, ease: 'Linear',
+      onUpdate: () => label.setText(fmt(counter.v)),
     });
   }
 

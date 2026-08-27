@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { KitchenScene } from './scenes/KitchenScene';
+import { KitchenScene, type GameMode } from './scenes/KitchenScene';
 
-export function createGame(parent: HTMLElement): Phaser.Game {
+export function createGame(parent: HTMLElement, mode: GameMode = 'yaler'): Phaser.Game {
   const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     parent,
@@ -20,7 +20,7 @@ export function createGame(parent: HTMLElement): Phaser.Game {
         debug: false,
       },
     },
-    scene: [KitchenScene],
+    scene: [new KitchenScene(mode)],
   };
 
   return new Phaser.Game(config);
