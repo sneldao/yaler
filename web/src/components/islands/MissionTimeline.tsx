@@ -244,6 +244,12 @@ export default function MissionTimeline({
   const activeStageIdx = getStageIndex(mission?.status);
   const isWorking = mission?.status !== 'COMPLETED' && mission?.status !== 'DRAFT';
   const showWork = isWorking && !hideWork;
+  const mandateSummary = mission ? [
+    mission.mandate.budget.maxAmount > 0 ? `£${mission.mandate.budget.maxAmount} max` : null,
+    mission.mandate.serviceArea.postalDistrict || null,
+    mission.mandate.latestCompletionAt ? `by ${new Date(mission.mandate.latestCompletionAt).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' })}` : null,
+    mission.mandate.requiredEvidence.length > 0 ? 'photo required' : null,
+  ].filter(Boolean).join(' · ') : '';
 
   // Derive which sponsor APIs are active/completed from the mission status.
   const statusSponsors: Record<string, { active?: SponsorId; done?: SponsorId[] }> = {
@@ -331,9 +337,10 @@ export default function MissionTimeline({
             </div>
           </div>
 
-          <p className="text-sm text-ink-muted">
-            Up to {formatMoney(mission.mandate.budget.maxAmount)} · {mission.mandate.serviceArea.postalDistrict}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm text-ink-muted">{mandateSummary}</p>
+            <span className="text-[10px] text-ink-muted border border-ink/10 rounded-full px-2 py-0.5" title="The agent acts within these rules.">Your rules</span>
+          </div>
 
           {/* Progress bar */}
           <div className="space-y-2">
@@ -370,6 +377,17 @@ export default function MissionTimeline({
       {/* Perf-edge separator — the receipt motif, same as the /ops desk */}
       {mission && <div className="receipt-perf" />}
 
+      {/* Matching mechanic — compact by default, detailed state stays in the timeline. */}
+      {mission && (mission.status === 'SOURCING' || mission.status === 'OFFERS_RECEIVED') && (
+        <div className="paper-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 animate-pop-in">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-mandate animate-pulse" aria-hidden />
+            <p className="text-sm font-medium text-ink">Matching in parallel</p>
+          </div>
+          <p className="text-xs text-ink-muted">Qualified engineers get the same short window · first valid fit wins</p>
+        </div>
+      )}
+
       {/* Agent thinking — VISIBLE BY DEFAULT when working */}
       {isWorking && (
         <div className="paper-card rounded-2xl p-5 sm:p-6 space-y-4 animate-pop-in">
@@ -390,6 +408,9 @@ export default function MissionTimeline({
           <p className="text-sm text-ink leading-relaxed">
             {agentNarrative(mission?.status)}
           </p>
+          {mission?.status === 'SOURCING' && (
+            <p className="text-xs text-ink-muted">No response is a timeout; declining is always okay.</p>
+          )}
 
           {/* Sponsor rail — shows which APIs are active at each stage */}
           <SponsorRail active={activeSponsor} completed={completedSponsors} />

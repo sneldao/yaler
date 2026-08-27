@@ -299,7 +299,7 @@ export default function OfferComparison({
         <div>
           <h3 className="font-display text-2xl text-ink">Quotes</h3>
           <p className="text-sm text-ink-muted">
-            {rehearsal ? 'One is over the ceiling. We stopped there first.' : `${offers.length} in. Best match is first.`}
+            {rehearsal ? 'One is over the ceiling. We stopped there first.' : `${offers.length} responses · best fit is first`}
           </p>
         </div>
         <button
@@ -360,7 +360,7 @@ export default function OfferComparison({
               )}
               <p className="text-[11px] text-ink-muted mt-2 flex items-center gap-1.5">
                 {isSimulated
-                  ? 'Synthetic roster — auto-generated so the flow runs. No real engineer was asked.'
+                  ? 'Demo response — no real engineer was asked.'
                   : (
                     <>
                       <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full border border-orange-200 bg-orange-50 text-orange-600 font-medium">Apify</span>
@@ -416,6 +416,9 @@ export default function OfferComparison({
                 ? `${formatMoney(selected.price, selected.currency)} sits over the ceiling you set.`
                 : `${formatMoney(selected.price, selected.currency)} · ${selected.availability}`}
           </p>
+          {!isAlreadyBooked && !blocked && !isRehearsalQuotes && (
+            <p className="text-[11px] text-ink-muted mt-1">Selected against your budget, timing, and reliability rules.</p>
+          )}
         </div>
         <button
           type="button"

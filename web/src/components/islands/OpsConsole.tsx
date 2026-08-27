@@ -220,10 +220,10 @@ function CalloutCard({ row, budget, onChanged }: { row: CalloutRow; budget: numb
         <p className="text-[11px] text-mandate font-medium">Quote recorded — mission will advance when offers are in.</p>
       )}
       {callout.status === 'DECLINED' && (
-        <p className="text-[11px] text-ink-muted">Supplier declined. Try another callout or onboard someone new.</p>
+        <p className="text-[11px] text-ink-muted">Declined cleanly — no reliability penalty. Try another callout if needed.</p>
       )}
       {callout.status === 'EXPIRED' && (
-        <p className="text-[11px] text-escalate">Callout expired with no response — re-approach or escalate.</p>
+        <p className="text-[11px] text-escalate">Expired with no response — declining would not affect reliability.</p>
       )}
       {callout.status === 'CANCELLED' && (
         <p className="text-[11px] text-ink-muted">Another engineer accepted first — first-accept-wins.</p>
@@ -600,6 +600,14 @@ export default function OpsConsole() {
                     </p>
                   </div>
                 </div>
+
+                {/* Compact explanation of the mechanism; detail remains on each callout. */}
+                {callouts.length > 0 && (
+                  <div className="flex items-center justify-between gap-3 text-[11px] text-ink-muted">
+                    <span>Parallel window · first valid offer wins</span>
+                    <span>{m.mandate.requiredEvidence.length > 0 ? 'Photo evidence required' : 'Evidence required'}</span>
+                  </div>
+                )}
 
                 {/* Callout summary line */}
                 {callouts.length > 0 && (
