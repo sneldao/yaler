@@ -70,6 +70,12 @@ type Mission struct {
 	Version            int64         `json:"version" firestore:"version"`
 	CreatedAt          time.Time     `json:"createdAt" firestore:"createdAt"`
 	UpdatedAt          time.Time     `json:"updatedAt" firestore:"updatedAt"`
+	// ExperimentCohort assigns this mission to a matching-mechanism A/B arm:
+	// "parallel" (default, current behaviour — broadcast to all qualified
+	// engineers at once with a short accept window) or "sequential" (send
+	// callouts one at a time, wait for decline/expiry before the next).
+	// Set once at creation; the worker reads it to decide sourcing strategy.
+	ExperimentCohort string `json:"experimentCohort,omitempty" firestore:"experimentCohort,omitempty"`
 }
 
 // Supplier represents a supply-side agent profile.
@@ -98,10 +104,11 @@ type Supplier struct {
 type CalloutStatus string
 
 const (
-	CalloutSent     CalloutStatus = "SENT"     // sent to supplier (or concierge), awaiting response
-	CalloutOffered  CalloutStatus = "OFFERED"  // a quote was recorded
-	CalloutDeclined CalloutStatus = "DECLINED" // supplier cannot take the job
-	CalloutExpired  CalloutStatus = "EXPIRED"  // passed ExpiresAt without a response
+	CalloutSent      CalloutStatus = "SENT"      // sent to supplier (or concierge), awaiting response
+	CalloutOffered   CalloutStatus = "OFFERED"   // a quote was recorded
+	CalloutDeclined  CalloutStatus = "DECLINED"  // supplier cannot take the job
+	CalloutExpired   CalloutStatus = "EXPIRED"   // passed ExpiresAt without a response
+	CalloutCancelled CalloutStatus = "CANCELLED" // another engineer accepted first — first-accept-wins
 )
 
 // Callout is a scoped job request sent to a specific supplier for a mission.
@@ -180,6 +187,11 @@ type ProofReceipt struct {
 	// is submitted after the receipt is issued. Zero value means unrated.
 	Rating        int    `json:"rating,omitempty" firestore:"-"`
 	RatingComment string `json:"ratingComment,omitempty" firestore:"-"`
+	// SelectionRationale is the plain-English explanation of why the agent
+	// picked this engineer — derived from the audit trail, not self-reported.
+	// e.g. "20% under budget · 3 prior N1 jobs · 12-min average accept time".
+	// Shown on the receipt so the selection is explainable, not a black box.
+	SelectionRationale string `json:"selectionRationale,omitempty" firestore:"selectionRationale,omitempty"`
 }
 
 // TaskPayload represents the async task payload sent via Cloud Tasks or direct call emulator.
@@ -282,6 +294,82 @@ func ReliabilityFromFeedback(seed float64, feedback []*MissionFeedback) float64 
 	}
 	score := seed*(1-w) + mean*w
 	// clamp
+	if score < 0 {
+		return 0
+	}
+	if score > 1 {
+		return 1
+	}
+	return score
+}
+
+// CalloutOutcome records the result of one callout for latency scoring.
+type CalloutOutcome struct {
+	SupplierID  string
+	Status      CalloutStatus // SENT (no response yet), OFFERED, DECLINED, EXPIRED, CANCELLED
+	ResponseSec float64       // seconds from SentAt to RespondedAt; 0 if no response
+}
+
+// ReliabilityFromLatency blends the feedback-based score with response-latency
+// signals from the callout audit trail. The design principle (from the
+// incentive audit): penalize SILENCE and non-response, not declining.
+//
+//   - A fast honest decline is neutral (engineers are allowed to be busy).
+//   - A fast accept is a positive signal.
+//   - Silence / expiry is the negative signal — it's what creates the
+//     "stringing-along" cost for the vendor.
+//
+// latencyFactor is 0..1: 1.0 = excellent (fast accepts, no expiries),
+// 0.0 = terrible (everything expired silently). The final score blends
+// 70% feedback-based reliability with 30% latency factor, decaying toward
+// the latency factor as more callout data accumulates.
+func ReliabilityFromLatency(seed float64, feedback []*MissionFeedback, outcomes []CalloutOutcome) float64 {
+	base := ReliabilityFromFeedback(seed, feedback)
+	if len(outcomes) == 0 {
+		return base
+	}
+
+	var total, positive, negative, neutral float64
+	for _, o := range outcomes {
+		total++
+		switch o.Status {
+		case CalloutOffered:
+			// Fast accept is the best signal; slower accept still positive.
+			positive++
+			if o.ResponseSec > 0 && o.ResponseSec < 300 { // under 5 min
+				positive += 0.5 // bonus for speed
+			}
+		case CalloutDeclined:
+			neutral++ // honest decline is neutral, not negative
+		case CalloutExpired, CalloutSent:
+			negative++ // silence / non-response is the penalty
+		case CalloutCancelled:
+			neutral++ // someone else won — not this engineer's fault
+		}
+	}
+
+	latencyFactor := 0.5 // neutral start
+	if total > 0 {
+		latencyFactor = (positive*1.0 + neutral*0.5) / total
+		// Expiry penalty: each silent expiry drags the factor down.
+		if negative > 0 {
+			penalty := negative / total * 0.5
+			latencyFactor -= penalty
+		}
+	}
+	if latencyFactor < 0 {
+		latencyFactor = 0
+	}
+
+	// Weight of the latency factor ramps from 0.2 (1 callout) to 0.4 (10+).
+	w := 0.2
+	if n := len(outcomes); n >= 10 {
+		w = 0.4
+	} else if n > 1 {
+		w = 0.2 + 0.2*float64(n-1)/9.0
+	}
+
+	score := base*(1-w) + latencyFactor*w
 	if score < 0 {
 		return 0
 	}

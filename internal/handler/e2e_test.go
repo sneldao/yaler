@@ -92,7 +92,8 @@ func TestE2E_DemoPath_SyntheticRoster(t *testing.T) {
 	)
 
 	created := doJSON(t, mux, http.MethodPost, "/api/missions", map[string]any{
-		"goal": "Fridge down at Cafe Noor, food at risk",
+		"goal":             "Fridge down at Cafe Noor, food at risk",
+		"experimentCohort": "parallel", // pin the arm: sequential sends 1 callout
 	}, http.StatusCreated)
 	var m0 domain.Mission
 	if err := json.Unmarshal(created, &m0); err != nil {
@@ -251,7 +252,8 @@ func createAndStart(t *testing.T, mux http.Handler) domain.Mission {
 	t.Helper()
 	var m domain.Mission
 	if err := json.Unmarshal(doJSON(t, mux, http.MethodPost, "/api/missions", map[string]any{
-		"goal": "Fridge down, food at risk",
+		"goal":             "Fridge down, food at risk",
+		"experimentCohort": "parallel", // deterministic broadcast for assertions
 	}, http.StatusCreated), &m); err != nil {
 		t.Fatalf("failed to decode mission: %v", err)
 	}
