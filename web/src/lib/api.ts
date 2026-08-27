@@ -31,6 +31,7 @@ export interface Mission {
   version: number;
   createdAt: string;
   updatedAt: string;
+  experimentCohort?: string;
 }
 
 export interface Offer {
@@ -73,6 +74,7 @@ export interface ProofReceipt {
   createdAt: string;
   rating?: number;
   ratingComment?: string;
+  selectionRationale?: string;
 }
 
 export interface Supplier {

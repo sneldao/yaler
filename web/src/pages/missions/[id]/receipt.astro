@@ -62,6 +62,13 @@ const ogDescription = receipt
               <p class="text-sm text-ink leading-relaxed">{receipt.agreedTerms}</p>
             </div>
 
+            {receipt.selectionRationale && (
+              <div class="space-y-1">
+                <p class="text-[11px] uppercase tracking-wider text-mandate">Why this engineer</p>
+                <p class="text-sm text-ink leading-relaxed">{receipt.selectionRationale}</p>
+              </div>
+            )}
+
             <div class="space-y-2">
               <p class="text-[11px] uppercase tracking-wider text-ink-muted">Checked</p>
               <ul class="space-y-1.5">

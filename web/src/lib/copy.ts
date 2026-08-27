@@ -148,6 +148,7 @@ const EVENT_LABELS: Record<string, string> = {
   FEEDBACK_RECORDED: 'You rated the job',
   ESCALATED: 'Escalated',
   WORKER_FAILED: 'Something went wrong',
+  CALLOUT_CANCELLED: 'Taken by another engineer',
 };
 
 const AUTONOMY_COPY: Record<string, { label: string; help: string }> = {

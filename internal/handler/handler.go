@@ -161,14 +161,15 @@ func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 	missionID := fmt.Sprintf("m_%d", now.UnixNano())
 
 	m := &domain.Mission{
-		ID:        missionID,
-		Goal:      req.Goal,
-		Status:    domain.StatusDraft,
-		Mandate:   *mandate,
-		BuyerID:   req.BuyerID,
-		Version:   1,
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:               missionID,
+		Goal:             req.Goal,
+		Status:           domain.StatusDraft,
+		Mandate:          *mandate,
+		BuyerID:          req.BuyerID,
+		Version:          1,
+		CreatedAt:        now,
+		UpdatedAt:        now,
+		ExperimentCohort: assignExperimentCohort(missionID),
 	}
 
 	if err := h.store.CreateMission(ctx, m); err != nil {
@@ -726,7 +727,7 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 				MissionID:  m.ID,
 				SupplierID: sup.ID,
 				Status:     domain.CalloutSent,
-				Message:    calloutMessage(m, sup),
+				Message:    calloutMessage(m, sup, len(active)),
 				SentAt:     now,
 				ExpiresAt:  now.Add(calloutTTL),
 			}
@@ -833,7 +834,18 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 
-					h.recordEvent(ctx, m.ID, "OFFER_ACCEPTED", "DEMAND_AGENT", selectedOffer, "ALLOW", payload.IdempotencyKey)
+					// First-accept-wins: cancel every other SENT callout so
+					// competing engineers see the job disappear, not linger.
+					h.cancelCompetingCallouts(ctx, m.ID, selectedOffer.CalloutID, payload.IdempotencyKey)
+
+					// Explainable selection — derive the rationale from the
+					// audit trail so the receipt can say WHY this engineer
+					// was picked, not just that they were.
+					rationale := h.buildSelectionRationale(ctx, m, selectedOffer)
+					h.recordEvent(ctx, m.ID, "OFFER_ACCEPTED", "DEMAND_AGENT", map[string]any{
+						"offer":              selectedOffer,
+						"selectionRationale":  rationale,
+					}, "ALLOW", payload.IdempotencyKey)
 					h.scheduleMilestone(ctx, m)
 				} else if policyRes.Disposition == domain.DispositionEscalate {
 					if err := domain.Transition(m, domain.StatusAwaitingApproval); err != nil {
@@ -903,26 +915,145 @@ func (h *Handler) enqueueNext(ctx context.Context, m *domain.Mission) {
 	_ = h.taskClient.EnqueueTask(ctx, taskPayload)
 }
 
+// cancelCompetingCallouts is the first-accept-wins mechanic: when one
+// engineer's offer is committed, every other SENT callout for the mission
+// is marked CANCELLED so competing engineers see the job disappear, not
+// linger as open optionality. This removes the leverage that makes
+// "stringing along" rational.
+func (h *Handler) cancelCompetingCallouts(ctx context.Context, missionID, winningCalloutID, idempotencyKey string) {
+	callouts, err := h.store.ListCallouts(ctx, missionID)
+	if err != nil {
+		return
+	}
+	for _, co := range callouts {
+		if co.ID == winningCalloutID {
+			continue
+		}
+		if co.Status != domain.CalloutSent {
+			continue
+		}
+		co.Status = domain.CalloutCancelled
+		co.RespondedAt = time.Now().UTC()
+		if err := h.store.SaveCallout(ctx, co); err != nil {
+			log.Printf("[Worker] Failed to cancel callout %s: %v", co.ID, err)
+			continue
+		}
+		h.recordEvent(ctx, missionID, "CALLOUT_CANCELLED", "DEMAND_AGENT",
+			map[string]string{"supplierId": co.SupplierID, "calloutId": co.ID, "reason": "first_accept_wins"},
+			"ALLOW", idempotencyKey)
+	}
+}
+
+// buildSelectionRationale derives a plain-English explanation of why the
+// agent picked this engineer — from the audit trail, not self-reported.
+// This is the explainability that makes the selection a trust mechanism,
+// not a black box. Surfaced on the receipt.
+func (h *Handler) buildSelectionRationale(ctx context.Context, m *domain.Mission, offer *domain.Offer) string {
+	var parts []string
+
+	// Budget fit
+	budget := m.Mandate.Budget.MaxAmount
+	if budget > 0 && offer.Price > 0 {
+		pct := (budget - offer.Price) / budget * 100
+		if pct >= 0 {
+			parts = append(parts, fmt.Sprintf("%.0f%% under budget", pct))
+		} else {
+			parts = append(parts, fmt.Sprintf("%.0f%% over budget", -pct))
+		}
+	}
+
+	// Prior jobs in this area
+	sup, err := h.store.GetSupplier(ctx, offer.SupplierAgentID)
+	if err == nil && sup != nil {
+		feedback, _ := h.store.ListMissionFeedbackBySupplier(ctx, offer.SupplierAgentID)
+		if len(feedback) > 0 {
+			parts = append(parts, fmt.Sprintf("%d prior job%s", len(feedback), pluralS(len(feedback))))
+		}
+
+		// Accept speed from the callout
+		if offer.CalloutID != "" {
+			co, coErr := h.store.GetCallout(ctx, offer.CalloutID)
+			if coErr == nil && co != nil && !co.RespondedAt.IsZero() && !co.SentAt.IsZero() {
+				respMin := co.RespondedAt.Sub(co.SentAt).Minutes()
+				if respMin < 1 {
+					parts = append(parts, "under 1-min accept")
+				} else {
+					parts = append(parts, fmt.Sprintf("%.0f-min accept", respMin))
+				}
+			}
+		}
+
+		// Reliability score
+		if sup.ReliabilityScore > 0 {
+			parts = append(parts, fmt.Sprintf("%.0f%% reliability", sup.ReliabilityScore*100))
+		}
+	}
+
+	if len(parts) == 0 {
+		return "Best match within your rules"
+	}
+	return strings.Join(parts, " · ")
+}
+
+// assignExperimentCohort deterministically assigns a mission to the
+// "parallel" or "sequential" A/B arm at creation time. The assignment is
+// hash-based (mission ID) so it's stable and replayable, and roughly 50/50.
+// The worker reads this to decide whether to broadcast all callouts at
+// once (parallel — the structural fix) or send them one at a time
+// (sequential — the status-quo control arm for the field experiment).
+func assignExperimentCohort(missionID string) string {
+	sum := 0
+	for _, c := range missionID {
+		sum += int(c)
+	}
+	if sum%2 == 0 {
+		return "parallel"
+	}
+	return "sequential"
+}
+
 // calloutTTL is how long a real callout waits for a response before it is
-// considered expired. Expiry is applied lazily (when callouts are listed or
-// answered); the concierge loop does not need a background sweeper.
-const calloutTTL = 4 * time.Hour
+// considered expired. The structural incentive design (see INCENTIVES.md):
+// a short, visible accept window removes the leverage that makes
+// "stringing along" the dominant strategy. 10 minutes, not 4 hours —
+// first to accept wins, everyone else's offer disappears.
+const calloutTTL = 10 * time.Minute
 
 // calloutMessage drafts the scoped job request for a supplier in kitchen
 // English. Deterministic on purpose: the same mandate always produces the
 // same ask, which is what the concierge pastes into a call or message.
-func calloutMessage(m *domain.Mission, sup *domain.Supplier) string {
+// The message now carries the structural incentive: a visible accept window
+// and the fact that other engineers are seeing it too — converting the
+// invisible externality (vendor's wasted time) into a felt constraint.
+func calloutMessage(m *domain.Mission, sup *domain.Supplier, competitorCount int) string {
 	when := "today"
 	if !m.Mandate.LatestCompletionAt.IsZero() {
 		when = "by " + m.Mandate.LatestCompletionAt.Format("3:04pm, Mon 2 Jan")
 	}
-	return fmt.Sprintf("%s - kitchen job in %s: %s. Budget up to %s, need it done %s. Can you take it? Reply with your price and earliest arrival.",
+	msg := fmt.Sprintf("%s - kitchen job in %s: %s. Budget up to %s, need it done %s. Can you take it? Reply with your price and earliest arrival.",
 		sup.DisplayName,
 		m.Mandate.ServiceArea.PostalDistrict,
 		m.Goal,
 		formatGBP(m.Mandate.Budget.MaxAmount),
 		when,
 	)
+	// The incentive layer: make the cost of holding optionality visible.
+	// "This closes in 10 min" + "N other engineers can see this" = loss
+	// aversion pointed at the right party, not the vendor.
+	others := competitorCount - 1
+	if others > 0 {
+		msg += fmt.Sprintf(" First to accept gets the job — this closes in 10 minutes. %d other engineer%s can see this.", others, pluralS(others))
+	} else {
+		msg += " This closes in 10 minutes — first to accept gets the job."
+	}
+	return msg
+}
+
+func pluralS(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
 }
 
 func formatGBP(amount float64) string {
@@ -1284,6 +1415,19 @@ func (h *Handler) scheduleMilestone(ctx context.Context, m *domain.Mission) {
 }
 
 func (h *Handler) generateReceipt(ctx context.Context, m *domain.Mission) {
+	// Derive the selection rationale from the event trail so the receipt
+	// explains WHY this engineer was picked — derived, not self-reported.
+	rationale := ""
+	if m.SelectedSupplierID != "" {
+		offers, _ := h.store.ListOffers(ctx, m.ID)
+		for _, o := range offers {
+			if o.SupplierAgentID == m.SelectedSupplierID {
+				rationale = h.buildSelectionRationale(ctx, m, o)
+				break
+			}
+		}
+	}
+
 	receipt := &domain.ProofReceipt{
 		ID:          m.ID,
 		MissionID:   m.ID,
@@ -1301,9 +1445,10 @@ func (h *Handler) generateReceipt(ctx context.Context, m *domain.Mission) {
 			"amount":   fmt.Sprintf("£%.2f (Within mandate ceiling)", m.Mandate.Budget.MaxAmount),
 			"provider": "Verified London Hospitality Service Partner",
 		},
-		ShareToken:    fmt.Sprintf("receipt_token_%s", m.ID),
-		HumanReviewed: false,
-		CreatedAt:     time.Now().UTC(),
+		ShareToken:         fmt.Sprintf("receipt_token_%s", m.ID),
+		HumanReviewed:       false,
+		CreatedAt:           time.Now().UTC(),
+		SelectionRationale:  rationale,
 	}
 	_ = h.store.SaveProofReceipt(ctx, receipt)
 }
