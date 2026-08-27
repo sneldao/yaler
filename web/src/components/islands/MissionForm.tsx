@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { navigate } from 'astro:transitions/client';
-import { createMission } from '../../lib/api';
+import { createMission, uploadImage, type DiagnosticMedia } from '../../lib/api';
 import { broadcastMissionsChanged } from '../../lib/cache';
 import { loadSavedMandate } from '../../lib/rehearsal';
 import { DISTRICT_EVENT, getDistrict } from './DistrictPicker';
@@ -23,6 +23,8 @@ export default function MissionForm() {
   const [showSamples, setShowSamples] = useState(stage === 'new');
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [diagnosticMedia, setDiagnosticMedia] = useState<DiagnosticMedia[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
   const [district, setDistrict] = useState('N1');
   const typingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -128,7 +130,7 @@ export default function MissionForm() {
     setError(null);
     playUiSound('ping');
     try {
-      const mission = await createMission(goal);
+      const mission = await createMission(goal, undefined, diagnosticMedia);
       // Let other tabs' pulses refresh before we leave the page.
       broadcastMissionsChanged();
       navigate(`/missions/${mission.id}`);
@@ -195,6 +197,52 @@ export default function MissionForm() {
       </Suspense>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="rounded-xl border border-ink/10 bg-paper-inset/40 p-3 space-y-2.5">
+          <div>
+            <p className="text-sm font-medium text-ink">Add a photo if it helps</p>
+            <p className="text-xs text-ink-muted">Optional. Choose the view so the engineer knows what they’re looking at.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {[
+              ['unit', 'Full unit', 'Show the equipment and surroundings'],
+              ['display', 'Display / error', 'Show a temperature or fault code'],
+              ['model_plate', 'Model plate', 'Help identify parts and manuals'],
+            ].map(([kind, title, hint]) => (
+              <label key={kind} className="cursor-pointer rounded-lg border border-ink/10 bg-paper px-2.5 py-2 hover:border-mandate/40 transition-colors">
+                <span className="block text-xs font-medium text-ink">{uploadingMedia === kind ? 'Uploading…' : title}</span>
+                <span className="block text-[10px] text-ink-muted mt-0.5 leading-snug">{hint}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={uploadingMedia !== null}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadingMedia(kind);
+                    try {
+                      const uploaded = await uploadImage(file);
+                      setDiagnosticMedia((current) => [...current, { kind: 'photo', url: uploaded.url, label: title }]);
+                    } catch (err: any) {
+                      setError(err.message || 'Could not add that photo.');
+                    } finally {
+                      setUploadingMedia(null);
+                      e.currentTarget.value = '';
+                    }
+                  }}
+                />
+              </label>
+            ))}
+          </div>
+          {diagnosticMedia.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {diagnosticMedia.map((media, index) => (
+                <button key={`${media.url}-${index}`} type="button" onClick={() => setDiagnosticMedia((current) => current.filter((_, i) => i !== index))} className="text-[11px] text-ink bg-paper border border-ink/10 rounded-full px-2.5 py-1">{media.label} ×</button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <label htmlFor="mission-goal-input" className="sr-only">
           Describe the job — what's broken, your budget, and your postcode area
         </label>

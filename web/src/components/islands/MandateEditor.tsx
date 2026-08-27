@@ -181,6 +181,26 @@ export default function MandateEditor({ initialMission, onStarted, rehearsal = f
         {mission.goal}
       </p>
 
+      {mission.diagnosticBrief && (
+        <details className="group rounded-xl border border-ink/10 bg-paper-inset/50">
+          <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-3 text-sm text-ink">
+            <span className="font-medium">What we heard</span>
+            <span className="text-[11px] text-ink-muted group-open:hidden">{mission.diagnosticBrief.confidence}</span>
+            <span className="text-[11px] text-ink-muted hidden group-open:inline">collapse</span>
+          </summary>
+          <div className="px-3 pb-3 pt-2.5 border-t border-ink/10 space-y-2">
+            <p className="text-xs text-ink-muted">{mission.diagnosticBrief.reportedSummary}</p>
+            {mission.diagnosticBrief.known.length > 0 && (
+              <p className="text-xs text-ink"><span className="text-ink-muted">Known:</span> {mission.diagnosticBrief.known.join(' · ')}</p>
+            )}
+            {mission.diagnosticBrief.likelyAreas.length > 0 && (
+              <p className="text-xs text-ink"><span className="text-ink-muted">Possible:</span> {mission.diagnosticBrief.likelyAreas.join(' · ')}</p>
+            )}
+            <p className="text-[10px] text-ink-muted italic">Possible areas are not a confirmed diagnosis.</p>
+          </div>
+        </details>
+      )}
+
       {/* Mandate as data — four editable chip-rows, not a paragraph */}
       <div className="space-y-2" role="group" aria-label="Your rules — tap a row to edit it">
         {fields.map((field) => {

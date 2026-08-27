@@ -45,6 +45,43 @@ function announceEvent(evt: Event): string {
 }
 
 /** Paper-cutout fridge icon for empty states — pure SVG, no image request. */
+function DiagnosticBriefCard({ brief }: { brief: NonNullable<Mission['diagnosticBrief']> }) {
+  const sections = [
+    ['Known', brief.known],
+    ['Likely areas', brief.likelyAreas],
+    ['To confirm', brief.toConfirm],
+  ] as const;
+  return (
+    <details className="group rounded-xl border border-ink/10 bg-paper-inset/50">
+      <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-3 text-sm text-ink">
+        <span className="font-medium">Issue brief</span>
+        <span className="text-[11px] text-ink-muted group-open:hidden">{brief.confidence || 'preliminary'} · for the engineer</span>
+        <span className="text-[11px] text-ink-muted hidden group-open:inline">collapse</span>
+      </summary>
+      <div className="px-3 pb-3 space-y-2.5 border-t border-ink/10 pt-2.5">
+        <p className="text-xs text-ink-muted">{brief.reportedSummary}</p>
+        {sections.map(([label, items]) => items.length > 0 && (
+          <div key={label}>
+            <p className="text-[10px] uppercase tracking-wider text-ink-muted mb-1">{label}</p>
+            <ul className="space-y-0.5 text-xs text-ink">
+              {items.map((item) => <li key={item}>· {item}</li>)}
+            </ul>
+          </div>
+        ))}
+        {brief.diagnosticMedia && brief.diagnosticMedia.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {brief.diagnosticMedia.map((media) => (
+              <a key={media.url} href={media.url} target="_blank" rel="noreferrer" className="text-[10px] text-mandate border border-mandate/20 rounded-full px-2 py-1">{media.label}</a>
+            ))}
+          </div>
+        )}
+        <p className="text-[10px] text-ink-muted italic">Likely areas are suggestions, not a confirmed diagnosis.</p>
+      </div>
+    </details>
+  );
+}
+
+/** Paper-cutout fridge icon for empty states — pure SVG, no image request. */
 function FridgeCutout({ className = 'w-10 h-10' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={className} aria-hidden>
@@ -341,6 +378,10 @@ export default function MissionTimeline({
             <p className="text-sm text-ink-muted">{mandateSummary}</p>
             <span className="text-[10px] text-ink-muted border border-ink/10 rounded-full px-2 py-0.5" title="The agent acts within these rules.">Your rules</span>
           </div>
+
+          {mission.diagnosticBrief && (
+            <DiagnosticBriefCard brief={mission.diagnosticBrief} />
+          )}
 
           {/* Progress bar */}
           <div className="space-y-2">

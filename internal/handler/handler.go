@@ -139,9 +139,10 @@ func (h *Handler) HandleCredentials(w http.ResponseWriter, r *http.Request) {
 // 1. Create Mission (Goal -> Gemini Extract Mandate -> Draft Mission)
 func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Goal             string `json:"goal"`
-		BuyerID          string `json:"buyerId"`
-		ExperimentCohort string `json:"experimentCohort"`
+		Goal             string                   `json:"goal"`
+		BuyerID          string                   `json:"buyerId"`
+		ExperimentCohort string                   `json:"experimentCohort"`
+		DiagnosticMedia  []domain.DiagnosticMedia `json:"diagnosticMedia"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Goal == "" {
 		writeError(w, http.StatusBadRequest, "Missing required 'goal' parameter")
@@ -171,6 +172,8 @@ func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 		cohort = assignExperimentCohort(missionID)
 	}
 
+	diagnosticBrief, _ := h.geminiClient.ExtractDiagnosticBrief(ctx, req.Goal, *mandate)
+
 	m := &domain.Mission{
 		ID:               missionID,
 		Goal:             req.Goal,
@@ -181,6 +184,10 @@ func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:        now,
 		UpdatedAt:        now,
 		ExperimentCohort: cohort,
+	}
+	if diagnosticBrief != nil {
+		m.DiagnosticBrief = *diagnosticBrief
+		m.DiagnosticBrief.DiagnosticMedia = req.DiagnosticMedia
 	}
 
 	if err := h.store.CreateMission(ctx, m); err != nil {

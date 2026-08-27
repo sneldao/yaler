@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { navigate } from 'astro:transitions/client';
-import { submitEvidence, uploadImage } from '../../lib/api';
+import { getMission, submitEvidence, uploadImage, type Mission } from '../../lib/api';
 import { LoaderGrid } from '../primitives/LoaderGrid';
 
 interface Props {
@@ -16,6 +16,11 @@ export default function EvidenceForm({ missionId }: Props) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mission, setMission] = useState<Mission | null>(null);
+
+  React.useEffect(() => {
+    getMission(missionId).then(setMission).catch(() => undefined);
+  }, [missionId]);
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
@@ -62,6 +67,30 @@ export default function EvidenceForm({ missionId }: Props) {
         <h2 className="font-display text-2xl text-ink">Send photos</h2>
         <p className="text-sm text-ink-muted mt-1">A short note and a photo is enough. We’ll check them against what was agreed.</p>
       </div>
+
+      {mission?.diagnosticBrief && (
+        <details className="group rounded-xl border border-ink/10 bg-paper-inset/50">
+          <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between text-sm text-ink">
+            <span className="font-medium">Brief from the manager</span>
+            <span className="text-[11px] text-ink-muted group-open:hidden">{mission.diagnosticBrief.confidence}</span>
+            <span className="text-[11px] text-ink-muted hidden group-open:inline">collapse</span>
+          </summary>
+          <div className="px-3 pb-3 pt-2.5 border-t border-ink/10 space-y-2 text-xs">
+            <p className="text-ink-muted">{mission.diagnosticBrief.reportedSummary}</p>
+            {mission.diagnosticBrief.known.length > 0 && <p><span className="text-ink-muted">Known:</span> {mission.diagnosticBrief.known.join(' · ')}</p>}
+            {mission.diagnosticBrief.likelyAreas.length > 0 && <p><span className="text-ink-muted">Possible:</span> {mission.diagnosticBrief.likelyAreas.join(' · ')}</p>}
+            {mission.diagnosticBrief.toConfirm.length > 0 && <p><span className="text-ink-muted">Confirm:</span> {mission.diagnosticBrief.toConfirm.join(' · ')}</p>}
+            {mission.diagnosticBrief.diagnosticMedia && mission.diagnosticBrief.diagnosticMedia.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {mission.diagnosticBrief.diagnosticMedia.map((media) => (
+                  <a key={media.url} href={media.url} target="_blank" rel="noreferrer" className="text-[10px] text-mandate border border-mandate/20 rounded-full px-2 py-1">{media.label}</a>
+                ))}
+              </div>
+            )}
+            <p className="text-[10px] text-ink-muted italic">Possible areas are suggestions, not a confirmed diagnosis.</p>
+          </div>
+        </details>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

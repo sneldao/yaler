@@ -63,6 +63,20 @@ They care about:
 
 The system that interprets the mission, discovers and communicates with counterpart agents, negotiates within constraints, schedules milestones, records evidence, and escalates exceptions.
 
+## Adaptive diagnostic assistance
+
+Yaler adapts the experience by role and job context without changing the underlying mandate or policy rules. Business managers get a short, voice- or text-first intake; engineers receive a concise diagnostic handoff with the original report, known facts, possible issue areas, and checks still required on site.
+
+When useful, managers can attach guided photos before dispatch:
+
+- Full unit — identify the equipment and surroundings.
+- Display / error — capture temperatures or fault codes.
+- Model plate — identify compatible parts and service documentation.
+
+These inputs are contextual aids, not proof of a diagnosis. Yaler preserves the distinction between reported, observed, inferred, and confirmed information. Likely issue areas remain suggestions until an appropriately qualified engineer verifies them.
+
+The service can progressively add source-backed research—model identification, error-code context, manufacturer documentation, likely parts, and certification requirements—while showing the source and confidence. Research should produce a short engineer-ready brief, not an unqualified repair instruction.
+
 ## Core workflow
 
 ```text
@@ -142,4 +156,5 @@ Yaler is an **outcome-execution network** for fragmented, real-world capacity. I
 5. **Supply dignity.** The system should help providers win better-scoped work, not merely squeeze prices.
 6. **Human exceptions.** Humans handle safety, disputes, ambiguity, and policy changes.
 7. **Open protocol, focused product.** Use interoperable agent messages, but own one concrete workflow.
-8. **Kitchen English in the operator UI.** The product may be a mission network internally. The person with the broken fridge sees a job, a budget, an engineer, and a receipt. Protocol and model names belong in docs, not on buttons.
+8. **Adaptive clarity.** Reduce friction for the manager and uncertainty for the engineer; adapt detail to role, urgency, expertise, and evidence without hiding the rules.
+9. **Kitchen English in the operator UI.** The product may be a mission network internally. The person with the broken fridge sees a job, a budget, an engineer, and a receipt. Protocol and model names belong in docs, not on buttons.

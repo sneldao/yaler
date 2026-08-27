@@ -60,6 +60,28 @@ type Mandate struct {
 }
 
 // Mission is the root domain entity representing a demand-side goal.
+// DiagnosticBrief turns a manager's unstructured report into a concise,
+// role-aware handoff. Observed facts stay separate from inferences so a
+// likely diagnosis is never presented as a confirmed repair.
+type DiagnosticBrief struct {
+	ReportedSummary string            `json:"reportedSummary" firestore:"reportedSummary"`
+	Known           []string          `json:"known" firestore:"known"`
+	LikelyAreas     []string          `json:"likelyAreas" firestore:"likelyAreas"`
+	ToConfirm       []string          `json:"toConfirm" firestore:"toConfirm"`
+	EvidenceNeeded  []string          `json:"evidenceNeeded" firestore:"evidenceNeeded"`
+	Confidence      string            `json:"confidence" firestore:"confidence"`
+	DiagnosticMedia []DiagnosticMedia `json:"diagnosticMedia,omitempty" firestore:"diagnosticMedia,omitempty"`
+}
+
+// DiagnosticMedia is manager-supplied context captured before dispatch.
+type DiagnosticMedia struct {
+	Kind  string `json:"kind" firestore:"kind"`
+	URL   string `json:"url" firestore:"url"`
+	Label string `json:"label" firestore:"label"`
+}
+
+// Mission struct fields include the buyer-facing mandate and the engineer
+// handoff generated from the original report.
 type Mission struct {
 	ID                 string        `json:"id" firestore:"id"`
 	Goal               string        `json:"goal" firestore:"goal"`
@@ -75,7 +97,8 @@ type Mission struct {
 	// engineers at once with a short accept window) or "sequential" (send
 	// callouts one at a time, wait for decline/expiry before the next).
 	// Set once at creation; the worker reads it to decide sourcing strategy.
-	ExperimentCohort string `json:"experimentCohort,omitempty" firestore:"experimentCohort,omitempty"`
+	ExperimentCohort string          `json:"experimentCohort,omitempty" firestore:"experimentCohort,omitempty"`
+	DiagnosticBrief  DiagnosticBrief `json:"diagnosticBrief,omitempty" firestore:"diagnosticBrief,omitempty"`
 }
 
 // Supplier represents a supply-side agent profile.

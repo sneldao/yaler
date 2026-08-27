@@ -21,6 +21,22 @@ export interface Mandate {
   expiresAt: string;
 }
 
+export interface DiagnosticMedia {
+  kind: string;
+  url: string;
+  label: string;
+}
+
+export interface DiagnosticBrief {
+  reportedSummary: string;
+  known: string[];
+  likelyAreas: string[];
+  toConfirm: string[];
+  evidenceNeeded: string[];
+  confidence: string;
+  diagnosticMedia?: DiagnosticMedia[];
+}
+
 export interface Mission {
   id: string;
   goal: string;
@@ -32,6 +48,7 @@ export interface Mission {
   createdAt: string;
   updatedAt: string;
   experimentCohort?: string;
+  diagnosticBrief?: DiagnosticBrief;
 }
 
 export interface Offer {
@@ -202,11 +219,11 @@ export async function submitMissionFeedback(
   return res.json();
 }
 
-export async function createMission(goal: string, buyerId = 'buyer_london_cafe_1'): Promise<Mission> {
+export async function createMission(goal: string, buyerId = 'buyer_london_cafe_1', diagnosticMedia?: DiagnosticMedia[]): Promise<Mission> {
   const res = await fetch(`${API_BASE}/api/missions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ goal, buyerId }),
+    body: JSON.stringify({ goal, buyerId, diagnosticMedia }),
   });
   if (!res.ok) throw new Error('Failed to create mission');
   return res.json();

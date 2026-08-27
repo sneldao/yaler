@@ -33,6 +33,15 @@ type CounterofferDraft struct {
 	Rationale     string  `json:"rationale"`
 }
 
+type DiagnosticBriefResult struct {
+	ReportedSummary string   `json:"reportedSummary"`
+	Known           []string `json:"known"`
+	LikelyAreas     []string `json:"likelyAreas"`
+	ToConfirm       []string `json:"toConfirm"`
+	EvidenceNeeded  []string `json:"evidenceNeeded"`
+	Confidence      string   `json:"confidence"`
+}
+
 type EvidenceExtractionResult struct {
 	Satisfied       bool     `json:"satisfied"`
 	ConfidenceScore float64  `json:"confidenceScore"`
@@ -145,6 +154,49 @@ func (c *Client) ExtractMandate(ctx context.Context, goal string) (*domain.Manda
 		AutonomyMode:       mode,
 		ExpiresAt:          now.Add(time.Duration(raw.ExpiryHours) * time.Hour),
 	}, nil
+}
+
+func (c *Client) ExtractDiagnosticBrief(ctx context.Context, goal string, mandate domain.Mandate) (*domain.DiagnosticBrief, error) {
+	if len(goal) > 2000 {
+		goal = goal[:2000]
+	}
+	if c.genaiClient == nil {
+		return fallbackDiagnosticBrief(goal, mandate), nil
+	}
+	prompt := fmt.Sprintf("Original report: %s\\nMandate: %+v", goal, mandate)
+	respText, err := c.generateContent(ctx, SystemPromptDiagnosticBrief, prompt)
+	if err != nil {
+		return fallbackDiagnosticBrief(goal, mandate), nil
+	}
+	var raw DiagnosticBriefResult
+	if err := json.Unmarshal([]byte(respText), &raw); err != nil {
+		return fallbackDiagnosticBrief(goal, mandate), nil
+	}
+	if raw.ReportedSummary == "" {
+		raw.ReportedSummary = goal
+	}
+	if raw.Confidence == "" {
+		raw.Confidence = "preliminary"
+	}
+	return &domain.DiagnosticBrief{
+		ReportedSummary: raw.ReportedSummary,
+		Known:           raw.Known,
+		LikelyAreas:     raw.LikelyAreas,
+		ToConfirm:       raw.ToConfirm,
+		EvidenceNeeded:  raw.EvidenceNeeded,
+		Confidence:      raw.Confidence,
+	}, nil
+}
+
+func fallbackDiagnosticBrief(goal string, mandate domain.Mandate) *domain.DiagnosticBrief {
+	return &domain.DiagnosticBrief{
+		ReportedSummary: goal,
+		Known:           []string{"Issue reported by the business manager"},
+		LikelyAreas:     []string{"Fault category requires engineer assessment"},
+		ToConfirm:       []string{"Equipment model, symptoms, and safe access on site"},
+		EvidenceNeeded:  mandate.RequiredEvidence,
+		Confidence:      "preliminary",
+	}
 }
 
 func (c *Client) CompareOffers(ctx context.Context, mandate domain.Mandate, offers []*domain.Offer, suppliers []*domain.Supplier) (*RankingResult, error) {

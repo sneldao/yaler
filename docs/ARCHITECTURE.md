@@ -49,7 +49,7 @@ Astro is used for:
 
 Interactive islands are used only where needed:
 
-- `MissionForm` — speak or type what’s broken; creates a live mission
+- `MissionForm` — speak or type what’s broken; optionally attaches guided diagnostic photos; creates a live mission
 - `SpeakNote` — Vapi (Web Speech fallback) on rehearsal and the live form
 - `HearReceipt` — ElevenLabs reads the paper (`POST /api/tts`)
 - `SavedMandateCard` — shows rules saved after a rehearsal
@@ -172,6 +172,8 @@ missions/{missionId}
   createdAt
   updatedAt
   version
+  diagnosticBrief        # reported summary, known facts, likely areas, checks, confidence
+  diagnosticBrief.diagnosticMedia  # optional labelled manager photos
 
 missions/{missionId}/offers/{offerId}
   supplierAgentId
@@ -287,9 +289,13 @@ A task must be safe to retry.
 
 Pub/Sub is not required for the MVP. Add it only when one event needs to fan out to multiple independent consumers.
 
-## Evidence
+## Diagnostic context and evidence
 
-For the Kiro kernel, store evidence as Firestore metadata: supplier text, source labels, and an optional labelled fixture reference. Cloud Storage for photos or documents is the Horizon 2 path; add it when real uploads are required.
+A mission may carry a `diagnosticBrief` generated from the manager's original report. It separates `known` facts, `likelyAreas`, and `toConfirm` checks, with a `confidence` label. `diagnosticMedia` is optional manager context, with each item labelled by capture intent (`unit`, `display`, or `model_plate`) and stored as a URL reference.
+
+The UI keeps this brief collapsed by default and exposes it to both roles: managers can review what Yaler heard before dispatch, while engineers can use it as a starting handoff. Likely areas are never treated as confirmed diagnosis.
+
+For the Kiro kernel, store completion evidence as Firestore metadata: supplier text, source labels, and an optional labelled fixture reference. Cloud Storage for photos or documents is the Horizon 2 path; the current upload route supports the guided diagnostic capture wedge. Future image interpretation should preserve source and confidence and remain advisory until qualified human confirmation.
 
 Do not expose private supplier or buyer information in public proof receipts. Public receipts should be explicitly redacted and opt-in.
 
