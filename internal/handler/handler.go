@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"log"
 	"math"
 	"net/http"
@@ -138,8 +139,9 @@ func (h *Handler) HandleCredentials(w http.ResponseWriter, r *http.Request) {
 // 1. Create Mission (Goal -> Gemini Extract Mandate -> Draft Mission)
 func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Goal    string `json:"goal"`
-		BuyerID string `json:"buyerId"`
+		Goal             string `json:"goal"`
+		BuyerID          string `json:"buyerId"`
+		ExperimentCohort string `json:"experimentCohort"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Goal == "" {
 		writeError(w, http.StatusBadRequest, "Missing required 'goal' parameter")
@@ -147,6 +149,12 @@ func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.BuyerID == "" {
 		req.BuyerID = "buyer_london_cafe_1"
+	}
+	// Callers (tests, ops tooling) may pin an arm; ordinary traffic leaves
+	// it empty and gets the deterministic hash assignment.
+	cohort := req.ExperimentCohort
+	if cohort != "parallel" && cohort != "sequential" {
+		cohort = ""
 	}
 
 	ctx := r.Context()
@@ -159,6 +167,9 @@ func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now().UTC()
 	missionID := fmt.Sprintf("m_%d", now.UnixNano())
+	if cohort == "" {
+		cohort = assignExperimentCohort(missionID)
+	}
 
 	m := &domain.Mission{
 		ID:               missionID,
@@ -169,7 +180,7 @@ func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 		Version:          1,
 		CreatedAt:        now,
 		UpdatedAt:        now,
-		ExperimentCohort: assignExperimentCohort(missionID),
+		ExperimentCohort: cohort,
 	}
 
 	if err := h.store.CreateMission(ctx, m); err != nil {
@@ -844,7 +855,7 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 					rationale := h.buildSelectionRationale(ctx, m, selectedOffer)
 					h.recordEvent(ctx, m.ID, "OFFER_ACCEPTED", "DEMAND_AGENT", map[string]any{
 						"offer":              selectedOffer,
-						"selectionRationale":  rationale,
+						"selectionRationale": rationale,
 					}, "ALLOW", payload.IdempotencyKey)
 					h.scheduleMilestone(ctx, m)
 				} else if policyRes.Disposition == domain.DispositionEscalate {
@@ -1001,12 +1012,13 @@ func (h *Handler) buildSelectionRationale(ctx context.Context, m *domain.Mission
 // The worker reads this to decide whether to broadcast all callouts at
 // once (parallel — the structural fix) or send them one at a time
 // (sequential — the status-quo control arm for the field experiment).
+//
+// FNV-1a over the whole ID: a naive character-sum parity skews badly on
+// m_<UnixNano> IDs because trailing timestamp digits dominate the sum.
 func assignExperimentCohort(missionID string) string {
-	sum := 0
-	for _, c := range missionID {
-		sum += int(c)
-	}
-	if sum%2 == 0 {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(missionID))
+	if h.Sum32()%2 == 0 {
 		return "parallel"
 	}
 	return "sequential"
@@ -1446,9 +1458,9 @@ func (h *Handler) generateReceipt(ctx context.Context, m *domain.Mission) {
 			"provider": "Verified London Hospitality Service Partner",
 		},
 		ShareToken:         fmt.Sprintf("receipt_token_%s", m.ID),
-		HumanReviewed:       false,
-		CreatedAt:           time.Now().UTC(),
-		SelectionRationale:  rationale,
+		HumanReviewed:      false,
+		CreatedAt:          time.Now().UTC(),
+		SelectionRationale: rationale,
 	}
 	_ = h.store.SaveProofReceipt(ctx, receipt)
 }
