@@ -300,7 +300,7 @@ Diagnostic analysis is explicitly stateful: `QUEUED → ANALYZING → COMPLETED`
 
 When diagnostic media is present, mission creation queues a `DIAGNOSTIC_ANALYSIS` task. The worker reads the local upload reference and, when Gemini is configured, extracts only visibly readable signals. The analysis is non-blocking and records `DIAGNOSTIC_ANALYSIS_COMPLETED` or `DIAGNOSTIC_ANALYSIS_PENDING` events. Local filesystem retrieval is suitable for development only; production requires durable object storage accessible to the worker.
 
-For the Kiro kernel, store completion evidence as Firestore metadata: supplier text, source labels, and an optional labelled fixture reference. Cloud Storage for photos or documents is the Horizon 2 path; the current upload route supports the guided diagnostic capture wedge. Future image interpretation should preserve source and confidence and remain advisory until qualified human confirmation.
+For the Kiro kernel, store completion evidence as Firestore metadata: supplier text, source labels, and an optional labelled fixture reference. Cloud Storage for photos or documents is the Horizon 2 path; the current upload route supports the guided diagnostic capture wedge. If analysis cannot extract a useful signal, the worker derives at most two optional follow-up requests for missing high-value views, such as a display or model plate. Future image interpretation should preserve source and confidence and remain advisory until qualified human confirmation.
 
 Do not expose private supplier or buyer information in public proof receipts. Public receipts should be explicitly redacted and opt-in.
 

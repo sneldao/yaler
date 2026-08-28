@@ -64,18 +64,29 @@ type Mandate struct {
 // role-aware handoff. Observed facts stay separate from inferences so a
 // likely diagnosis is never presented as a confirmed repair.
 type DiagnosticBrief struct {
-	ReportedSummary   string                   `json:"reportedSummary" firestore:"reportedSummary"`
-	Known             []string                 `json:"known" firestore:"known"`
-	LikelyAreas       []string                 `json:"likelyAreas" firestore:"likelyAreas"`
-	ToConfirm         []string                 `json:"toConfirm" firestore:"toConfirm"`
-	EvidenceNeeded    []string                 `json:"evidenceNeeded" firestore:"evidenceNeeded"`
-	Confidence        string                   `json:"confidence" firestore:"confidence"`
-	DiagnosticMedia   []DiagnosticMedia        `json:"diagnosticMedia,omitempty" firestore:"diagnosticMedia,omitempty"`
-	ExtractedSignals  []DiagnosticSignal       `json:"extractedSignals,omitempty" firestore:"extractedSignals,omitempty"`
-	AnalysisStatus    DiagnosticAnalysisStatus `json:"analysisStatus,omitempty" firestore:"analysisStatus,omitempty"`
-	AnalysisAttempts  int                      `json:"analysisAttempts,omitempty" firestore:"analysisAttempts,omitempty"`
-	AnalysisError     string                   `json:"analysisError,omitempty" firestore:"analysisError,omitempty"`
-	AnalysisUpdatedAt time.Time                `json:"analysisUpdatedAt,omitempty" firestore:"analysisUpdatedAt,omitempty"`
+	ReportedSummary   string                      `json:"reportedSummary" firestore:"reportedSummary"`
+	Known             []string                    `json:"known" firestore:"known"`
+	LikelyAreas       []string                    `json:"likelyAreas" firestore:"likelyAreas"`
+	ToConfirm         []string                    `json:"toConfirm" firestore:"toConfirm"`
+	EvidenceNeeded    []string                    `json:"evidenceNeeded" firestore:"evidenceNeeded"`
+	Confidence        string                      `json:"confidence" firestore:"confidence"`
+	DiagnosticMedia   []DiagnosticMedia           `json:"diagnosticMedia,omitempty" firestore:"diagnosticMedia,omitempty"`
+	ExtractedSignals  []DiagnosticSignal          `json:"extractedSignals,omitempty" firestore:"extractedSignals,omitempty"`
+	AnalysisStatus    DiagnosticAnalysisStatus    `json:"analysisStatus,omitempty" firestore:"analysisStatus,omitempty"`
+	AnalysisAttempts  int                         `json:"analysisAttempts,omitempty" firestore:"analysisAttempts,omitempty"`
+	AnalysisError     string                      `json:"analysisError,omitempty" firestore:"analysisError,omitempty"`
+	AnalysisUpdatedAt time.Time                   `json:"analysisUpdatedAt,omitempty" firestore:"analysisUpdatedAt,omitempty"`
+	FollowUpRequests  []DiagnosticFollowUpRequest `json:"followUpRequests,omitempty" firestore:"followUpRequests,omitempty"`
+}
+
+// DiagnosticFollowUpRequest is a single, optional request for higher-value
+// evidence. Requests are deliberately bounded so analysis never becomes an
+// endless questionnaire.
+type DiagnosticFollowUpRequest struct {
+	Kind      string `json:"kind" firestore:"kind"`
+	Reason    string `json:"reason" firestore:"reason"`
+	Requested bool   `json:"requested" firestore:"requested"`
+	Completed bool   `json:"completed" firestore:"completed"`
 }
 
 // DiagnosticSignal is a bounded observation extracted from a report or image.

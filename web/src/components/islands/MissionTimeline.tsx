@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Event, type Mission, getEvents, getMission, submitMissionFeedback, updateDiagnosticSignal } from '../../lib/api';
+import { type Event, type Mission, addDiagnosticMedia, getEvents, getMission, submitMissionFeedback, updateDiagnosticSignal, uploadImage } from '../../lib/api';
 import ThinkingTrace, { type TraceRow } from '../primitives/ThinkingTrace';
 import { LoadingStatus } from '../primitives/LoaderGrid';
 import ToolChips, { type ToolChipCall } from '../primitives/ToolChips';
@@ -49,6 +49,7 @@ function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullab
   const [busy, setBusy] = useState<number | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
+  const [uploadingFollowUp, setUploadingFollowUp] = useState<string | null>(null);
   const review = async (index: number, action: 'CONFIRM' | 'DISMISS') => {
     if (!missionId || busy !== null) return;
     setBusy(index);
@@ -119,6 +120,37 @@ function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullab
           <p className="text-[10px] text-ink-muted">
             Photos attached · {brief.analysisStatus === 'COMPLETED' ? 'visual signals extracted' : brief.analysisStatus === 'FAILED' ? 'visual analysis unavailable' : 'image analysis in progress'}
           </p>
+        )}
+        {brief.followUpRequests && brief.followUpRequests.some((request) => request.requested && !request.completed) && (
+          <div className="rounded-lg border border-mandate/20 bg-mandate-light/30 p-2.5 space-y-1.5">
+            <p className="text-[10px] uppercase tracking-wider text-mandate">Optional follow-up</p>
+            {brief.followUpRequests.filter((request) => request.requested && !request.completed).map((request) => (
+              <label key={request.kind} className="flex items-start gap-2 text-xs text-ink cursor-pointer">
+                <span className="flex-1"><strong>{request.kind === 'model_plate' ? 'Model plate' : 'Display / error'}</strong> · {request.reason}</span>
+                <span className="shrink-0 text-mandate underline">{uploadingFollowUp === request.kind ? 'Uploading…' : 'Add photo'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    disabled={uploadingFollowUp !== null}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !missionId) return;
+                      setUploadingFollowUp(request.kind);
+                      try {
+                        const uploaded = await uploadImage(file);
+                        onUpdated?.(await addDiagnosticMedia(missionId, { kind: request.kind, url: uploaded.url, objectKey: uploaded.objectKey, mimeType: uploaded.mimeType, label: request.kind === 'model_plate' ? 'Model plate' : 'Display / error' }));
+                      } finally {
+                        setUploadingFollowUp(null);
+                        e.currentTarget.value = '';
+                      }
+                    }}
+                  />
+                </span>
+              </label>
+            ))}
+            <p className="text-[10px] text-ink-muted">Optional and limited to the most useful missing view — the job continues without it.</p>
+          </div>
         )}
         {brief.diagnosticMedia && brief.diagnosticMedia.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1">

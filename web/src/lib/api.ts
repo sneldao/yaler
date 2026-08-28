@@ -37,6 +37,13 @@ export interface DiagnosticSignal {
   status?: 'SUGGESTED' | 'CONFIRMED' | 'DISMISSED';
 }
 
+export interface DiagnosticFollowUpRequest {
+  kind: string;
+  reason: string;
+  requested: boolean;
+  completed: boolean;
+}
+
 export interface DiagnosticBrief {
   reportedSummary: string;
   known: string[];
@@ -48,6 +55,7 @@ export interface DiagnosticBrief {
   extractedSignals?: DiagnosticSignal[];
   analysisStatus?: 'NOT_STARTED' | 'QUEUED' | 'ANALYZING' | 'COMPLETED' | 'FAILED';
   analysisAttempts?: number;
+  followUpRequests?: DiagnosticFollowUpRequest[];
   analysisError?: string;
   analysisUpdatedAt?: string;
 }
@@ -253,6 +261,14 @@ export async function updateDiagnosticSignal(missionId: string, index: number, a
   return res.json();
 }
 
+export async function addDiagnosticMedia(missionId: string, media: DiagnosticMedia): Promise<Mission> {
+  const res = await fetch(`${API_BASE}/api/missions/${missionId}/diagnostic-media`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(media),
+  });
+  if (!res.ok) throw new Error('Failed to add diagnostic photo');
+  return res.json();
+}
+
 export async function getMission(id: string): Promise<Mission> {
   const res = await fetch(`${API_BASE}/api/missions/${id}`);
   if (!res.ok) throw new Error('Mission not found');
@@ -373,7 +389,7 @@ export async function listSuppliers(): Promise<Supplier[]> {
   return res.json();
 }
 
-export async function uploadImage(file: File): Promise<{ url: string; filename: string; size: number }> {
+export async function uploadImage(file: File): Promise<{ url: string; filename: string; size: number; objectKey?: string; mimeType?: string }> {
   const formData = new FormData();
   formData.append('file', file);
   const res = await fetch(`${API_BASE}/api/upload`, {

@@ -56,6 +56,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/missions", h.HandleListMissions)
 	mux.HandleFunc("GET /api/missions/{id}", h.HandleGetMission)
 	mux.HandleFunc("POST /api/missions/{id}/diagnostic-signals", h.HandleUpdateDiagnosticSignal)
+	mux.HandleFunc("POST /api/missions/{id}/diagnostic-media", h.HandleAddDiagnosticMedia)
 	mux.HandleFunc("PUT /api/missions/{id}/mandate", h.HandleUpdateMandate)
 	mux.HandleFunc("POST /api/missions/{id}/start", h.HandleStartMission)
 	mux.HandleFunc("GET /api/missions/{id}/events", h.HandleListEvents)
@@ -281,6 +282,85 @@ func (h *Handler) HandleUpdateDiagnosticSignal(w http.ResponseWriter, r *http.Re
 	h.recordEvent(r.Context(), id, "DIAGNOSTIC_SIGNAL_REVIEWED", "BUYER", map[string]any{
 		"index": req.Index, "action": req.Action, "original": original, "updated": updated,
 	}, "ALLOW", fmt.Sprintf("diagnostic_signal:%s:%d", id, req.Index))
+	writeJSON(w, http.StatusOK, m)
+}
+
+// diagnosticFollowUps returns at most two optional, high-value capture
+// requests. It is intentionally deterministic and never asks for a generic
+// retake after a useful signal has already been extracted.
+func diagnosticFollowUps(media []domain.DiagnosticMedia, signals []domain.DiagnosticSignal) []domain.DiagnosticFollowUpRequest {
+	if len(signals) > 0 {
+		return nil
+	}
+	seen := make(map[string]bool)
+	for _, item := range media {
+		seen[strings.ToLower(item.Kind)] = true
+	}
+	requests := make([]domain.DiagnosticFollowUpRequest, 0, 2)
+	if !seen["display"] && len(requests) < 2 {
+		requests = append(requests, domain.DiagnosticFollowUpRequest{Kind: "display", Reason: "A clear display or fault code can help the engineer prepare before arrival.", Requested: true})
+	}
+	if !seen["model_plate"] && len(requests) < 2 {
+		requests = append(requests, domain.DiagnosticFollowUpRequest{Kind: "model_plate", Reason: "A readable model plate helps identify compatible parts and manuals.", Requested: true})
+	}
+	return requests
+}
+
+// HandleAddDiagnosticMedia attaches one additional manager-supplied image
+// and queues a fresh, idempotent analysis pass. It is deliberately limited to
+// the guided follow-up capture flow rather than accepting arbitrary URLs.
+func (h *Handler) HandleAddDiagnosticMedia(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var media domain.DiagnosticMedia
+	if err := json.NewDecoder(r.Body).Decode(&media); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid diagnostic media")
+		return
+	}
+	media.Kind = strings.TrimSpace(strings.ToLower(media.Kind))
+	media.Label = strings.TrimSpace(media.Label)
+	if media.Kind != "display" && media.Kind != "model_plate" && media.Kind != "unit" {
+		writeError(w, http.StatusBadRequest, "diagnostic media kind is invalid")
+		return
+	}
+	if media.ObjectKey == "" || media.URL == "" || media.Label == "" {
+		writeError(w, http.StatusBadRequest, "diagnostic media requires objectKey, url, and label")
+		return
+	}
+	m, err := h.store.GetMission(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Mission not found")
+		return
+	}
+	for _, existing := range m.DiagnosticBrief.DiagnosticMedia {
+		if existing.ObjectKey == media.ObjectKey {
+			writeJSON(w, http.StatusOK, m)
+			return
+		}
+	}
+	m.DiagnosticBrief.DiagnosticMedia = append(m.DiagnosticBrief.DiagnosticMedia, media)
+	m.DiagnosticBrief.AnalysisStatus = domain.DiagnosticAnalysisQueued
+	m.DiagnosticBrief.AnalysisError = ""
+	m.DiagnosticBrief.AnalysisUpdatedAt = time.Now().UTC()
+	for i := range m.DiagnosticBrief.FollowUpRequests {
+		if m.DiagnosticBrief.FollowUpRequests[i].Kind == media.Kind {
+			m.DiagnosticBrief.FollowUpRequests[i].Completed = true
+		}
+	}
+	m.Version++
+	m.UpdatedAt = time.Now().UTC()
+	if err := h.store.UpdateMission(r.Context(), m); err != nil {
+		writeError(w, http.StatusConflict, "Mission changed; please retry")
+		return
+	}
+	h.recordEvent(r.Context(), id, "DIAGNOSTIC_MEDIA_ADDED", "BUYER", media, "ALLOW", fmt.Sprintf("diagnostic_media:%s:%s", id, media.ObjectKey))
+	if h.taskClient != nil {
+		_ = h.taskClient.EnqueueTask(r.Context(), domain.TaskPayload{
+			MissionID: id, StepID: "DIAGNOSTIC_ANALYSIS", TaskType: "DIAGNOSTIC_ANALYSIS",
+			ExpectedVersion: m.Version, IdempotencyKey: fmt.Sprintf("%s_diagnostic_analysis_%d", id, len(m.DiagnosticBrief.DiagnosticMedia)),
+			AttemptCount: m.DiagnosticBrief.AnalysisAttempts + 1,
+			Deadline:     time.Now().Add(5 * time.Minute).Format(time.RFC3339),
+		})
+	}
 	writeJSON(w, http.StatusOK, m)
 }
 
@@ -801,6 +881,21 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var analyzed []domain.DiagnosticSignal
+		if h.geminiClient == nil {
+			brief.AnalysisStatus = domain.DiagnosticAnalysisFailed
+			brief.AnalysisError = "Image analysis is not configured"
+			brief.FollowUpRequests = diagnosticFollowUps(brief.DiagnosticMedia, nil)
+			brief.AnalysisUpdatedAt = time.Now().UTC()
+			m.DiagnosticBrief = brief
+			m.Version++
+			if updateErr := h.store.UpdateMission(ctx, m); updateErr != nil {
+				writeError(w, http.StatusInternalServerError, "Failed to persist diagnostic analysis")
+				return
+			}
+			h.recordEvent(ctx, m.ID, "DIAGNOSTIC_ANALYSIS_FAILED", "DEMAND_AGENT", brief.AnalysisError, "ALLOW", payload.IdempotencyKey)
+			writeJSON(w, http.StatusOK, map[string]string{"status": "analysis_failed", "missionId": m.ID})
+			return
+		}
 		for _, media := range brief.DiagnosticMedia {
 			key := media.ObjectKey
 			if key == "" {
@@ -834,10 +929,12 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 			brief.ExtractedSignals = append(brief.ExtractedSignals, analyzed...)
 			brief.AnalysisStatus = domain.DiagnosticAnalysisCompleted
 			brief.AnalysisError = ""
+			brief.FollowUpRequests = diagnosticFollowUps(brief.DiagnosticMedia, analyzed)
 			h.recordEvent(ctx, m.ID, "DIAGNOSTIC_ANALYSIS_COMPLETED", "DEMAND_AGENT", analyzed, "ALLOW", payload.IdempotencyKey)
 		} else {
 			brief.AnalysisStatus = domain.DiagnosticAnalysisFailed
 			brief.AnalysisError = "No readable image signals extracted"
+			brief.FollowUpRequests = diagnosticFollowUps(brief.DiagnosticMedia, nil)
 			h.recordEvent(ctx, m.ID, "DIAGNOSTIC_ANALYSIS_FAILED", "DEMAND_AGENT", brief.AnalysisError, "ALLOW", payload.IdempotencyKey)
 		}
 		m.DiagnosticBrief = brief

@@ -75,7 +75,7 @@ When useful, managers can attach guided photos before dispatch:
 
 These inputs are contextual aids, not proof of a diagnosis. Yaler preserves the distinction between reported, observed, inferred, and confirmed information. Extracted signals such as a mentioned temperature or fault code retain their source and confidence label. Likely issue areas remain suggestions until an appropriately qualified engineer verifies them.
 
-The service can progressively add source-backed research—model identification, error-code context, manufacturer documentation, likely parts, and certification requirements—while showing the source and confidence. Research should produce a short engineer-ready brief, not an unqualified repair instruction. Current image analysis is deliberately limited to readable/visible signals and remains advisory. Managers should be able to correct or dismiss an extracted observation; the original observation remains auditable rather than being silently overwritten.
+The service can progressively add source-backed research—model identification, error-code context, manufacturer documentation, likely parts, and certification requirements—while showing the source and confidence. Research should produce a short engineer-ready brief, not an unqualified repair instruction. Current image analysis is deliberately limited to readable/visible signals and remains advisory. Managers should be able to correct or dismiss an extracted observation; the original observation remains auditable rather than being silently overwritten. If analysis cannot extract a useful signal, Yaler may offer up to two optional, targeted follow-up captures (such as a display or model plate), never an open-ended questionnaire.
 
 ## Core workflow
 
