@@ -49,7 +49,17 @@ are restricted to images up to 10MB and receive a 30-day expiry timestamp.
 Production objects are not served through the public `/uploads` route. The
 `POST /api/media/access` endpoint issues a five-minute, object-scoped viewer
 URL and requires `X-Ops-Token` when `OPS_TOKEN` is configured. This is the
-interim access model until persona authentication is introduced.
+interim access model until persona authentication is introduced. As of the
+current deployment, `OPS_TOKEN` is not configured on Cloud Run, so configure
+it before exposing real diagnostic media to users:
+
+```bash
+gcloud run services update yaler-backend --region=europe-west2 --project=cognivern \
+  --set-env-vars="OPS_TOKEN=<strong-random-token>"
+```
+
+The frontend must receive the same value as its private deployment-time
+`PUBLIC_OPS_TOKEN`; do not put either token in committed source.
 
 ```bash
 make deploy-backend

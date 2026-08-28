@@ -76,13 +76,15 @@ export default function EvidenceForm({ missionId }: Props) {
             <span className="text-[11px] text-ink-muted hidden group-open:inline">collapse</span>
           </summary>
           <div className="px-3 pb-3 pt-2.5 border-t border-ink/10 space-y-2 text-xs">
-            <p className="text-ink-muted">{mission.diagnosticBrief.reportedSummary}</p>
-            {mission.diagnosticBrief.known.length > 0 && <p><span className="text-ink-muted">Known:</span> {mission.diagnosticBrief.known.join(' · ')}</p>}
-            {mission.diagnosticBrief.likelyAreas.length > 0 && <p><span className="text-ink-muted">Possible:</span> {mission.diagnosticBrief.likelyAreas.join(' · ')}</p>}
-            {mission.diagnosticBrief.extractedSignals && mission.diagnosticBrief.extractedSignals.length > 0 && (
-              <p><span className="text-ink-muted">Signals:</span> {mission.diagnosticBrief.extractedSignals.map((signal) => `${signal.label}: ${signal.value} (${signal.confidence})`).join(' · ')}</p>
-            )}
-            {mission.diagnosticBrief.toConfirm.length > 0 && <p><span className="text-ink-muted">Confirm:</span> {mission.diagnosticBrief.toConfirm.join(' · ')}</p>}
+            <div className="space-y-1.5">
+              <p><span className="text-ink-muted">Reported:</span> {mission.diagnosticBrief.reportedSummary}</p>
+              {mission.diagnosticBrief.known.length > 0 && <p><span className="text-ink-muted">Known:</span> {mission.diagnosticBrief.known.join(' · ')}</p>}
+              {mission.diagnosticBrief.extractedSignals && mission.diagnosticBrief.extractedSignals.length > 0 && (
+                <p><span className="text-ink-muted">Observed:</span> {mission.diagnosticBrief.extractedSignals.filter((signal) => signal.status !== 'DISMISSED').map((signal) => `${signal.label}: ${signal.value} (${signal.status === 'CONFIRMED' ? 'manager-confirmed' : signal.confidence})`).join(' · ')}</p>
+              )}
+              {mission.diagnosticBrief.likelyAreas.length > 0 && <p><span className="text-ink-muted">Possible:</span> {mission.diagnosticBrief.likelyAreas.join(' · ')}</p>}
+              {mission.diagnosticBrief.toConfirm.length > 0 && <p><span className="text-ink-muted">Verify on site:</span> {mission.diagnosticBrief.toConfirm.join(' · ')}</p>}
+            </div>
             {mission.diagnosticBrief.diagnosticMedia && mission.diagnosticBrief.diagnosticMedia.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {mission.diagnosticBrief.diagnosticMedia.map((media) => (

@@ -77,10 +77,13 @@ function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullab
         <span className="text-[11px] text-ink-muted hidden group-open:inline">collapse</span>
       </summary>
       <div className="px-3 pb-3 space-y-2.5 border-t border-ink/10 pt-2.5">
-        <p className="text-xs text-ink-muted">{brief.reportedSummary}</p>
+        <div className="rounded-lg bg-paper border border-ink/10 px-2.5 py-2">
+          <p className="text-[10px] uppercase tracking-wider text-ink-muted mb-0.5">Reported</p>
+          <p className="text-xs text-ink">{brief.reportedSummary}</p>
+        </div>
         {brief.extractedSignals && brief.extractedSignals.length > 0 && (
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-ink-muted mb-1">Signals</p>
+            <p className="text-[10px] uppercase tracking-wider text-ink-muted mb-1">Observed from evidence</p>
             <div className="flex flex-wrap gap-1.5">
               {brief.extractedSignals.map((signal, index) => (
                 <span key={`${signal.label}-${signal.value}`} className="text-[10px] bg-paper border border-ink/10 rounded-full px-2 py-1 text-ink">
@@ -99,7 +102,7 @@ function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullab
                     </span>
                   ) : (
                     <>
-                      {signal.label}: {signal.value} <span className="text-ink-muted">· {signal.status === 'CONFIRMED' ? 'confirmed' : signal.status === 'DISMISSED' ? 'dismissed' : signal.confidence}</span>
+                      {signal.label}: {signal.value} <span className="text-ink-muted">· {signal.status === 'CONFIRMED' ? 'manager-confirmed' : signal.status === 'DISMISSED' ? 'dismissed' : signal.confidence}</span>
                       {missionId && signal.status !== 'DISMISSED' && signal.status !== 'CONFIRMED' && <span className="ml-1 inline-flex gap-1"><button type="button" className="underline" disabled={busy === index} onClick={() => review(index, 'CONFIRM')}>confirm</button><button type="button" className="underline" disabled={busy === index} onClick={() => startEdit(index, signal.value)}>edit</button><button type="button" className="underline" disabled={busy === index} onClick={() => review(index, 'DISMISS')}>dismiss</button></span>}
                     </>
                   )}
@@ -110,7 +113,7 @@ function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullab
         )}
         {sections.map(([label, items]) => items.length > 0 && (
           <div key={label}>
-            <p className="text-[10px] uppercase tracking-wider text-ink-muted mb-1">{label}</p>
+            <p className="text-[10px] uppercase tracking-wider text-ink-muted mb-1">{label === 'Likely areas' ? 'Possible areas' : label === 'To confirm' ? 'Verify on site' : label}</p>
             <ul className="space-y-0.5 text-xs text-ink">
               {items.map((item) => <li key={item}>· {item}</li>)}
             </ul>
@@ -159,7 +162,7 @@ function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullab
             ))}
           </div>
         )}
-        <p className="text-[10px] text-ink-muted italic">Likely areas are suggestions, not a confirmed diagnosis.</p>
+        <p className="text-[10px] text-ink-muted italic">Possible areas are suggestions, not a confirmed diagnosis.</p>
       </div>
     </details>
   );
@@ -442,6 +445,18 @@ export default function MissionTimeline({
               <StatusBadge status={mission.status} />
               <h1 className="font-display text-3xl text-ink tracking-tight leading-tight">{mission.goal}</h1>
               <p className="text-sm text-ink-muted">{nextActionLabel(mission.status, rehearsal)}</p>
+              <div className="rounded-lg border border-ink/10 bg-paper-inset/40 px-3 py-2 text-xs text-ink" role="status">
+                <span className="font-medium">Next:</span>{' '}
+                {mission.status === 'DRAFT' ? 'Check the brief, then start looking.' :
+                  mission.status === 'SOURCING' ? 'Nothing needed — qualified engineers are reviewing it.' :
+                    mission.status === 'OFFERS_RECEIVED' ? 'Review the best fit against your rules.' :
+                      mission.status === 'AWAITING_APPROVAL' ? 'Choose whether to approve, reject, or reroute.' :
+                        mission.status === 'IN_PROGRESS' ? 'Wait for the completion update.' :
+                          mission.status === 'EVIDENCE_PENDING' ? 'Send the requested completion photos.' :
+                            mission.status === 'COMPLETED' ? 'Review your receipt and rate the engineer.' :
+                              mission.status === 'ESCALATED' ? 'Choose whether to retry or add context.' :
+                                'Yaler is handling the next step.'}
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -541,7 +556,9 @@ export default function MissionTimeline({
           <SponsorRail active={activeSponsor} completed={completedSponsors} />
 
           {showWork && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3 border-t border-ink/10">
+            <details className="border-t border-ink/10 pt-3 group">
+              <summary className="cursor-pointer list-none text-xs font-medium text-ink-muted uppercase tracking-wider">How Yaler is handling this <span className="normal-case font-normal ml-1 group-open:hidden">· show details</span><span className="normal-case font-normal ml-1 hidden group-open:inline">· hide details</span></summary>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3">
               <div className="space-y-3" aria-live="polite" aria-atomic="false">
                 <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wider">Reasoning</h3>
                 <ThinkingTrace
@@ -557,7 +574,8 @@ export default function MissionTimeline({
                 <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wider">Policy checks</h3>
                 <ToolChips calls={toolCalls} />
               </div>
-            </div>
+              </div>
+            </details>
           )}
         </div>
       )}

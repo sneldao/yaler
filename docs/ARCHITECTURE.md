@@ -28,7 +28,7 @@ flowchart TD
     W --> P[Deterministic policy engine]
     W --> F
     W --> S[Supplier agent endpoints\ncurated registry]
-    W --> C[Evidence metadata\nFirestore; Cloud Storage later]
+    W --> C[Evidence metadata\nFirestore + private Cloud Storage]
     G --> L[Cloud Logging / Error Reporting]
     W --> L
 ```
@@ -175,6 +175,8 @@ missions/{missionId}
   diagnosticBrief        # reported summary, known facts, likely areas, checks, confidence
   diagnosticBrief.diagnosticMedia  # optional labelled manager photos
   diagnosticBrief.extractedSignals # bounded image/report observations with source + confidence
+  diagnosticBrief.followUpRequests  # at most two optional targeted capture requests
+  diagnosticBrief.mediaExpiresAt    # 30-day retention metadata
 
 missions/{missionId}/offers/{offerId}
   supplierAgentId
@@ -294,13 +296,13 @@ Pub/Sub is not required for the MVP. Add it only when one event needs to fan out
 
 A mission may carry a `diagnosticBrief` generated from the manager's original report. It separates `known` facts, `likelyAreas`, and `toConfirm` checks, with a `confidence` label. `diagnosticMedia` is optional manager context, with each item labelled by capture intent (`unit`, `display`, or `model_plate`) and stored as a URL reference. `extractedSignals` carries bounded observations such as a reported temperature or fault-code mention, including source and confidence; it does not assert a diagnosis.
 
-The UI keeps this brief collapsed by default and exposes it to both roles: managers can review what Yaler heard before dispatch, while engineers can use it as a starting handoff. Likely areas are never treated as confirmed diagnosis.
+The UI keeps this brief collapsed by default and exposes it to both roles: managers can review what Yaler heard before dispatch, while engineers receive explicit `Reported`, `Observed`, `Manager-confirmed`, and `Verify on site` sections. Likely areas are never treated as confirmed diagnosis.
 
 Diagnostic analysis is explicitly stateful: `QUEUED → ANALYZING → COMPLETED` or `FAILED`. A completed task is idempotent and does not append duplicate signals on redelivery; a failed task records a bounded error and remains non-blocking for dispatch.
 
-When diagnostic media is present, mission creation queues a `DIAGNOSTIC_ANALYSIS` task. The worker reads the local upload reference and, when Gemini is configured, extracts only visibly readable signals. The analysis is non-blocking and records `DIAGNOSTIC_ANALYSIS_COMPLETED` or `DIAGNOSTIC_ANALYSIS_PENDING` events. Local filesystem retrieval is suitable for development only; production requires durable object storage accessible to the worker.
+When diagnostic media is present, mission creation queues a `DIAGNOSTIC_ANALYSIS` task. The worker reads the internal object reference and, when Gemini is configured, extracts only visibly readable signals. The analysis is non-blocking and records completion or failure events. Production media is stored in private GCS; human viewing uses the five-minute object-scoped `/api/media/{token}` URL issued by `/api/media/access`. Local filesystem retrieval remains suitable for development only.
 
-For the Kiro kernel, store completion evidence as Firestore metadata: supplier text, source labels, and an optional labelled fixture reference. Cloud Storage for photos or documents is the Horizon 2 path; the current upload route supports the guided diagnostic capture wedge. If analysis cannot extract a useful signal, the worker derives at most two optional follow-up requests for missing high-value views, such as a display or model plate. Future image interpretation should preserve source and confidence and remain advisory until qualified human confirmation.
+For the Kiro kernel, store completion evidence as Firestore metadata: supplier text, source labels, and an optional labelled fixture reference. Private Cloud Storage now supports diagnostic media; the current upload route supports the guided diagnostic capture wedge. If analysis cannot extract a useful signal, the worker derives at most two optional follow-up requests for missing high-value views, such as a display or model plate. Future image interpretation should preserve source and confidence and remain advisory until qualified human confirmation.
 
 Do not expose private supplier or buyer information in public proof receipts. Public receipts should be explicitly redacted and opt-in.
 
@@ -346,7 +348,7 @@ yaler-web      Astro application on Cloud Run or static hosting
 yaler-agent    Go API and worker on Cloud Run
 firestore      durable state
 cloud-tasks    asynchronous mission execution
-cloud-storage  optional later; not required for Kiro
+cloud-storage  private diagnostic media + short-lived viewer access
 secret-manager credentials
 cloud-logging  runtime evidence
 ```
