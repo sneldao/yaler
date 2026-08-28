@@ -11,6 +11,7 @@ export default function EvidenceForm({ missionId }: Props) {
   const [report, setReport] = useState("Technician replaced faulty compressor relay, verified temperature dropping to 3°C.");
   const [photoUrl, setPhotoUrl] = useState("https://storage.googleapis.com/yaler-evidence/proof_temp_check.jpg");
   const [previewFilename, setPreviewFilename] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showUrl, setShowUrl] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -30,6 +31,7 @@ export default function EvidenceForm({ missionId }: Props) {
       const res = await uploadImage(file);
       setPhotoUrl(res.url);
       setPreviewFilename(`${res.filename} (${(res.size / 1024).toFixed(1)} KB)`);
+      setPreviewUrl(URL.createObjectURL(file));
     } catch (err: any) {
       setError(err.message || 'Could not upload that photo.');
     } finally {
@@ -112,7 +114,7 @@ export default function EvidenceForm({ missionId }: Props) {
 
         <div className="space-y-2">
           <label className="block text-xs uppercase tracking-wider text-ink-muted">
-            Photo
+            Completion photo
           </label>
           <div
             onDragOver={(e) => e.preventDefault()}
@@ -122,22 +124,28 @@ export default function EvidenceForm({ missionId }: Props) {
             <input
               type="file"
               accept="image/*"
+              capture="environment"
               onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
               className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+              aria-label="Take or choose a completion photo"
             />
-            <div className="space-y-1 pointer-events-none">
-              <p className="text-sm text-ink">
-                {uploading ? 'Uploading…' : 'Drop a photo here, or tap to choose'}
-              </p>
-              {previewFilename && (
-                <p className="text-xs text-mandate">Uploaded: {previewFilename}</p>
+            <div className="space-y-2 pointer-events-none">
+              {previewUrl ? (
+                <img src={previewUrl} alt="Selected completion photo" className="mx-auto h-24 w-24 rounded-lg object-cover border border-ink/10" />
+              ) : (
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-mandate-light text-mandate" aria-hidden>📷</div>
               )}
+              <p className="text-sm text-ink">
+                {uploading ? 'Uploading…' : previewUrl ? 'Tap to retake or replace' : 'Take a photo or choose one'}
+              </p>
+              {previewFilename && <p className="text-xs text-mandate">{previewFilename}</p>}
+              {!previewUrl && <p className="text-[11px] text-ink-muted">A clear after-work photo helps close the job.</p>}
             </div>
           </div>
           <button
             type="button"
             onClick={() => setShowUrl((open) => !open)}
-            className="text-xs text-ink-muted hover:text-ink"
+            className="min-h-11 text-xs text-ink-muted hover:text-ink"
           >
             {showUrl ? 'Hide photo link' : 'Use a photo link instead'}
           </button>
@@ -169,10 +177,11 @@ export default function EvidenceForm({ missionId }: Props) {
           </div>
         )}
 
+        <div className="sticky bottom-0 -mx-5 sm:mx-0 px-5 sm:px-0 pb-[env(safe-area-inset-bottom)] pt-3 bg-paper/95 backdrop-blur-sm">
         <button
           type="submit"
           disabled={loading || uploading}
-          className="btn-primary w-full"
+          className="btn-primary w-full min-h-12"
         >
           {loading ? (
             <>
@@ -183,6 +192,7 @@ export default function EvidenceForm({ missionId }: Props) {
             <span>Send and finish</span>
           )}
         </button>
+        </div>
       </form>
     </div>
   );

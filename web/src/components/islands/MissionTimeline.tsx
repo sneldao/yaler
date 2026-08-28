@@ -103,7 +103,7 @@ function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullab
                   ) : (
                     <>
                       {signal.label}: {signal.value} <span className="text-ink-muted">· {signal.status === 'CONFIRMED' ? 'manager-confirmed' : signal.status === 'DISMISSED' ? 'dismissed' : signal.confidence}</span>
-                      {missionId && signal.status !== 'DISMISSED' && signal.status !== 'CONFIRMED' && <span className="ml-1 inline-flex gap-1"><button type="button" className="underline" disabled={busy === index} onClick={() => review(index, 'CONFIRM')}>confirm</button><button type="button" className="underline" disabled={busy === index} onClick={() => startEdit(index, signal.value)}>edit</button><button type="button" className="underline" disabled={busy === index} onClick={() => review(index, 'DISMISS')}>dismiss</button></span>}
+                      {missionId && signal.status !== 'DISMISSED' && signal.status !== 'CONFIRMED' && <span className="ml-1 mt-1 inline-flex flex-wrap gap-1.5 align-middle"><button type="button" className="min-h-9 rounded-md px-1.5 underline" disabled={busy === index} onClick={() => review(index, 'CONFIRM')}>confirm</button><button type="button" className="min-h-9 rounded-md px-1.5 underline" disabled={busy === index} onClick={() => startEdit(index, signal.value)}>edit</button><button type="button" className="min-h-9 rounded-md px-1.5 underline" disabled={busy === index} onClick={() => review(index, 'DISMISS')}>dismiss</button></span>}
                     </>
                   )}
                 </span>
@@ -514,12 +514,20 @@ export default function MissionTimeline({
         </div>
       )}
 
+      {mission && !rehearsal && (
+        <div className="sm:hidden fixed bottom-0 inset-x-0 z-30 border-t border-ink/10 bg-paper/95 backdrop-blur-sm px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          {mission.status === 'COMPLETED' && <a href={`/missions/${mission.id}/receipt`} className="btn-primary min-h-12 w-full text-center">View receipt</a>}
+          {mission.status === 'EVIDENCE_PENDING' && <a href={`/evidence/${mission.id}`} className="btn-primary min-h-12 w-full text-center">Send completion photos</a>}
+          {mission.status === 'AWAITING_APPROVAL' && <a href="#offers" className="btn-primary min-h-12 w-full text-center">Review the quote</a>}
+          {mission.status !== 'COMPLETED' && mission.status !== 'EVIDENCE_PENDING' && mission.status !== 'AWAITING_APPROVAL' && <span className="block text-center text-xs text-ink-muted py-3">No action needed right now</span>}
+        </div>
+      )}
+
       {/* Perf-edge separator — the receipt motif, same as the /ops desk */}
       {mission && <div className="receipt-perf" />}
 
       {/* Matching mechanic — compact by default, detailed state stays in the timeline. */}
-      {mission && (mission.status === 'SOURCING' || mission.status === 'OFFERS_RECEIVED') && (
-        <div className="paper-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 animate-pop-in">
+      {mission && (mission.status === 'SOURCING' || mission.status === 'OFFERS_RECEIVED') && (          <div id="offers" className="paper-card rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 animate-pop-in">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-mandate animate-pulse" aria-hidden />
             <p className="text-sm font-medium text-ink">Matching in parallel</p>

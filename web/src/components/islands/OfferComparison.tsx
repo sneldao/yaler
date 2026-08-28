@@ -305,9 +305,9 @@ export default function OfferComparison({
         <button
           type="button"
           onClick={() => setShowCompare((open) => !open)}
-          className="text-sm text-ink-muted hover:text-ink transition-colors"
+          className="min-h-11 px-2 text-sm text-ink-muted hover:text-ink transition-colors"
         >
-          {showCompare ? 'Hide comparison' : 'Compare all'}
+          {showCompare ? 'Hide comparison' : 'Compare all details'}
         </button>
       </div>
 
@@ -323,7 +323,7 @@ export default function OfferComparison({
               key={offer.id}
               type="button"
               onClick={() => setSelectedId(offer.id)}
-              className={`w-full text-left paper-card rounded-2xl p-4 transition-colors ${
+              className={`w-full min-h-[11rem] text-left paper-card rounded-2xl p-4 transition-colors ${
                 isSelected && isBlocked
                   ? 'border-escalate animate-shake-slow animate-pulse-border'
                   : isSelected
@@ -346,7 +346,7 @@ export default function OfferComparison({
                   <p className={`font-medium ${isSimulated ? 'text-ink-muted' : 'text-ink'}`}>{supplierLabel(offer.supplierAgentId)}</p>
                   <p className="text-xs text-ink-muted mt-0.5">{offer.availability}</p>
                 </div>
-                <p className={`font-display text-2xl ${isSimulated ? 'text-ink-muted' : 'text-ink'}`}>{formatMoney(offer.price, offer.currency)}</p>
+                <p className={`font-display text-2xl tabular-nums sm:text-3xl ${isSimulated ? 'text-ink-muted' : 'text-ink'}`}>{formatMoney(offer.price, offer.currency)}</p>
               </div>
               {/* Confidence — why the agent ranks this quote where it does */}
               {confidenceById.get(offer.id) && (
@@ -357,6 +357,16 @@ export default function OfferComparison({
               )}
               {isSelected && offer.explanation && (
                 <p className="text-xs text-ink-muted mt-2">{offer.explanation}</p>
+              )}
+              {isSelected && confidenceById.get(offer.id) && (
+                <details className="sm:hidden mt-3 border-t border-ink/10 pt-2">
+                  <summary className="min-h-11 flex items-center text-xs font-medium text-ink-muted cursor-pointer">Why this fit</summary>
+                  <div className="space-y-1 text-xs text-ink-muted pb-1">
+                    <p>Budget: {confidenceById.get(offer.id)!.mandateNote}</p>
+                    <p>Business: {confidenceById.get(offer.id)!.verifiedNote}</p>
+                    <p>Reliability: {confidenceById.get(offer.id)!.reliabilityNote}</p>
+                  </div>
+                </details>
               )}
               <p className="text-[11px] text-ink-muted mt-2 flex items-center gap-1.5">
                 {isSimulated
@@ -400,7 +410,7 @@ export default function OfferComparison({
         </div>
       )}
 
-      <div className="paper-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="paper-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:static sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 bg-paper/95 backdrop-blur-sm">
         <div>
           <p className="text-sm font-medium text-ink">
             {isAlreadyBooked
@@ -424,7 +434,7 @@ export default function OfferComparison({
           type="button"
           onClick={handleConfirm}
           disabled={submitting || blocked || isAlreadyBooked}
-          className="btn-primary text-sm py-2.5"
+          className="btn-primary text-sm py-3 min-h-11 w-full sm:w-auto"
         >
           {isAlreadyBooked
             ? 'Booked'
