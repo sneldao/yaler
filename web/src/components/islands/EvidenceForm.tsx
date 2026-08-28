@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { navigate } from 'astro:transitions/client';
-import { getMission, submitEvidence, uploadImage, type Mission } from '../../lib/api';
+import { createMediaAccess, getMission, submitEvidence, uploadImage, type Mission } from '../../lib/api';
 import { LoaderGrid } from '../primitives/LoaderGrid';
 
 interface Props {
@@ -86,7 +86,7 @@ export default function EvidenceForm({ missionId }: Props) {
             {mission.diagnosticBrief.diagnosticMedia && mission.diagnosticBrief.diagnosticMedia.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {mission.diagnosticBrief.diagnosticMedia.map((media) => (
-                  <a key={media.url} href={media.url} target="_blank" rel="noreferrer" className="text-[10px] text-mandate border border-mandate/20 rounded-full px-2 py-1">{media.label}</a>
+                  <button key={media.url} type="button" onClick={async () => { try { const access = await createMediaAccess(missionId, media.objectKey || ''); window.open(access.url, '_blank', 'noopener,noreferrer'); } catch { /* unavailable media is non-blocking */ } }} className="text-[10px] text-mandate border border-mandate/20 rounded-full px-2 py-1">{media.label}</button>
                 ))}
               </div>
             )}

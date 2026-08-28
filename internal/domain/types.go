@@ -77,6 +77,7 @@ type DiagnosticBrief struct {
 	AnalysisError     string                      `json:"analysisError,omitempty" firestore:"analysisError,omitempty"`
 	AnalysisUpdatedAt time.Time                   `json:"analysisUpdatedAt,omitempty" firestore:"analysisUpdatedAt,omitempty"`
 	FollowUpRequests  []DiagnosticFollowUpRequest `json:"followUpRequests,omitempty" firestore:"followUpRequests,omitempty"`
+	MediaExpiresAt    time.Time                   `json:"mediaExpiresAt,omitempty" firestore:"mediaExpiresAt,omitempty"`
 }
 
 // DiagnosticFollowUpRequest is a single, optional request for higher-value

@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/textproto"
 	"testing"
 
 	"github.com/sneldao/yaler/internal/handler"
@@ -24,7 +25,10 @@ func TestFileUpload(t *testing.T) {
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", "test_proof.jpg")
+	part, err := writer.CreatePart(textproto.MIMEHeader{
+		"Content-Disposition": {`form-data; name="file"; filename="test_proof.jpg"`},
+		"Content-Type":        {"image/jpeg"},
+	})
 	if err != nil {
 		t.Fatalf("failed to create multipart form file: %v", err)
 	}

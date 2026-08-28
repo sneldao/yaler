@@ -58,6 +58,7 @@ export interface DiagnosticBrief {
   followUpRequests?: DiagnosticFollowUpRequest[];
   analysisError?: string;
   analysisUpdatedAt?: string;
+  mediaExpiresAt?: string;
 }
 
 export interface Mission {
@@ -259,6 +260,17 @@ export async function updateDiagnosticSignal(missionId: string, index: number, a
   });
   if (!res.ok) throw new Error('Failed to review diagnostic signal');
   return res.json();
+}
+
+export async function createMediaAccess(missionId: string, objectKey: string): Promise<{ url: string; expiresAt: string }> {
+  const res = await fetch(`${API_BASE}/api/media/access`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(import.meta.env.PUBLIC_OPS_TOKEN ? { 'X-Ops-Token': import.meta.env.PUBLIC_OPS_TOKEN } : {}) },
+    body: JSON.stringify({ missionId, objectKey }),
+  });
+  if (!res.ok) throw new Error('Could not open media');
+  const access = await res.json();
+  return { ...access, url: access.url.startsWith('http') ? access.url : `${API_BASE}${access.url}` };
 }
 
 export async function addDiagnosticMedia(missionId: string, media: DiagnosticMedia): Promise<Mission> {

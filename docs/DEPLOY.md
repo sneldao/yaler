@@ -44,7 +44,12 @@ gcloud storage buckets add-iam-policy-binding gs://cognivern-yaler-diagnostic-me
 Set `MEDIA_STORAGE=gcs` and `MEDIA_BUCKET=cognivern-yaler-diagnostic-media`
 on Cloud Run. Local development keeps `MEDIA_STORAGE` unset and uses `./uploads`.
 Uploads are private object references; diagnostic analysis reads them through
-the backend storage abstraction rather than fetching arbitrary URLs.
+the backend storage abstraction rather than fetching arbitrary URLs. Uploads
+are restricted to images up to 10MB and receive a 30-day expiry timestamp.
+Production objects are not served through the public `/uploads` route. The
+`POST /api/media/access` endpoint issues a five-minute, object-scoped viewer
+URL and requires `X-Ops-Token` when `OPS_TOKEN` is configured. This is the
+interim access model until persona authentication is introduced.
 
 ```bash
 make deploy-backend

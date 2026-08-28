@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Event, type Mission, addDiagnosticMedia, getEvents, getMission, submitMissionFeedback, updateDiagnosticSignal, uploadImage } from '../../lib/api';
+import { type Event, type Mission, addDiagnosticMedia, createMediaAccess, getEvents, getMission, submitMissionFeedback, updateDiagnosticSignal, uploadImage } from '../../lib/api';
 import ThinkingTrace, { type TraceRow } from '../primitives/ThinkingTrace';
 import { LoadingStatus } from '../primitives/LoaderGrid';
 import ToolChips, { type ToolChipCall } from '../primitives/ToolChips';
@@ -155,7 +155,7 @@ function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullab
         {brief.diagnosticMedia && brief.diagnosticMedia.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1">
             {brief.diagnosticMedia.map((media) => (
-              <a key={media.url} href={media.url} target="_blank" rel="noreferrer" className="text-[10px] text-mandate border border-mandate/20 rounded-full px-2 py-1">{media.label}</a>
+              <button key={media.url} type="button" onClick={async () => { try { const access = await createMediaAccess(missionId || '', media.objectKey || ''); window.open(access.url, '_blank', 'noopener,noreferrer'); } catch { /* unavailable media stays non-blocking */ } }} className="text-[10px] text-mandate border border-mandate/20 rounded-full px-2 py-1">{media.label}</button>
             ))}
           </div>
         )}

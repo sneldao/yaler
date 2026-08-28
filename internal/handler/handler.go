@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sneldao/yaler/internal/discovery"
@@ -30,6 +31,14 @@ type Handler struct {
 	taskClient       tasks.Client
 	discoveryService *discovery.DiscoveryService
 	mediaStore       storage.MediaStore
+	mediaTokens      map[string]mediaToken
+	mediaTokensMu    sync.Mutex
+}
+
+type mediaToken struct {
+	ObjectKey string
+	ExpiresAt time.Time
+	MimeType  string
 }
 
 func NewHandler(st store.Store, pe *policy.Engine, gc *gemini.Client, tc tasks.Client) *Handler {
@@ -40,6 +49,7 @@ func NewHandler(st store.Store, pe *policy.Engine, gc *gemini.Client, tc tasks.C
 		taskClient:       tc,
 		discoveryService: discovery.NewDiscoveryService(),
 		mediaStore:       &storage.LocalStore{Root: "./uploads"},
+		mediaTokens:      make(map[string]mediaToken),
 	}
 }
 
@@ -74,6 +84,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/suppliers", h.HandleListSuppliers)
 	mux.HandleFunc("POST /api/a2a", h.HandleA2A)
 	mux.HandleFunc("POST /api/upload", h.HandleUpload)
+	mux.HandleFunc("POST /api/media/access", h.HandleCreateMediaAccess)
+	mux.HandleFunc("GET /api/media/{token}", h.HandleServeMedia)
 	mux.HandleFunc("POST /api/tts", h.HandleTTS)
 	mux.HandleFunc("GET /api/discovery", h.HandleDiscovery)
 	mux.HandleFunc("GET /api/credentials", h.HandleCredentials)
@@ -82,15 +94,16 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/waitlist", h.HandleListWaitlist)
 	mux.HandleFunc("GET /api/stats", h.HandleStats)
 
-	// Note: uploads write to local disk (./uploads/) on an ephemeral container.
-	// Files uploaded to one Cloud Run instance may not be servable by another.
-	// For production, move uploads to GCS or R2.
+	// Local files are only served in development. Production GCS objects are
+	// private and must be accessed through the authenticated media endpoint.
 	_ = os.MkdirAll("./uploads", 0755)
-	fileServer := http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads")))
-	mux.Handle("GET /uploads/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "public, max-age=86400")
-		fileServer.ServeHTTP(w, r)
-	}))
+	if _, local := h.mediaStore.(*storage.LocalStore); local {
+		fileServer := http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads")))
+		mux.Handle("GET /uploads/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Cache-Control", "private, max-age=300")
+			fileServer.ServeHTTP(w, r)
+		}))
+	}
 }
 
 func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
@@ -204,6 +217,7 @@ func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 		m.DiagnosticBrief.DiagnosticMedia = req.DiagnosticMedia
 		if len(req.DiagnosticMedia) > 0 {
 			m.DiagnosticBrief.AnalysisStatus = domain.DiagnosticAnalysisQueued
+			m.DiagnosticBrief.MediaExpiresAt = now.Add(30 * 24 * time.Hour)
 		}
 	}
 
@@ -224,6 +238,79 @@ func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, m)
+}
+
+// HandleCreateMediaAccess issues a short-lived, single-object media URL.
+// It uses the existing ops guard until persona authentication is available.
+func (h *Handler) HandleCreateMediaAccess(w http.ResponseWriter, r *http.Request) {
+	if !h.opsAuthorized(r) {
+		writeError(w, http.StatusUnauthorized, "Ops token required")
+		return
+	}
+	var req struct {
+		MissionID string `json:"missionId"`
+		ObjectKey string `json:"objectKey"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.MissionID) == "" || strings.TrimSpace(req.ObjectKey) == "" {
+		writeError(w, http.StatusBadRequest, "missionId and objectKey are required")
+		return
+	}
+	m, err := h.store.GetMission(r.Context(), req.MissionID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Mission not found")
+		return
+	}
+	allowed := false
+	var mimeType string
+	for _, media := range m.DiagnosticBrief.DiagnosticMedia {
+		if media.ObjectKey == req.ObjectKey {
+			allowed = true
+			mimeType = media.MimeType
+			break
+		}
+	}
+	if !allowed {
+		writeError(w, http.StatusNotFound, "Media is not attached to this mission")
+		return
+	}
+	token := fmt.Sprintf("mt_%d", time.Now().UnixNano())
+	h.mediaTokensMu.Lock()
+	h.mediaTokens[token] = mediaToken{ObjectKey: req.ObjectKey, ExpiresAt: time.Now().UTC().Add(5 * time.Minute), MimeType: mimeType}
+	h.mediaTokensMu.Unlock()
+	writeJSON(w, http.StatusOK, map[string]any{"url": "/api/media/" + token, "expiresAt": time.Now().UTC().Add(5 * time.Minute)})
+}
+
+// HandleServeMedia serves one private media object after validating its
+// short-lived token. Tokens are intentionally non-renewable and object-scoped.
+func (h *Handler) HandleServeMedia(w http.ResponseWriter, r *http.Request) {
+	token := r.PathValue("token")
+	h.mediaTokensMu.Lock()
+	entry, ok := h.mediaTokens[token]
+	if ok && time.Now().UTC().After(entry.ExpiresAt) {
+		delete(h.mediaTokens, token)
+		ok = false
+	}
+	h.mediaTokensMu.Unlock()
+	if !ok {
+		writeError(w, http.StatusNotFound, "Media access expired")
+		return
+	}
+	reader, storedMime, err := h.mediaStore.Open(r.Context(), entry.ObjectKey)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Media not found")
+		return
+	}
+	defer reader.Close()
+	mimeType := entry.MimeType
+	if mimeType == "" {
+		mimeType = storedMime
+	}
+	if mimeType != "" {
+		w.Header().Set("Content-Type", mimeType)
+	}
+	w.Header().Set("Cache-Control", "private, max-age=300")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	_, _ = io.Copy(w, io.LimitReader(reader, 10<<20+1))
 }
 
 // 2. List Missions
@@ -338,6 +425,9 @@ func (h *Handler) HandleAddDiagnosticMedia(w http.ResponseWriter, r *http.Reques
 		}
 	}
 	m.DiagnosticBrief.DiagnosticMedia = append(m.DiagnosticBrief.DiagnosticMedia, media)
+	if m.DiagnosticBrief.MediaExpiresAt.IsZero() {
+		m.DiagnosticBrief.MediaExpiresAt = time.Now().UTC().Add(30 * 24 * time.Hour)
+	}
 	m.DiagnosticBrief.AnalysisStatus = domain.DiagnosticAnalysisQueued
 	m.DiagnosticBrief.AnalysisError = ""
 	m.DiagnosticBrief.AnalysisUpdatedAt = time.Now().UTC()
@@ -2035,7 +2125,8 @@ func (h *Handler) HandleA2A(w http.ResponseWriter, r *http.Request) {
 
 // Multipart Image Upload Endpoint
 func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
-	// Max 10MB memory limit
+	// Max 10MB memory limit. Diagnostic media is intentionally restricted to
+	// image formats because it may be sent to the vision model.
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		writeError(w, http.StatusBadRequest, "Failed to parse multipart form")
 		return
@@ -2047,6 +2138,15 @@ func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = file.Close() }()
+	if header.Size > 10<<20 {
+		writeError(w, http.StatusRequestEntityTooLarge, "uploaded media exceeds 10MB limit")
+		return
+	}
+	contentType := header.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "image/") {
+		writeError(w, http.StatusUnsupportedMediaType, "only image uploads are supported")
+		return
+	}
 
 	ext := "jpg"
 	if len(header.Filename) > 0 {
@@ -2057,7 +2157,7 @@ func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	if h.mediaStore == nil {
 		h.mediaStore = &storage.LocalStore{Root: "./uploads"}
 	}
-	if err := h.mediaStore.Save(r.Context(), key, header.Header.Get("Content-Type"), file); err != nil {
+	if err := h.mediaStore.Save(r.Context(), key, contentType, file); err != nil {
 		writeError(w, http.StatusInternalServerError, "Failed to save uploaded media")
 		return
 	}
@@ -2072,7 +2172,7 @@ func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		"url":       publicURL,
 		"filename":  filename,
 		"objectKey": key,
-		"mimeType":  header.Header.Get("Content-Type"),
+		"mimeType":  contentType,
 		"size":      header.Size,
 	})
 }

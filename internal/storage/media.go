@@ -15,6 +15,7 @@ import (
 type MediaStore interface {
 	Save(ctx context.Context, key, contentType string, src io.Reader) error
 	Open(ctx context.Context, key string) (io.ReadCloser, string, error)
+	Delete(ctx context.Context, key string) error
 }
 
 // LocalStore is the development/test implementation.
@@ -35,6 +36,14 @@ func (s *LocalStore) Save(_ context.Context, key, _ string, src io.Reader) error
 	defer f.Close()
 	_, err = io.Copy(f, src)
 	return err
+}
+
+func (s *LocalStore) Delete(_ context.Context, key string) error {
+	path, err := safePath(s.Root, key)
+	if err != nil {
+		return err
+	}
+	return os.Remove(path)
 }
 
 func (s *LocalStore) Open(_ context.Context, key string) (io.ReadCloser, string, error) {
@@ -72,6 +81,10 @@ func (s *GCSStore) Save(ctx context.Context, key, contentType string, src io.Rea
 		return err
 	}
 	return w.Close()
+}
+
+func (s *GCSStore) Delete(ctx context.Context, key string) error {
+	return s.Bucket.Object(key).Delete(ctx)
 }
 
 func (s *GCSStore) Open(ctx context.Context, key string) (io.ReadCloser, string, error) {
