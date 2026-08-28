@@ -25,6 +25,8 @@ export interface DiagnosticMedia {
   kind: string;
   url: string;
   label: string;
+  objectKey?: string;
+  mimeType?: string;
 }
 
 export interface DiagnosticSignal {
@@ -32,6 +34,7 @@ export interface DiagnosticSignal {
   value: string;
   source: string;
   confidence: string;
+  status?: 'SUGGESTED' | 'CONFIRMED' | 'DISMISSED';
 }
 
 export interface DiagnosticBrief {
@@ -43,6 +46,10 @@ export interface DiagnosticBrief {
   confidence: string;
   diagnosticMedia?: DiagnosticMedia[];
   extractedSignals?: DiagnosticSignal[];
+  analysisStatus?: 'NOT_STARTED' | 'QUEUED' | 'ANALYZING' | 'COMPLETED' | 'FAILED';
+  analysisAttempts?: number;
+  analysisError?: string;
+  analysisUpdatedAt?: string;
 }
 
 export interface Mission {
@@ -234,6 +241,15 @@ export async function createMission(goal: string, buyerId = 'buyer_london_cafe_1
     body: JSON.stringify({ goal, buyerId, diagnosticMedia }),
   });
   if (!res.ok) throw new Error('Failed to create mission');
+  return res.json();
+}
+
+export async function updateDiagnosticSignal(missionId: string, index: number, action: 'CONFIRM' | 'EDIT' | 'DISMISS', value?: string, label?: string): Promise<Mission> {
+  const res = await fetch(`${API_BASE}/api/missions/${missionId}/diagnostic-signals`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ index, action, value, label }),
+  });
+  if (!res.ok) throw new Error('Failed to review diagnostic signal');
   return res.json();
 }
 

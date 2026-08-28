@@ -64,14 +64,18 @@ type Mandate struct {
 // role-aware handoff. Observed facts stay separate from inferences so a
 // likely diagnosis is never presented as a confirmed repair.
 type DiagnosticBrief struct {
-	ReportedSummary  string             `json:"reportedSummary" firestore:"reportedSummary"`
-	Known            []string           `json:"known" firestore:"known"`
-	LikelyAreas      []string           `json:"likelyAreas" firestore:"likelyAreas"`
-	ToConfirm        []string           `json:"toConfirm" firestore:"toConfirm"`
-	EvidenceNeeded   []string           `json:"evidenceNeeded" firestore:"evidenceNeeded"`
-	Confidence       string             `json:"confidence" firestore:"confidence"`
-	DiagnosticMedia  []DiagnosticMedia  `json:"diagnosticMedia,omitempty" firestore:"diagnosticMedia,omitempty"`
-	ExtractedSignals []DiagnosticSignal `json:"extractedSignals,omitempty" firestore:"extractedSignals,omitempty"`
+	ReportedSummary   string                   `json:"reportedSummary" firestore:"reportedSummary"`
+	Known             []string                 `json:"known" firestore:"known"`
+	LikelyAreas       []string                 `json:"likelyAreas" firestore:"likelyAreas"`
+	ToConfirm         []string                 `json:"toConfirm" firestore:"toConfirm"`
+	EvidenceNeeded    []string                 `json:"evidenceNeeded" firestore:"evidenceNeeded"`
+	Confidence        string                   `json:"confidence" firestore:"confidence"`
+	DiagnosticMedia   []DiagnosticMedia        `json:"diagnosticMedia,omitempty" firestore:"diagnosticMedia,omitempty"`
+	ExtractedSignals  []DiagnosticSignal       `json:"extractedSignals,omitempty" firestore:"extractedSignals,omitempty"`
+	AnalysisStatus    DiagnosticAnalysisStatus `json:"analysisStatus,omitempty" firestore:"analysisStatus,omitempty"`
+	AnalysisAttempts  int                      `json:"analysisAttempts,omitempty" firestore:"analysisAttempts,omitempty"`
+	AnalysisError     string                   `json:"analysisError,omitempty" firestore:"analysisError,omitempty"`
+	AnalysisUpdatedAt time.Time                `json:"analysisUpdatedAt,omitempty" firestore:"analysisUpdatedAt,omitempty"`
 }
 
 // DiagnosticSignal is a bounded observation extracted from a report or image.
@@ -80,14 +84,28 @@ type DiagnosticSignal struct {
 	Value      string `json:"value" firestore:"value"`
 	Source     string `json:"source" firestore:"source"`
 	Confidence string `json:"confidence" firestore:"confidence"`
+	Status     string `json:"status,omitempty" firestore:"status,omitempty"` // SUGGESTED, CONFIRMED, DISMISSED
 }
 
 // DiagnosticMedia is manager-supplied context captured before dispatch.
 type DiagnosticMedia struct {
-	Kind  string `json:"kind" firestore:"kind"`
-	URL   string `json:"url" firestore:"url"`
-	Label string `json:"label" firestore:"label"`
+	Kind      string `json:"kind" firestore:"kind"`
+	URL       string `json:"url" firestore:"url"`
+	Label     string `json:"label" firestore:"label"`
+	ObjectKey string `json:"objectKey,omitempty" firestore:"objectKey,omitempty"`
+	MimeType  string `json:"mimeType,omitempty" firestore:"mimeType,omitempty"`
 }
+
+// DiagnosticAnalysisStatus tracks non-blocking image analysis.
+type DiagnosticAnalysisStatus string
+
+const (
+	DiagnosticAnalysisNotStarted DiagnosticAnalysisStatus = "NOT_STARTED"
+	DiagnosticAnalysisQueued     DiagnosticAnalysisStatus = "QUEUED"
+	DiagnosticAnalysisAnalyzing  DiagnosticAnalysisStatus = "ANALYZING"
+	DiagnosticAnalysisCompleted  DiagnosticAnalysisStatus = "COMPLETED"
+	DiagnosticAnalysisFailed     DiagnosticAnalysisStatus = "FAILED"
+)
 
 // Mission struct fields include the buyer-facing mandate and the engineer
 // handoff generated from the original report.

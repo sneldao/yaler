@@ -15,6 +15,7 @@ import (
 	"github.com/sneldao/yaler/internal/gemini"
 	"github.com/sneldao/yaler/internal/handler"
 	"github.com/sneldao/yaler/internal/policy"
+	"github.com/sneldao/yaler/internal/storage"
 	"github.com/sneldao/yaler/internal/store"
 	"github.com/sneldao/yaler/internal/tasks"
 )
@@ -93,6 +94,14 @@ func main() {
 
 	// 5. Initialize Handler
 	h := handler.NewHandler(st, pe, gc, tc)
+	if os.Getenv("MEDIA_STORAGE") == "gcs" {
+		mediaStore, storageErr := storage.NewGCSStore(ctx, os.Getenv("MEDIA_BUCKET"))
+		if storageErr != nil {
+			log.Fatalf("[Server] media storage init failed: %v", storageErr)
+		}
+		h.SetMediaStore(mediaStore)
+		log.Printf("[Server] Using GCS media bucket %s.", os.Getenv("MEDIA_BUCKET"))
+	}
 
 	// Concierge sweeper: periodically escalate sourcing missions whose
 	// callouts all declined or expired without a single quote (FR-6). An

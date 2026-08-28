@@ -21,6 +21,31 @@ git push origin main
 
 Requires `gcloud` authenticated to project `cognivern`. Secrets live in Secret Manager (`gemini-api-key`, `elevenlabs-api-key`, `exa-api-key`, `apify-api-key`). The browser never sees them.
 
+### Durable diagnostic media
+
+Production diagnostic uploads use a private Google Cloud Storage bucket. The
+recommended bucket is `cognivern-yaler-diagnostic-media` in `europe-west2`.
+The Cloud Run runtime service account needs object creator and viewer access;
+no service-account key belongs in the repository.
+
+One-time setup (run only after confirming the bucket name and IAM principal):
+
+```bash
+gcloud storage buckets create gs://cognivern-yaler-diagnostic-media \
+  --project=cognivern --location=europe-west2 --uniform-bucket-level-access
+RUNNER=$(gcloud run services describe yaler-backend --region=europe-west2 \
+  --project=cognivern --format='value(status.template.spec.serviceAccountName)')
+gcloud storage buckets add-iam-policy-binding gs://cognivern-yaler-diagnostic-media \
+  --member="serviceAccount:${RUNNER}" --role=roles/storage.objectCreator
+gcloud storage buckets add-iam-policy-binding gs://cognivern-yaler-diagnostic-media \
+  --member="serviceAccount:${RUNNER}" --role=roles/storage.objectViewer
+```
+
+Set `MEDIA_STORAGE=gcs` and `MEDIA_BUCKET=cognivern-yaler-diagnostic-media`
+on Cloud Run. Local development keeps `MEDIA_STORAGE` unset and uses `./uploads`.
+Uploads are private object references; diagnostic analysis reads them through
+the backend storage abstraction rather than fetching arbitrary URLs.
+
 ```bash
 make deploy-backend
 ```

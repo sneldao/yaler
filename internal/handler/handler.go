@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"io"
 	"log"
 	"math"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 	"github.com/sneldao/yaler/internal/domain"
 	"github.com/sneldao/yaler/internal/gemini"
 	"github.com/sneldao/yaler/internal/policy"
+	"github.com/sneldao/yaler/internal/storage"
 	"github.com/sneldao/yaler/internal/store"
 	"github.com/sneldao/yaler/internal/tasks"
 )
@@ -27,6 +29,7 @@ type Handler struct {
 	geminiClient     *gemini.Client
 	taskClient       tasks.Client
 	discoveryService *discovery.DiscoveryService
+	mediaStore       storage.MediaStore
 }
 
 func NewHandler(st store.Store, pe *policy.Engine, gc *gemini.Client, tc tasks.Client) *Handler {
@@ -36,6 +39,14 @@ func NewHandler(st store.Store, pe *policy.Engine, gc *gemini.Client, tc tasks.C
 		geminiClient:     gc,
 		taskClient:       tc,
 		discoveryService: discovery.NewDiscoveryService(),
+		mediaStore:       &storage.LocalStore{Root: "./uploads"},
+	}
+}
+
+// SetMediaStore configures durable media storage for production deployments.
+func (h *Handler) SetMediaStore(ms storage.MediaStore) {
+	if ms != nil {
+		h.mediaStore = ms
 	}
 }
 
@@ -44,6 +55,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/missions", h.HandleCreateMission)
 	mux.HandleFunc("GET /api/missions", h.HandleListMissions)
 	mux.HandleFunc("GET /api/missions/{id}", h.HandleGetMission)
+	mux.HandleFunc("POST /api/missions/{id}/diagnostic-signals", h.HandleUpdateDiagnosticSignal)
 	mux.HandleFunc("PUT /api/missions/{id}/mandate", h.HandleUpdateMandate)
 	mux.HandleFunc("POST /api/missions/{id}/start", h.HandleStartMission)
 	mux.HandleFunc("GET /api/missions/{id}/events", h.HandleListEvents)
@@ -189,6 +201,9 @@ func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 	if diagnosticBrief != nil {
 		m.DiagnosticBrief = *diagnosticBrief
 		m.DiagnosticBrief.DiagnosticMedia = req.DiagnosticMedia
+		if len(req.DiagnosticMedia) > 0 {
+			m.DiagnosticBrief.AnalysisStatus = domain.DiagnosticAnalysisQueued
+		}
 	}
 
 	if err := h.store.CreateMission(ctx, m); err != nil {
@@ -211,6 +226,64 @@ func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
 }
 
 // 2. List Missions
+// HandleUpdateDiagnosticSignal lets the manager confirm, edit, or dismiss
+// one observation without overwriting the original AI-generated suggestion.
+func (h *Handler) HandleUpdateDiagnosticSignal(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var req struct {
+		Index  int    `json:"index"`
+		Action string `json:"action"` // CONFIRM, EDIT, DISMISS
+		Label  string `json:"label"`
+		Value  string `json:"value"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid signal update")
+		return
+	}
+	if req.Action != "CONFIRM" && req.Action != "EDIT" && req.Action != "DISMISS" {
+		writeError(w, http.StatusBadRequest, "action must be CONFIRM, EDIT, or DISMISS")
+		return
+	}
+	m, err := h.store.GetMission(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Mission not found")
+		return
+	}
+	if req.Index < 0 || req.Index >= len(m.DiagnosticBrief.ExtractedSignals) {
+		writeError(w, http.StatusBadRequest, "signal index out of range")
+		return
+	}
+	original := m.DiagnosticBrief.ExtractedSignals[req.Index]
+	updated := original
+	switch req.Action {
+	case "CONFIRM":
+		updated.Status = "CONFIRMED"
+	case "EDIT":
+		if strings.TrimSpace(req.Value) == "" {
+			writeError(w, http.StatusBadRequest, "value is required for EDIT")
+			return
+		}
+		if strings.TrimSpace(req.Label) != "" {
+			updated.Label = strings.TrimSpace(req.Label)
+		}
+		updated.Value = strings.TrimSpace(req.Value)
+		updated.Status = "CONFIRMED"
+	case "DISMISS":
+		updated.Status = "DISMISSED"
+	}
+	m.DiagnosticBrief.ExtractedSignals[req.Index] = updated
+	m.Version++
+	m.UpdatedAt = time.Now().UTC()
+	if err := h.store.UpdateMission(r.Context(), m); err != nil {
+		writeError(w, http.StatusConflict, "Mission changed; please retry")
+		return
+	}
+	h.recordEvent(r.Context(), id, "DIAGNOSTIC_SIGNAL_REVIEWED", "BUYER", map[string]any{
+		"index": req.Index, "action": req.Action, "original": original, "updated": updated,
+	}, "ALLOW", fmt.Sprintf("diagnostic_signal:%s:%d", id, req.Index))
+	writeJSON(w, http.StatusOK, m)
+}
+
 func (h *Handler) HandleListMissions(w http.ResponseWriter, r *http.Request) {
 	missions, err := h.store.ListMissions(r.Context())
 	if err != nil {
@@ -710,29 +783,69 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 
 	if payload.TaskType == "DIAGNOSTIC_ANALYSIS" {
 		brief := m.DiagnosticBrief
+		if brief.AnalysisStatus == domain.DiagnosticAnalysisCompleted || brief.AnalysisStatus == domain.DiagnosticAnalysisAnalyzing {
+			writeJSON(w, http.StatusOK, map[string]string{"status": "analysis_complete", "missionId": m.ID})
+			return
+		}
+		if brief.AnalysisStatus == domain.DiagnosticAnalysisCompleted {
+			writeJSON(w, http.StatusOK, map[string]string{"status": "analysis_complete", "missionId": m.ID})
+			return
+		}
+		brief.AnalysisStatus = domain.DiagnosticAnalysisAnalyzing
+		brief.AnalysisAttempts++
+		brief.AnalysisUpdatedAt = time.Now().UTC()
+		m.DiagnosticBrief = brief
+		m.Version++
+		if updateErr := h.store.UpdateMission(ctx, m); updateErr != nil {
+			writeError(w, http.StatusConflict, "Diagnostic analysis already changed")
+			return
+		}
 		var analyzed []domain.DiagnosticSignal
 		for _, media := range brief.DiagnosticMedia {
-			path := filepath.Join("uploads", filepath.Base(media.URL))
-			imageBytes, readErr := os.ReadFile(path)
+			key := media.ObjectKey
+			if key == "" {
+				key = media.URL
+				if i := strings.LastIndex(key, "/"); i >= 0 {
+					key = key[i+1:]
+				}
+			}
+			reader, storedMime, readErr := h.mediaStore.Open(ctx, key)
 			if readErr != nil {
 				continue
 			}
-			signals, analyzeErr := h.geminiClient.AnalyzeDiagnosticImage(ctx, imageBytes, "image/jpeg", media.Label)
+			imageBytes, readErr := io.ReadAll(io.LimitReader(reader, 10<<20+1))
+			_ = reader.Close()
+			if readErr != nil || len(imageBytes) > 10<<20 {
+				continue
+			}
+			mimeType := media.MimeType
+			if mimeType == "" {
+				mimeType = storedMime
+			}
+			signals, analyzeErr := h.geminiClient.AnalyzeDiagnosticImage(ctx, imageBytes, mimeType, media.Label)
 			if analyzeErr != nil {
 				continue
 			}
 			analyzed = append(analyzed, signals...)
 		}
+		brief = m.DiagnosticBrief
+		brief.AnalysisUpdatedAt = time.Now().UTC()
 		if len(analyzed) > 0 {
 			brief.ExtractedSignals = append(brief.ExtractedSignals, analyzed...)
-			m.DiagnosticBrief = brief
-			m.Version++
-			m.UpdatedAt = time.Now().UTC()
-			if err := h.store.UpdateMission(ctx, m); err == nil {
-				h.recordEvent(ctx, m.ID, "DIAGNOSTIC_ANALYSIS_COMPLETED", "DEMAND_AGENT", analyzed, "ALLOW", payload.IdempotencyKey)
-			}
+			brief.AnalysisStatus = domain.DiagnosticAnalysisCompleted
+			brief.AnalysisError = ""
+			h.recordEvent(ctx, m.ID, "DIAGNOSTIC_ANALYSIS_COMPLETED", "DEMAND_AGENT", analyzed, "ALLOW", payload.IdempotencyKey)
 		} else {
-			h.recordEvent(ctx, m.ID, "DIAGNOSTIC_ANALYSIS_PENDING", "DEMAND_AGENT", "No readable image signals extracted", "ALLOW", payload.IdempotencyKey)
+			brief.AnalysisStatus = domain.DiagnosticAnalysisFailed
+			brief.AnalysisError = "No readable image signals extracted"
+			h.recordEvent(ctx, m.ID, "DIAGNOSTIC_ANALYSIS_FAILED", "DEMAND_AGENT", brief.AnalysisError, "ALLOW", payload.IdempotencyKey)
+		}
+		m.DiagnosticBrief = brief
+		m.Version++
+		m.UpdatedAt = time.Now().UTC()
+		if updateErr := h.store.UpdateMission(ctx, m); updateErr != nil {
+			writeError(w, http.StatusInternalServerError, "Failed to persist diagnostic analysis")
+			return
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"status": "analysis_complete", "missionId": m.ID})
 		return
@@ -1838,27 +1951,17 @@ func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() { _ = file.Close() }()
 
-	if err := os.MkdirAll("./uploads", 0755); err != nil {
-		writeError(w, http.StatusInternalServerError, "Failed to prepare uploads directory")
-		return
-	}
-
 	ext := "jpg"
 	if len(header.Filename) > 0 {
 		ext = header.Filename
 	}
 	filename := fmt.Sprintf("proof_%d.%s", time.Now().UnixNano(), strings.TrimPrefix(filepath.Ext(ext), "."))
-	filePath := fmt.Sprintf("./uploads/%s", filename)
-
-	out, err := os.Create(filePath)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Failed to create upload destination file")
-		return
+	key := filename
+	if h.mediaStore == nil {
+		h.mediaStore = &storage.LocalStore{Root: "./uploads"}
 	}
-	defer func() { _ = out.Close() }()
-
-	if _, err := out.ReadFrom(file); err != nil {
-		writeError(w, http.StatusInternalServerError, "Failed to save file content")
+	if err := h.mediaStore.Save(r.Context(), key, header.Header.Get("Content-Type"), file); err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to save uploaded media")
 		return
 	}
 
@@ -1869,9 +1972,11 @@ func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	publicURL := fmt.Sprintf("%s://%s/uploads/%s", scheme, r.Host, filename)
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"url":      publicURL,
-		"filename": filename,
-		"size":     header.Size,
+		"url":       publicURL,
+		"filename":  filename,
+		"objectKey": key,
+		"mimeType":  header.Header.Get("Content-Type"),
+		"size":      header.Size,
 	})
 }
 

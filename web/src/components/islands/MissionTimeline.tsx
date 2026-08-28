@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type Event, type Mission, getEvents, getMission, submitMissionFeedback } from '../../lib/api';
+import { type Event, type Mission, getEvents, getMission, submitMissionFeedback, updateDiagnosticSignal } from '../../lib/api';
 import ThinkingTrace, { type TraceRow } from '../primitives/ThinkingTrace';
 import { LoadingStatus } from '../primitives/LoaderGrid';
 import ToolChips, { type ToolChipCall } from '../primitives/ToolChips';
@@ -45,7 +45,24 @@ function announceEvent(evt: Event): string {
 }
 
 /** Paper-cutout fridge icon for empty states — pure SVG, no image request. */
-function DiagnosticBriefCard({ brief }: { brief: NonNullable<Mission['diagnosticBrief']> }) {
+function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullable<Mission['diagnosticBrief']>; missionId?: string; onUpdated?: (mission: Mission) => void }) {
+  const [busy, setBusy] = useState<number | null>(null);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [draft, setDraft] = useState('');
+  const review = async (index: number, action: 'CONFIRM' | 'DISMISS') => {
+    if (!missionId || busy !== null) return;
+    setBusy(index);
+    try { onUpdated?.(await updateDiagnosticSignal(missionId, index, action)); } finally { setBusy(null); }
+  };
+  const startEdit = (index: number, value: string) => { setEditing(index); setDraft(value); };
+  const saveEdit = async (index: number) => {
+    if (!missionId || busy !== null || draft.trim() === '') return;
+    setBusy(index);
+    try {
+      onUpdated?.(await updateDiagnosticSignal(missionId, index, 'EDIT', draft.trim()));
+      setEditing(null);
+    } finally { setBusy(null); }
+  };
   const sections = [
     ['Known', brief.known],
     ['Likely areas', brief.likelyAreas],
@@ -64,9 +81,27 @@ function DiagnosticBriefCard({ brief }: { brief: NonNullable<Mission['diagnostic
           <div>
             <p className="text-[10px] uppercase tracking-wider text-ink-muted mb-1">Signals</p>
             <div className="flex flex-wrap gap-1.5">
-              {brief.extractedSignals.map((signal) => (
+              {brief.extractedSignals.map((signal, index) => (
                 <span key={`${signal.label}-${signal.value}`} className="text-[10px] bg-paper border border-ink/10 rounded-full px-2 py-1 text-ink">
-                  {signal.label}: {signal.value} <span className="text-ink-muted">· {signal.confidence}</span>
+                  {editing === index ? (
+                    <span className="inline-flex items-center gap-1">
+                      <input
+                        autoFocus
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(index); if (e.key === 'Escape') setEditing(null); }}
+                        className="w-24 bg-paper-inset border border-ink/10 rounded px-1 py-0.5 text-ink"
+                        aria-label={`Edit ${signal.label}`}
+                      />
+                      <button type="button" className="underline" disabled={busy === index || draft.trim() === ''} onClick={() => saveEdit(index)}>save</button>
+                      <button type="button" className="underline" disabled={busy === index} onClick={() => setEditing(null)}>cancel</button>
+                    </span>
+                  ) : (
+                    <>
+                      {signal.label}: {signal.value} <span className="text-ink-muted">· {signal.status === 'CONFIRMED' ? 'confirmed' : signal.status === 'DISMISSED' ? 'dismissed' : signal.confidence}</span>
+                      {missionId && signal.status !== 'DISMISSED' && signal.status !== 'CONFIRMED' && <span className="ml-1 inline-flex gap-1"><button type="button" className="underline" disabled={busy === index} onClick={() => review(index, 'CONFIRM')}>confirm</button><button type="button" className="underline" disabled={busy === index} onClick={() => startEdit(index, signal.value)}>edit</button><button type="button" className="underline" disabled={busy === index} onClick={() => review(index, 'DISMISS')}>dismiss</button></span>}
+                    </>
+                  )}
                 </span>
               ))}
             </div>
@@ -81,7 +116,9 @@ function DiagnosticBriefCard({ brief }: { brief: NonNullable<Mission['diagnostic
           </div>
         ))}
         {brief.diagnosticMedia && brief.diagnosticMedia.length > 0 && (
-          <p className="text-[10px] text-ink-muted">Photos attached · image analysis will appear when available</p>
+          <p className="text-[10px] text-ink-muted">
+            Photos attached · {brief.analysisStatus === 'COMPLETED' ? 'visual signals extracted' : brief.analysisStatus === 'FAILED' ? 'visual analysis unavailable' : 'image analysis in progress'}
+          </p>
         )}
         {brief.diagnosticMedia && brief.diagnosticMedia.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1">
@@ -395,7 +432,7 @@ export default function MissionTimeline({
           </div>
 
           {mission.diagnosticBrief && (
-            <DiagnosticBriefCard brief={mission.diagnosticBrief} />
+            <DiagnosticBriefCard brief={mission.diagnosticBrief} missionId={mission.id} onUpdated={setMission} />
           )}
 
           {/* Progress bar */}

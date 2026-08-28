@@ -37,7 +37,7 @@ steps:
       - --memory=512Mi
       - --cpu=1
       - --concurrency=80
-      - --set-env-vars=GCP_PROJECT_ID=$PROJECT_ID
+      - --set-env-vars=GCP_PROJECT_ID=$PROJECT_ID,MEDIA_STORAGE=gcs,MEDIA_BUCKET=cognivern-yaler-diagnostic-media
       - --update-secrets=GEMINI_API_KEY=gemini-api-key:latest,ELEVENLABS_API_KEY=elevenlabs-api-key:latest,EXA_API_KEY=exa-api-key:latest,APIFY_API_KEY=apify-api-key:latest
 
 images:
