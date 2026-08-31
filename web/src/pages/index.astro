@@ -6,6 +6,8 @@ import SponsorChips from '../components/islands/SponsorChips';
 import StoryTeaser from '../components/islands/StoryTeaser';
 import DeferredWaitlist from '../components/islands/DeferredWaitlist';
 import AgentQuotePreview from '../components/islands/AgentQuotePreview';
+import HeroStepFlow from '../components/islands/HeroStepFlow';
+import AgentDiagram from '../components/islands/AgentDiagram';
 ---
 
 <Layout title="Yaler — Get the job done">
@@ -32,9 +34,7 @@ import AgentQuotePreview from '../components/islands/AgentQuotePreview';
         <h1 class="font-display text-4xl sm:text-5xl text-ink tracking-tight leading-[1.1]">
           An AI agent that gets your kitchen fixed.
         </h1>
-        <p class="text-ink-muted text-base sm:text-lg leading-relaxed max-w-md">
-          Voice in. Three AI supplier agents quote. Engineer booked. Receipt on the wall. Autonomously.
-        </p>
+        <HeroStepFlow client:visible />
       </div>
 
       <ActivityPulse client:load />
@@ -82,8 +82,9 @@ import AgentQuotePreview from '../components/islands/AgentQuotePreview';
 
     <!-- Market — one confident stat, the rest a thin strip -->
     <section class="paper-card rounded-2xl p-5 sm:p-6 space-y-4 reveal-on-scroll">
-      <div class="text-center space-y-1">
-        <p class="font-display text-5xl sm:text-6xl text-mandate leading-none">1 agent</p>
+      <div class="text-center space-y-2">
+        <AgentDiagram client:visible />
+        <p class="font-display text-4xl sm:text-5xl text-mandate leading-none">1 agent</p>
         <p class="text-sm text-ink">3 AI supplier quotes. 0 phone calls. That's the whole point.</p>
       </div>
       <div class="flex justify-center gap-6 sm:gap-10 text-center border-t border-ink/5 pt-3">

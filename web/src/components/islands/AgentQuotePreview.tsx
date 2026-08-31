@@ -15,6 +15,7 @@ interface AgentQuote {
   name: string;
   persona: string;
   tier: string;
+  tierColor: string;
   price: number;
   currency: string;
   availability: string;
@@ -29,6 +30,7 @@ const QUOTES: AgentQuote[] = [
     name: 'London Rapid ColdCare',
     persona: 'Premium emergency specialist',
     tier: 'PREMIUM',
+    tierColor: 'bg-amber-500',
     price: 480,
     currency: 'GBP',
     availability: 'Today, within 2 hours',
@@ -41,6 +43,7 @@ const QUOTES: AgentQuote[] = [
     name: 'Capital Kitchen Services',
     persona: 'Mid-market generalist',
     tier: 'MODERATE',
+    tierColor: 'bg-blue-500',
     price: 380,
     currency: 'GBP',
     availability: 'Tomorrow morning',
@@ -52,6 +55,7 @@ const QUOTES: AgentQuote[] = [
     name: 'East London Catering',
     persona: 'Budget direct fixer',
     tier: 'BUDGET',
+    tierColor: 'bg-emerald-500',
     price: 395,
     currency: 'GBP',
     availability: 'Today, within 4 hours',
@@ -78,9 +82,11 @@ export default function AgentQuotePreview() {
         {QUOTES.map((q) => (
           <div
             key={q.supplierId}
-            className={`paper-card rounded-2xl p-4 ${q.highlight ? 'border-mandate' : ''}`}
+            className={`paper-card rounded-2xl p-4 relative overflow-hidden ${q.highlight ? 'border-mandate' : ''}`}
           >
-            <div className="flex items-start justify-between gap-3">
+            {/* Tier bar — colored left edge so the three agents feel visually distinct at a glance */}
+            <div className={`absolute left-0 top-0 bottom-0 w-1 ${q.tierColor}`} aria-hidden />
+            <div className="flex items-start justify-between gap-3 pl-2">
               <div>
                 <p className="text-[11px] uppercase tracking-wider text-mandate mb-1 flex items-center gap-1">
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-mandate" />
@@ -93,10 +99,10 @@ export default function AgentQuotePreview() {
                 {formatMoney(q.price, q.currency)}
               </p>
             </div>
-            <p className="text-sm text-ink-muted mt-3 border-t border-ink/10 pt-3 leading-relaxed">
+            <p className="text-sm text-ink-muted mt-3 border-t border-ink/10 pt-3 leading-relaxed pl-2">
               {q.terms}
             </p>
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap gap-1.5 mt-2 pl-2">
               {q.evidence.map((ev) => (
                 <span
                   key={ev}
