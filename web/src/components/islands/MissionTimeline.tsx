@@ -640,7 +640,34 @@ export default function MissionTimeline({
             <span className="w-2 h-2 rounded-full bg-mandate animate-pulse" aria-hidden />
             <p className="text-sm font-medium text-ink">Matching in parallel</p>
           </div>
-          <p className="text-xs text-ink-muted">Qualified engineers get the same short window · first valid fit wins</p>
+          <p className="text-xs text-ink-muted">Three AI supplier agents get the same short window · first valid fit wins</p>
+        </div>
+      )}
+
+      {/* Sourcing animation — three AI agents preparing quotes */}
+      {mission && mission.status === 'SOURCING' && (
+        <div className="paper-card rounded-2xl p-5 space-y-3 animate-pop-in">
+          <p className="text-xs uppercase tracking-[0.14em] text-ink-muted font-medium">Three AI supplier agents are preparing quotes</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { name: 'London Rapid ColdCare', tier: 'Premium specialist', delay: '0s' },
+              { name: 'Capital Kitchen Services', tier: 'Mid-market generalist', delay: '0.4s' },
+              { name: 'East London Catering', tier: 'Budget direct fixer', delay: '0.8s' },
+            ].map((agent) => (
+              <div key={agent.name} className="rounded-xl border border-ink/10 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-mandate animate-pulse" style={{ animationDelay: agent.delay }} />
+                  <p className="text-sm font-medium text-ink truncate">{agent.name}</p>
+                </div>
+                <p className="text-[11px] text-ink-muted">{agent.tier}</p>
+                <div className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-ink/20 animate-pulse" style={{ animationDelay: agent.delay }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-ink/20 animate-pulse" style={{ animationDelay: `${parseFloat(agent.delay) + 0.2}s` }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-ink/20 animate-pulse" style={{ animationDelay: `${parseFloat(agent.delay) + 0.4}s` }} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

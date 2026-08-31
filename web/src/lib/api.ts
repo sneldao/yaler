@@ -132,6 +132,7 @@ export interface Supplier {
   verified?: boolean;
   contact?: string;
   source?: string;
+  persona?: string;
 }
 
 export type CalloutStatus = 'SENT' | 'OFFERED' | 'DECLINED' | 'EXPIRED' | 'CANCELLED';

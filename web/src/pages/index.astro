@@ -7,6 +7,7 @@ import SponsorChips from '../components/islands/SponsorChips';
 import StoryTeaser from '../components/islands/StoryTeaser';
 import DeferredWaitlist from '../components/islands/DeferredWaitlist';
 import StatsBar from '../components/islands/StatsBar';
+import AgentQuotePreview from '../components/islands/AgentQuotePreview';
 ---
 
 <Layout title="Yaler — Get the job done">
@@ -22,19 +23,23 @@ import StatsBar from '../components/islands/StatsBar';
     <!-- ═══ Act 1 — Hook ═══ -->
     <section class="space-y-5 pt-4">
       <div class="space-y-3">
+        <p class="text-xs uppercase tracking-[0.14em] text-mandate font-medium flex items-center gap-1.5">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-mandate" />
+          Powered by Gemini 3.5 Flash
+        </p>
         <h1 class="font-display text-4xl sm:text-5xl text-ink tracking-tight leading-[1.1]">
-          Equipment breaks. Every minute costs you money.
+          An AI agent that gets your kitchen fixed.
         </h1>
         <p class="text-ink-muted text-base sm:text-lg leading-relaxed max-w-md">
-          A verified local engineer, inside your budget, receipt when it's done. Autonomously.
+          Voice in. Three AI supplier agents quote. Engineer booked. Receipt on the wall. Autonomously.
         </p>
       </div>
 
       <ActivityPulse client:load />
 
       <div class="flex flex-col sm:flex-row gap-3">
-        <a href="/rehearsal" class="btn-primary text-sm py-3 px-6 text-center">See it work</a>
-        <a href="/missions/new" class="btn-secondary text-sm py-3 px-6 text-center">Start a job</a>
+        <a href="/rehearsal" class="btn-primary text-sm py-3 px-6 text-center">Watch the demo</a>
+        <a href="/missions/new" class="btn-secondary text-sm py-3 px-6 text-center">Try it live</a>
       </div>
 
       {/* Trust strip — honest product truths, not vanity numbers */}
@@ -49,6 +54,11 @@ import StatsBar from '../components/islands/StatsBar';
       <TimeCompare client:load />
     </section>
 
+    <!-- ═══ Act 1.5 — The product, visible ═══ -->
+    <section class="space-y-3 reveal-on-scroll">
+      <AgentQuotePreview client:load />
+    </section>
+
     <!-- ═══ Act 2 — Proof ═══ -->
     <section class="space-y-4 reveal-on-scroll">
       <div class="flex items-center justify-between gap-3">
@@ -57,6 +67,15 @@ import StatsBar from '../components/islands/StatsBar';
       </div>
       <StepsCarousel client:load />
     </section>
+
+    <!-- ═══ Act 2.5 — Play (moved up, not buried) ═══ -->
+    <div class="reveal-on-scroll">
+      <a href="/play" class="paper-card paper-card-hover rounded-2xl p-5 block space-y-1">
+        <p class="text-xs uppercase tracking-[0.14em] text-mandate font-medium">Play — 30 seconds</p>
+        <p class="font-display text-lg text-ink">Walk through the kitchen</p>
+        <p class="text-sm text-ink-muted">See what happens when the fridge dies at 6:47am.</p>
+      </a>
+    </div>
 
     <!-- ═══ Act 3 — Deep dive ═══ -->
     <section class="space-y-3 reveal-on-scroll">
@@ -68,12 +87,8 @@ import StatsBar from '../components/islands/StatsBar';
       <StoryTeaser client:load />
     </div>
 
-    <!-- Explore — two doors for two audiences -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 reveal-on-scroll">
-      <a href="/play" class="paper-card paper-card-hover rounded-2xl p-5 block space-y-1">
-        <p class="text-xs uppercase tracking-[0.14em] text-mandate font-medium">Play — 30 seconds</p>
-        <p class="font-display text-lg text-ink">Walk through the kitchen</p>
-      </a>
+    <!-- Explore — behind the scenes for the curious -->
+    <div class="reveal-on-scroll">
       <a href="/ops" class="paper-card paper-card-hover rounded-2xl p-5 block space-y-1">
         <p class="text-xs uppercase tracking-[0.14em] text-ink-muted font-medium">Behind the scenes</p>
         <p class="font-display text-lg text-ink">Concierge dispatch desk</p>
@@ -85,11 +100,11 @@ import StatsBar from '../components/islands/StatsBar';
       <StatsBar client:load />
     </section>
 
-    <!-- Market — one hero stat, the rest a thin strip -->
+    <!-- Market — one confident stat, the rest a thin strip -->
     <section class="paper-card rounded-2xl p-5 sm:p-6 space-y-4 reveal-on-scroll">
       <div class="text-center space-y-1">
-        <p class="font-display text-5xl sm:text-6xl text-mandate leading-none">0</p>
-        <p class="text-sm text-ink">autonomous options for a broken kitchen today</p>
+        <p class="font-display text-5xl sm:text-6xl text-mandate leading-none">1 agent</p>
+        <p class="text-sm text-ink">3 AI supplier quotes. 0 phone calls. That's the whole point.</p>
       </div>
       <div class="flex justify-center gap-6 sm:gap-10 text-center border-t border-ink/5 pt-3">
         <div>

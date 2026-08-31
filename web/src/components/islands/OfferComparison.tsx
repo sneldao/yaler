@@ -257,6 +257,17 @@ export default function OfferComparison({
     return supplierLabel(offer.supplierAgentId);
   };
 
+  const supplierPersona = (offer: Offer): string | null => {
+    const sup = supplierMap.get(normalise(offer.supplierAgentId));
+    if (!sup) return null;
+    const tierMap: Record<string, string> = {
+      PREMIUM: 'Premium emergency specialist',
+      MODERATE: 'Mid-market generalist',
+      BUDGET: 'Budget direct fixer',
+    };
+    return tierMap[sup.priceTier] || null;
+  };
+
   // Skeletons, not spinners — ghosted offer cards while the first load runs.
   if (!loaded) {
     return <SkeletonOfferCards count={3} />;
@@ -368,6 +379,9 @@ export default function OfferComparison({
                     <p className="text-[11px] uppercase tracking-wider text-mandate mb-1">Verified engineer</p>
                   )}
                   <p className="font-medium text-ink">{supplierName(offer)}</p>
+                  {supplierPersona(offer) && (
+                    <p className="text-[11px] text-ink-muted mt-0.5">{supplierPersona(offer)}</p>
+                  )}
                   <p className="text-xs text-ink-muted mt-0.5">{offer.availability}</p>
                 </div>
                 <p className="font-display text-2xl tabular-nums sm:text-3xl text-ink">{formatMoney(offer.price, offer.currency)}</p>

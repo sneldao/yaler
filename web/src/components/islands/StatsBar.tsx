@@ -45,7 +45,7 @@ export default function StatsBar() {
   // When only 1 completed (seed data), show the broader "jobs in system" count
   // so the bar reads as meaningful rather than "1".
   const buyers = stats.distinctBuyers > 0
-    ? `${formatNumber(stats.distinctBuyers)} kitchens`
+    ? `${formatNumber(stats.distinctBuyers)} kitchen${stats.distinctBuyers === 1 ? '' : 's'}`
     : `${formatNumber(stats.totalMissions)} jobs`;
   const completedLabel = live && stats.completed > 1
     ? `${formatNumber(stats.completed)} verified jobs`
