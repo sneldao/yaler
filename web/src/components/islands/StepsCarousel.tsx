@@ -52,7 +52,7 @@ function StepCard({
         <span className="font-machine text-sm font-bold text-mandate">
           {String(index + 1).padStart(2, '0')}
         </span>
-        <span className="font-machine text-[9px] uppercase tracking-[0.16em] text-ink-muted">
+        <span className="font-machine text-[9px] uppercase tracking-[0.12em] text-ink-muted">
           spike
         </span>
       </div>
@@ -111,11 +111,11 @@ export default function StepsCarousel() {
   }, []);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 overflow-hidden">
       <div className="ticket-rail">
         <div
           ref={rowRef}
-          className="snap-row hide-scrollbar flex gap-4 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:overflow-visible"
+          className="snap-row hide-scrollbar flex gap-3 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:overflow-visible"
           role="list"
           aria-label="How it works — three steps on the rail"
         >
