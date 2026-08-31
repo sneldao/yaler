@@ -396,13 +396,60 @@ export default function MissionTimeline({
   const activeSponsor = sponsorState.active;
   const completedSponsors = sponsorState.done;
 
-  const traceRows: TraceRow[] = events.map((evt) => ({
-    primary: eventLabel(evt.type),
-    secondary: new Date(evt.createdAt).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' }),
-    policyResult: evt.policyResult as 'ALLOW' | 'ESCALATE' | 'DENY',
-    actor: evt.actor,
-    mono: false,
-  }));
+  const traceRows: TraceRow[] = events.map((evt) => {
+    const primary = eventLabel(evt.type);
+    const time = new Date(evt.createdAt).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
+
+    // Enrich quote and decline events with payload details so the
+    // timeline shows *which* supplier and *what price* — not just "Quote in".
+    if (evt.type === 'OFFER_RECEIVED' || evt.type === 'QUOTE_RECEIVED') {
+      const p = evt.payload;
+      if (p && typeof p === 'object' && p.price !== undefined) {
+        const name = supplierLabel(p.supplierAgentId || evt.actor);
+        const price = formatMoney(p.price, p.currency || 'GBP');
+        return {
+          primary: `${primary} — ${name}`,
+          secondary: `${price} · ${p.availability || ''} · ${time}`.trim(),
+          policyResult: evt.policyResult as 'ALLOW' | 'ESCALATE' | 'DENY',
+          actor: evt.actor,
+          mono: false,
+        };
+      }
+    }
+    if (evt.type === 'CALLOUT_DECLINED') {
+      const p = evt.payload;
+      if (p && typeof p === 'object' && p.supplier) {
+        const reason = p.reason ? ` — ${p.reason}` : '';
+        return {
+          primary: `${primary} — ${p.supplier}${reason}`,
+          secondary: time,
+          policyResult: evt.policyResult as 'ALLOW' | 'ESCALATE' | 'DENY',
+          actor: evt.actor,
+          mono: false,
+        };
+      }
+    }
+    if (evt.type === 'SUPPLIERS_SOURCED') {
+      const p = evt.payload;
+      if (p && typeof p === 'string') {
+        return {
+          primary,
+          secondary: `${p} · ${time}`,
+          policyResult: evt.policyResult as 'ALLOW' | 'ESCALATE' | 'DENY',
+          actor: evt.actor,
+          mono: false,
+        };
+      }
+    }
+
+    return {
+      primary,
+      secondary: time,
+      policyResult: evt.policyResult as 'ALLOW' | 'ESCALATE' | 'DENY',
+      actor: evt.actor,
+      mono: false,
+    };
+  });
 
   const toolCalls: ToolChipCall[] = events.map((evt) => {
     const isAllow = evt.policyResult === 'ALLOW';

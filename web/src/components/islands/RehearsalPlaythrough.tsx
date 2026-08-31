@@ -124,7 +124,7 @@ export default function RehearsalPlaythrough({ autoplay }: Props) {
   const quoteMission: Mission = { ...mission, status: 'AWAITING_APPROVAL' };
   const doneMission: Mission = { ...mission, status: 'COMPLETED' };
   const receipt = rehearsalReceipt(
-    booked?.supplierAgentId || 'London Rapid ColdCare',
+    booked?.supplierAgentId?.replace(/^sup[_-]?/i, '').replace(/[^a-zA-Z0-9 ]/g, ' ').trim() || 'London Rapid ColdCare',
     booked?.price || 480,
   );
   const activeIdx = PHASES.findIndex((step) => step.id === phase);

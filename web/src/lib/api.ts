@@ -89,6 +89,7 @@ export interface Offer {
   status: string;
   createdAt: string;
   simulated?: boolean;
+  evidence?: string[];
 }
 
 export interface Event {

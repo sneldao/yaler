@@ -55,7 +55,7 @@ export function agentNarrative(status?: string, opts: { offerCount?: number; bud
     case 'MANDATE_CONFIRMED':
       return 'Rules confirmed. Lining up the search for nearby engineers.';
     case 'SOURCING':
-      return 'Asking verified engineers near you who can take the job…';
+      return 'Asking AI supplier agents near you who can take the job…';
     case 'OFFERS_RECEIVED':
       return n > 0 && budget
         ? `Comparing ${n} quote${n === 1 ? '' : 's'} against your ${budget} budget…`
@@ -105,7 +105,7 @@ export const AGENT_TOOLS: { id: string; label: string; eventTypes: string[] }[] 
 const STATUS_LABELS: Record<string, string> = {
   DRAFT: 'Check the details',
   MANDATE_CONFIRMED: 'Ready',
-  SOURCING: 'Asking nearby engineers',
+  SOURCING: 'Asking AI supplier agents',
   OFFERS_RECEIVED: 'Quotes in',
   NEGOTIATING: 'Comparing quotes',
   COMMITTED: 'Booked',

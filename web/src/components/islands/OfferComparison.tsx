@@ -90,9 +90,9 @@ function computeConfidence(
       ? 30
       : 50;
   const reliabilityNote = sup
-    ? `${reliability}% from ${sup.displayName}'s completed jobs and ratings.`
+    ? `${reliability}% from ${sup.displayName.replace(/\s*\(Synthetic\)\s*$/i, '')}'s completed jobs and ratings.`
     : offer.simulated
-      ? 'Simulated roster entry — no track record.'
+      ? 'AI supplier agent — no track record yet.'
       : 'No track record on the roster yet.';
 
   const aggregate = Math.round(mandate * 0.5 + verified * 0.25 + reliability * 0.25);
@@ -238,6 +238,25 @@ export default function OfferComparison({
     });
   }, [offers, confidenceById]);
 
+  // Supplier lookup map — uses the real displayName from the roster
+  // instead of deriving a label from the raw supplierAgentId string.
+  const supplierMap = useMemo(() => {
+    const map = new Map<string, Supplier>();
+    for (const s of suppliers) {
+      map.set(normalise(s.id), s);
+    }
+    return map;
+  }, [suppliers]);
+
+  const supplierName = (offer: Offer): string => {
+    const sup = supplierMap.get(normalise(offer.supplierAgentId));
+    if (sup?.displayName) {
+      // Strip the "(Synthetic)" suffix for display — it's noise on the card.
+      return sup.displayName.replace(/\s*\(Synthetic\)\s*$/i, '');
+    }
+    return supplierLabel(offer.supplierAgentId);
+  };
+
   // Skeletons, not spinners — ghosted offer cards while the first load runs.
   if (!loaded) {
     return <SkeletonOfferCards count={3} />;
@@ -272,12 +291,12 @@ export default function OfferComparison({
     try {
       if (rehearsal) {
         onBooked?.(selected);
-        setMessage(`In a real job we would book ${supplierLabel(selected.supplierAgentId)} for ${formatMoney(selected.price, selected.currency)}. Nothing was booked.`);
+        setMessage(`In a real job we would book ${supplierName(selected)} for ${formatMoney(selected.price, selected.currency)}. Nothing was booked.`);
         return;
       }
       if (!missionId) return;
       await approveException(missionId, 'APPROVE', selected.id);
-      setMessage(`Booked ${supplierLabel(selected.supplierAgentId)} for ${formatMoney(selected.price, selected.currency)}.`);
+      setMessage(`Booked ${supplierName(selected)} for ${formatMoney(selected.price, selected.currency)}.`);
     } catch (err: any) {
       setMessage(err.message || 'Could not confirm that engineer.');
     } finally {
@@ -316,6 +335,8 @@ export default function OfferComparison({
           const isSelected = offer.id === selected.id;
           const isBlocked = offer.status === 'BLOCKED';
           const isSimulated = offer.simulated === true;
+          const sup = supplierMap.get(normalise(offer.supplierAgentId));
+          const evidenceList = offer.evidence?.length ? offer.evidence : sup?.evidence ?? [];
           // Prefer a real (non-simulated) quote as the default selection —
           // a simulated quote is never auto-selected over a real one.
           return (
@@ -329,7 +350,7 @@ export default function OfferComparison({
                   : isSelected
                     ? 'border-mandate'
                     : 'hover:border-ink/20'
-              } ${isSimulated ? 'opacity-70' : ''}`}
+              }`}
               disabled={isBlocked}
             >
               <div className="flex items-start justify-between gap-3">
@@ -337,23 +358,37 @@ export default function OfferComparison({
                   {offer.status === 'BLOCKED' ? (
                     <p className="text-[11px] uppercase tracking-wider text-escalate mb-1">Over your ceiling</p>
                   ) : isSimulated ? (
-                    <p className="text-[11px] uppercase tracking-wider text-ink-muted mb-1">Simulated — not a real offer</p>
+                    <p className="text-[11px] uppercase tracking-wider text-mandate mb-1 flex items-center gap-1">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-mandate" />
+                      AI agent quote
+                    </p>
                   ) : idx === 0 && !isSimulated ? (
                     <p className="text-[11px] uppercase tracking-wider text-mandate mb-1">Best match · Verified engineer</p>
                   ) : (
                     <p className="text-[11px] uppercase tracking-wider text-mandate mb-1">Verified engineer</p>
                   )}
-                  <p className={`font-medium ${isSimulated ? 'text-ink-muted' : 'text-ink'}`}>{supplierLabel(offer.supplierAgentId)}</p>
+                  <p className="font-medium text-ink">{supplierName(offer)}</p>
                   <p className="text-xs text-ink-muted mt-0.5">{offer.availability}</p>
                 </div>
-                <p className={`font-display text-2xl tabular-nums sm:text-3xl ${isSimulated ? 'text-ink-muted' : 'text-ink'}`}>{formatMoney(offer.price, offer.currency)}</p>
+                <p className="font-display text-2xl tabular-nums sm:text-3xl text-ink">{formatMoney(offer.price, offer.currency)}</p>
               </div>
+              {/* Terms — always visible, in the supplier agent's own voice */}
+              {offer.terms && (
+                <p className="text-sm text-ink-muted mt-3 border-t border-ink/10 pt-3 leading-relaxed">{offer.terms}</p>
+              )}
+              {/* Certifications — LLM-generated evidence chips */}
+              {evidenceList.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {evidenceList.map((ev) => (
+                    <span key={ev} className="text-[10px] px-2 py-0.5 rounded-full bg-mandate/10 text-mandate border border-mandate/20 font-medium">
+                      {ev.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </span>
+                  ))}
+                </div>
+              )}
               {/* Confidence — why the agent ranks this quote where it does */}
               {confidenceById.get(offer.id) && (
                 <ConfidenceMeter confidence={confidenceById.get(offer.id)!} />
-              )}
-              {isSelected && offer.terms && (
-                <p className="text-sm text-ink-muted mt-3 border-t border-ink/10 pt-3">{offer.terms}</p>
               )}
               {isSelected && offer.explanation && (
                 <p className="text-xs text-ink-muted mt-2">{offer.explanation}</p>
@@ -370,7 +405,7 @@ export default function OfferComparison({
               )}
               <p className="text-[11px] text-ink-muted mt-2 flex items-center gap-1.5">
                 {isSimulated
-                  ? 'Demo response — no real engineer was asked.'
+                  ? 'AI supplier agent — Gemini 3.5 Flash generated this quote.'
                   : (
                     <>
                       <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full border border-orange-200 bg-orange-50 text-orange-600 font-medium">Apify</span>
@@ -399,7 +434,7 @@ export default function OfferComparison({
             <tbody>
               {sortedOffers.map((offer) => (
                 <tr key={offer.id} className="border-b border-ink/5 last:border-0">
-                  <td className="p-3 text-ink">{supplierLabel(offer.supplierAgentId)}</td>
+                  <td className="p-3 text-ink">{supplierName(offer)}</td>
                   <td className="p-3 text-ink-muted">{offer.availability}</td>
                   <td className="p-3 font-medium">{formatMoney(offer.price, offer.currency)}</td>
                   <td className="p-3 text-ink-muted tabular-nums">{confidenceById.get(offer.id)?.aggregate ?? '—'}/100</td>
@@ -416,8 +451,8 @@ export default function OfferComparison({
             {isAlreadyBooked
               ? 'Already booked'
               : blocked
-                ? `We will not book ${supplierLabel(selected.supplierAgentId)}`
-                : `Book ${supplierLabel(selected.supplierAgentId)}?`}
+                ? `We will not book ${supplierName(selected)}`
+                : `Book ${supplierName(selected)}?`}
           </p>
           <p className="text-xs text-ink-muted">
             {isAlreadyBooked
