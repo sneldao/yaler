@@ -47,3 +47,6 @@ uploads/
 # Private Operational Documentation
 OPS.md
 /server
+
+# Agent tooling
+.qoder/
