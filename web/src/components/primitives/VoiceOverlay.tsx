@@ -191,10 +191,10 @@ export default function VoiceOverlay({
           {phase === 'done' && (
             <>
               {/* What was said */}
-              {finalText && (
+              {finalTranscript && (
                 <div className="paper-card rounded-2xl p-5 space-y-2">
                   <p className="text-[10px] uppercase tracking-[0.14em] text-ink-muted">You said</p>
-                  <p className="text-ink text-sm leading-relaxed italic">"{finalText}"</p>
+                  <p className="text-ink text-sm leading-relaxed italic">"{finalTranscript}"</p>
                 </div>
               )}
 
