@@ -446,6 +446,19 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
                 <h2 className="font-display text-3xl text-ink mt-1">Job done</h2>
                 <p className="text-xs text-ink-muted mt-1">Nothing was booked. This is how the paper would look.</p>
               </header>
+
+              {/* Decision trail — how we got here, always visible on the receipt */}
+              <div className="rounded-lg bg-ink/5 px-4 py-3 space-y-1.5">
+                <p className="text-[10px] uppercase tracking-wider text-ink-muted">How the agent handled this</p>
+                <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink">
+                  <span className="rounded-full bg-paper border border-ink/10 px-2 py-0.5">3 quotes in</span>
+                  <span className="text-ink-muted">→</span>
+                  <span className="rounded-full bg-escalate/10 border border-escalate/20 text-escalate px-2 py-0.5">1 blocked · £80 over ceiling</span>
+                  <span className="text-ink-muted">→</span>
+                  <span className="rounded-full bg-mandate/10 border border-mandate/20 text-mandate px-2 py-0.5">Booked {booked.supplierAgentId?.replace(/^sup[_-]?/i, '').replace(/[^a-zA-Z0-9 ]/g, ' ').trim() || 'Capital Kitchen'} · {formatMoney(booked.price, booked.currency)}</span>
+                </div>
+              </div>
+
               <p className="font-display text-xl leading-snug text-ink">{receipt.summary}</p>
               <p className="text-sm text-ink leading-relaxed">{receipt.agreedTerms}</p>
               <ul className="space-y-1.5">

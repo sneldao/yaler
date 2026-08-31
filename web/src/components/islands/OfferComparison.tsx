@@ -327,11 +327,30 @@ export default function OfferComparison({
           detail="Apify scrapes the UK public register to verify each engineer is a real registered business. Fails closed to 'not checked' on any error."
         />
       )}
+
+      {/* Decision trail — the agent's voice, always visible. Not a collapsible. */}
+      <div className="rounded-xl bg-mandate/5 border border-mandate/20 px-4 py-3 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-mandate" />
+          <p className="text-sm text-ink leading-relaxed">
+            {(() => {
+              const total = sortedOffers.length;
+              const blockedCount = sortedOffers.filter((o) => o.status === 'BLOCKED').length;
+              const inBudget = total - blockedCount;
+              if (blockedCount > 0) {
+                return `${total} quotes in. ${blockedCount} blocked at ${formatMoney(sortedOffers.find((o) => o.status === 'BLOCKED')?.price || 0, sortedOffers[0]?.currency || 'GBP')} — over your ${formatMoney(budgetMax || 0, sortedOffers[0]?.currency || 'GBP')} ceiling. ${inBudget} under budget. Pick one.`;
+              }
+              return `${total} quotes in, all under your ${formatMoney(budgetMax || 0, sortedOffers[0]?.currency || 'GBP')} ceiling. Best fit is first.`;
+            })()}
+          </p>
+        </div>
+      </div>
+
       <div className="flex items-end justify-between gap-3">
         <div>
           <h3 className="font-display text-2xl text-ink">Quotes</h3>
           <p className="text-sm text-ink-muted">
-            {rehearsal ? 'One is over the ceiling. We stopped there first.' : `${offers.length} responses · best fit is first`}
+            {rehearsal ? 'Tap a card to select. Then book.' : `${offers.length} responses · best fit is first`}
           </p>
         </div>
         <button
@@ -409,18 +428,29 @@ export default function OfferComparison({
               {confidenceById.get(offer.id) && (
                 <ConfidenceMeter confidence={confidenceById.get(offer.id)!} />
               )}
+              {/* Why this fit — one sentence, always visible. Not a tooltip, not a collapsible. */}
+              {confidenceById.get(offer.id) && (() => {
+                const c = confidenceById.get(offer.id)!;
+                const parts: string[] = [];
+                if (isBlocked) {
+                  parts.push(`£${Math.round(offer.price - (budgetMax || 0))} over your ceiling`);
+                } else if (budgetMax && offer.price <= budgetMax * 0.6) {
+                  parts.push('Comfortably under ceiling');
+                } else if (budgetMax) {
+                  parts.push('Under ceiling');
+                }
+                if (c.verified >= 70) parts.push('register verified');
+                else if (c.verified < 45) parts.push('not on register');
+                if (c.reliability >= 70) parts.push('strong track record');
+                else if (c.reliability < 45) parts.push('no track record yet');
+                return (
+                  <p className="text-xs text-ink-muted mt-2 leading-relaxed">
+                    {parts.length > 0 ? parts.join(' · ') : 'Ranked by confidence score'}
+                  </p>
+                );
+              })()}
               {isSelected && offer.explanation && (
-                <p className="text-xs text-ink-muted mt-2">{offer.explanation}</p>
-              )}
-              {isSelected && confidenceById.get(offer.id) && (
-                <details className="sm:hidden mt-3 border-t border-ink/10 pt-2">
-                  <summary className="min-h-11 flex items-center text-xs font-medium text-ink-muted cursor-pointer">Why this fit</summary>
-                  <div className="space-y-1 text-xs text-ink-muted pb-1">
-                    <p>Budget: {confidenceById.get(offer.id)!.mandateNote}</p>
-                    <p>Business: {confidenceById.get(offer.id)!.verifiedNote}</p>
-                    <p>Reliability: {confidenceById.get(offer.id)!.reliabilityNote}</p>
-                  </div>
-                </details>
+                <p className="text-xs text-ink-muted mt-1 italic">{offer.explanation}</p>
               )}
               <p className="text-[11px] text-ink-muted mt-2 flex items-center gap-1.5">
                 {isSimulated
