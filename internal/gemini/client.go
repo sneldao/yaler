@@ -58,9 +58,32 @@ type Client struct {
 }
 
 func NewClient(ctx context.Context) (*Client, error) {
+	modelName := "gemini-3.5-flash"
+
+	// Prefer Vertex AI when GCP_PROJECT_ID is set (production / Cloud Run).
+	// Vertex AI uses Application Default Credentials — no API key needed.
+	// The Cloud Run service account (roles/editor) has Vertex AI User.
+	if project := os.Getenv("GCP_PROJECT_ID"); project != "" {
+		location := os.Getenv("GOOGLE_CLOUD_LOCATION")
+		if location == "" {
+			location = "global" // gemini-3.5-flash Standard PayGo supports global/eu/us
+		}
+		cfg := &genai.ClientConfig{
+			Project:  project,
+			Location: location,
+			Backend:  genai.BackendVertexAI,
+		}
+		gc, err := genai.NewClient(ctx, cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Vertex AI client: %w", err)
+		}
+		return &Client{genaiClient: gc, modelName: modelName}, nil
+	}
+
+	// Fall back to Gemini API key for local development.
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
-		return &Client{modelName: "gemini-3.5-flash"}, nil
+		return &Client{modelName: modelName}, nil
 	}
 
 	cfg := &genai.ClientConfig{
@@ -73,7 +96,7 @@ func NewClient(ctx context.Context) (*Client, error) {
 
 	return &Client{
 		genaiClient: gc,
-		modelName:   "gemini-3.5-flash",
+		modelName:   modelName,
 	}, nil
 }
 

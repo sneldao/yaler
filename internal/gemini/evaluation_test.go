@@ -9,6 +9,8 @@ import (
 )
 
 func TestDiagnosticFallbackFixtures(t *testing.T) {
+	t.Setenv("GEMINI_API_KEY", "")
+	t.Setenv("GCP_PROJECT_ID", "")
 	client, err := gemini.NewClient(context.Background())
 	if err != nil {
 		t.Fatal(err)

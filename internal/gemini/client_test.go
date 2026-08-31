@@ -9,6 +9,8 @@ import (
 )
 
 func TestGeminiFallback(t *testing.T) {
+	t.Setenv("GEMINI_API_KEY", "")
+	t.Setenv("GCP_PROJECT_ID", "")
 	ctx := context.Background()
 	client, err := gemini.NewClient(ctx)
 	if err != nil {

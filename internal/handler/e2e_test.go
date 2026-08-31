@@ -23,6 +23,7 @@ import (
 func setupE2E(t *testing.T, suppliers ...*domain.Supplier) (http.Handler, *store.MemoryStore) {
 	t.Helper()
 	t.Setenv("GEMINI_API_KEY", "") // force the offline fallback client
+	t.Setenv("GCP_PROJECT_ID", "") // don't use Vertex AI in tests
 
 	st := store.NewMemoryStore()
 	pe := policy.NewEngine()
