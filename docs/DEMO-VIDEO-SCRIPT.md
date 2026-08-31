@@ -41,7 +41,7 @@
 
 **Visual**: Click "Start looking." Show the timeline animation as events populate.
 
-> You confirm. The agent starts sourcing. Watch the timeline: it searches curated suppliers, collects offers, ranks them against the mandate. Three synthetic London suppliers respond with availability, price, and capability.
+> You confirm. The agent starts sourcing. Watch the timeline: it calls three independent supplier agents, each powered by Gemini 3.5 Flash and role-playing a different London business persona. They generate independent quotes with real reasoning — a premium specialist, a mid-market firm, and a budget outfit, each in their own voice.
 
 **Cut to**: The offer comparison view. Show the ranking.
 

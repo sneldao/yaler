@@ -48,7 +48,8 @@ Core flow:
 
 ```
 Buyer speaks/types → Gemini extracts mandate → Policy checks rules →
-Cloud Tasks queues worker → Worker sources suppliers (Exa) →
+Cloud Tasks queues worker → Worker calls 3 supplier agents (Gemini) →
+Each supplier agent role-plays a persona, generates independent quote →
 Gemini ranks offers → Policy enforces ceiling → Booking committed →
 Engineer submits evidence → Gemini verifies → Receipt issued
 ```
@@ -126,6 +127,7 @@ Full runbook: [docs/DEMO-RUNBOOK.md](./DEMO-RUNBOOK.md)
 - **Paper UI > dark console.** Kitchen managers don't want a dashboard. They want a receipt they can stick on the wall. This design decision made the demo feel like a product, not a prototype.
 - **Seeded replay mode** was the right call. A live demo is fragile; a scrubber replay of a completed mission is bulletproof and lets judges verify the full lifecycle at their own pace.
 - **Gemini proposes, Go decides.** Keeping the model behind a pure-function policy engine meant we could test every decision path deterministically. No Gemini response mutates state directly.
+- **Multi-agent supplier quotes.** Each supplier agent gets an independent Gemini 3.5 Flash call with its own persona (premium specialist, mid-market firm, budget outfit). The quotes are genuinely LLM-generated — different prices, different terms, different voices — and the buyer agent ranks them. This turned the sourcing step from deterministic code into real agent-to-agent interaction.
 
 ### What we'd do differently
 - **Voice input (Vapi) is a polish cost.** Speak-in works when the key is set; falls back to Web Speech otherwise. For a hackathon, the text path is sufficient and more reliable.
@@ -134,7 +136,7 @@ Full runbook: [docs/DEMO-RUNBOOK.md](./DEMO-RUNBOOK.md)
 
 ### Technical debt / future work
 - `google.golang.org/genai` (GenAI SDK) is wired and working; Google ADK could be layered in later for tool-calling orchestration, but the current GenAI SDK + pure-function policy engine satisfies the hackathon requirement and keeps the architecture clean.
-- Vertex AI migration is planned for production (D014 decision). Current API-key path is fine for demo.
+- Vertex AI authentication is live (Application Default Credentials via Cloud Run service account). The Gemini API key path remains as a local-dev fallback.
 - Outbound voice/SMS notifications (milestone calls to engineers) are Horizon 2 — deferred intentionally.
 
 ---
@@ -143,7 +145,7 @@ Full runbook: [docs/DEMO-RUNBOOK.md](./DEMO-RUNBOOK.md)
 
 | Criterion (weight) | Evidence |
 |---|---|
-| **Innovation & Operational Utility 40%** | Agent completes a real operational workflow (find → book → verify → receipt) autonomously, not just chat. The over-budget policy stop proves autonomy isn't blind compliance — the agent *refuses* to break the owner's rules. Cloud Tasks drives multi-step missions that survive scale-to-zero and run for hours without hand-holding. |
+| **Innovation & Operational Utility 40%** | Agent completes a real operational workflow (find → book → verify → receipt) autonomously, not just chat. Multi-agent sourcing: 3 independent Gemini-powered supplier agents role-play different business personas and generate independent quotes — the buyer agent then ranks them. The over-budget policy stop proves autonomy isn't blind compliance — the agent *refuses* to break the owner's rules. Cloud Tasks drives multi-step missions that survive scale-to-zero and run for hours without hand-holding. |
 | **Architectural Discipline 30%** | Pure-function policy engine (`internal/policy/`) validates every Gemini proposal. Append-only event log in Firestore with version-checked writes prevents race conditions. Idempotent worker steps via `ExpectedVersion` + `IdempotencyKey` — safe to retry on both local and Cloud Tasks transports. Gemini never mutates state directly; it proposes typed actions, Go decides. 14-state mission state machine with table-driven tests. |
 | **Demo & Production Readiness 30%** | Live hosted app (yaler.persidian.com), public repo (github.com/sneldao/yaler), 12 seeded missions covering all lifecycle states, replay mode with scrubber, spin-up instructions in README, architecture diagram (SVG + PNG), visible Google Cloud backend (Cloud Run console + live `.run.app` endpoint in the demo video). |
 
