@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   type CredentialCheck,
   type FoundEngineer,
@@ -13,6 +13,7 @@ import {
 import { SkeletonOfferCards } from '../primitives/Skeleton';
 import SponsorCallout from '../primitives/SponsorCallout';
 import { EMPTY_STATE_COPY, formatMoney, supplierLabel } from '../../lib/copy';
+import { playUiSound, playHaptic, stamp } from '../../lib/delight';
 
 interface Props {
   missionId?: string;
@@ -160,6 +161,7 @@ export default function OfferComparison({
     ? offersProp?.find((offer) => offer.status === 'BLOCKED')?.id ?? offersProp?.[0]?.id ?? null
     : offersProp?.[0]?.id ?? null;
   const [offers, setOffers] = useState<Offer[]>(offersProp ?? []);
+  const confirmBtnRef = useRef<HTMLButtonElement>(null);
   const [loaded, setLoaded] = useState(!!offersProp || !missionId);
   const [selectedId, setSelectedId] = useState<string | null>(initialSelected);
   const [showCompare, setShowCompare] = useState(false);
@@ -299,6 +301,11 @@ export default function OfferComparison({
 
   const handleConfirm = async () => {
     if (!selected || blocked) return;
+    // Stamp-down: the decision feels like a rubber stamp coming down.
+    // Heavy haptic + the stop sound (a firm thud) + the stamp visual.
+    playHaptic('stop');
+    playUiSound('stop');
+    stamp(confirmBtnRef.current);
     setSubmitting(true);
     setMessage(null);
     try {
@@ -538,6 +545,7 @@ export default function OfferComparison({
           )}
         </div>
         <button
+          ref={confirmBtnRef}
           type="button"
           onClick={handleConfirm}
           disabled={submitting || blocked || isAlreadyBooked}

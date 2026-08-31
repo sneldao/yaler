@@ -8,6 +8,7 @@ import DeferredWaitlist from '../components/islands/DeferredWaitlist';
 import AgentQuotePreview from '../components/islands/AgentQuotePreview';
 import HeroStepFlow from '../components/islands/HeroStepFlow';
 import AgentDiagram from '../components/islands/AgentDiagram';
+import ProgressiveGreeting from '../components/islands/ProgressiveGreeting';
 import TicketRailSection from '../components/sections/TicketRailSection.astro';
 ---
 
@@ -32,9 +33,7 @@ import TicketRailSection from '../components/sections/TicketRailSection.astro';
           <span class="inline-block w-1.5 h-1.5 rounded-full bg-mandate" />
           Powered by Gemini 3.5 Flash
         </p>
-        <h1 class="font-display text-4xl sm:text-5xl text-ink tracking-tight leading-[1.1]">
-          An AI agent that gets your kitchen fixed.
-        </h1>
+        <ProgressiveGreeting client:load />
         <HeroStepFlow client:visible />
       </div>
 

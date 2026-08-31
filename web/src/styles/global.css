@@ -92,6 +92,15 @@
   100% { opacity: 1; transform: translateY(0); }
 }
 
+/* A ticket being spiked onto a rail — drops from above, bounces once.
+   Used by AgentQuotePreview when the three AI agent quotes "arrive." */
+@keyframes chit-spike-in {
+  0% { opacity: 0; transform: translateY(-40px) rotate(var(--tilt, 0deg)) scale(0.9); }
+  60% { opacity: 1; transform: translateY(4px) rotate(var(--tilt, 0deg)) scale(1); }
+  80% { transform: translateY(-2px) rotate(var(--tilt, 0deg)) scale(1); }
+  100% { opacity: 1; transform: translateY(0) rotate(var(--tilt, 0deg)) scale(1); }
+}
+
 @keyframes fade-up {
   0% { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -130,6 +139,10 @@
 
 .animate-pop-in {
   animation: pop-in 220ms var(--ease) both;
+}
+
+.chit-spike-in {
+  animation: chit-spike-in 400ms var(--ease) both;
 }
 
 .animate-fade-in {
@@ -924,7 +937,9 @@
   box-shadow: inset 0 1px 2px rgb(var(--shadow-rgb) / 0.15);
 }
 
-/* Shuffling-papers animation for the verifying state. */
+/* Shuffling-papers animation — a subtle paper-shuffle sway for
+   waiting states (sourcing, verifying). Slow enough to feel like
+   someone shuffling through papers on a desk, not a vibration. */
 @keyframes shuffle-papers {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   25% { transform: translateY(-2px) rotate(0.5deg); }
@@ -933,7 +948,7 @@
 }
 
 .shuffle-papers {
-  animation: shuffle-papers 1.2s ease-in-out infinite;
+  animation: shuffle-papers 3s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

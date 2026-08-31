@@ -204,6 +204,17 @@ const isActive = (path: string): boolean => {
           });
         }
         document.addEventListener('astro:page-load', updateNavActive);
+
+        // Increment visit count once per real page load (not view
+        // transitions). This drives getJourneyStage() which controls
+        // progressive onboarding, greeting copy, and install prompt timing.
+        if (!window.__yalerVisitCounted) {
+          window.__yalerVisitCounted = true;
+          try {
+            var c = parseInt(localStorage.getItem('yaler_visit_count') || '0', 10);
+            localStorage.setItem('yaler_visit_count', String(c + 1));
+          } catch (e) { /* private mode */ }
+        }
       })();
     </script>
 

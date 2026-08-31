@@ -8,6 +8,33 @@ import { AGENT_TOOLS, EMPTY_STATE_COPY, eventLabel, formatMoney, nextActionLabel
 import { SponsorRail, type SponsorId } from '../primitives/SponsorCallout';
 import { celebrate, shake, playUiSound, markJobCompleted } from '../../lib/delight';
 
+/** Rotating "still knocking" messages during SOURCING — the longest wait.
+ *  Cycles every 4s with a fade swap so the user knows the agent is alive. */
+const SOURCING_PULSE_LINES = [
+  'Knocking on doors in N1\u2026',
+  'Checking who\u2019s Gas Safe registered\u2026',
+  'Asking for same-day availability\u2026',
+  'Cross-referencing your budget ceiling\u2026',
+  'Waiting on the third quote to come back\u2026',
+  'One engineer is checking their van stock\u2026',
+];
+
+function SourcingPulse() {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIdx((i) => (i + 1) % SOURCING_PULSE_LINES.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <div className="flex items-center gap-2 text-xs text-ink-muted">
+      <span className="w-1.5 h-1.5 rounded-full bg-mandate animate-pulse shrink-0" aria-hidden />
+      <span key={idx} className="animate-fade-in">{SOURCING_PULSE_LINES[idx]}</span>
+    </div>
+  );
+}
+
 /** Map status to a human-readable description of what the agent is doing right now */
 function agentNarrative(status?: string): string {
   switch (status) {
@@ -647,9 +674,11 @@ export default function MissionTimeline({
         </div>
       )}
 
-      {/* Sourcing animation — three AI agents preparing quotes */}
+      {/* Sourcing animation — three AI agents preparing quotes.
+          shuffle-papers gives the card a subtle paper-shuffle sway
+          so the wait feels alive, not frozen. */}
       {mission && mission.status === 'SOURCING' && (
-        <div className="paper-card rounded-2xl p-5 space-y-3 animate-pop-in">
+        <div className="paper-card rounded-2xl p-5 space-y-3 animate-pop-in shuffle-papers">
           <p className="text-xs uppercase tracking-[0.14em] text-ink-muted font-medium">Three AI supplier agents are preparing quotes</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
@@ -671,6 +700,7 @@ export default function MissionTimeline({
               </div>
             ))}
           </div>
+          <SourcingPulse />
         </div>
       )}
 

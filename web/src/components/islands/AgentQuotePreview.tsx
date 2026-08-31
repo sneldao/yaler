@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { formatMoney } from '../../lib/copy';
+import { playUiSound, playHaptic } from '../../lib/delight';
 
 /**
  * AgentQuotePreview — the three AI supplier agent quotes as chits on a
@@ -81,7 +82,37 @@ const QUOTES: AgentQuote[] = [
 
 export default function AgentQuotePreview() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [spiked, setSpiked] = useState(false);
+
+  // Fan-in: when the ticket rail enters the viewport, spike each chit
+  // onto the rail one by one with a paper sound + haptic. This is the
+  // emotional peak — the moment the three agents "reply."
+  useEffect(() => {
+    // Reduced-motion users get all chits immediately, no animation.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setSpiked(true);
+      return;
+    }
+    const section = sectionRef.current;
+    if (!section) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || spiked) return;
+        setSpiked(true);
+        // Stagger the paper sounds to match the visual spike-in.
+        QUOTES.forEach((_, i) => {
+          setTimeout(() => {
+            playUiSound('paper');
+          }, i * 250);
+        });
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [spiked]);
 
   // Track which chit is centered in the mobile carousel viewport.
   // Desktop doesn't scroll (sm:overflow-visible) so this is a no-op there.
@@ -105,7 +136,7 @@ export default function AgentQuotePreview() {
   }, []);
 
   return (
-    <>
+    <div ref={sectionRef}>
       {/* Mobile: swipeable snap-carousel — one chit at a time, 85vw each.
           Desktop (sm+): three chits across the rail, flex to fill — the
           kitchen pass with all three quotes visible for comparison. */}
@@ -113,8 +144,11 @@ export default function AgentQuotePreview() {
         {QUOTES.map((q, i) => (
           <div
             key={q.supplierId}
-            className={`chit shrink-0 w-[85vw] sm:w-auto sm:flex-1 snap-center px-4 pt-5 pb-3 space-y-3 ${q.highlight ? 'border-mandate/40' : ''}`}
-            style={{ '--tilt': i % 2 === 0 ? '-1.2deg' : '0.8deg' } as React.CSSProperties}
+            className={`chit shrink-0 w-[85vw] sm:w-auto sm:flex-1 snap-center px-4 pt-5 pb-3 space-y-3 ${q.highlight ? 'border-mandate/40' : ''} ${spiked ? 'chit-spike-in' : 'opacity-0'}`}
+            style={{
+              '--tilt': i % 2 === 0 ? '-1.2deg' : '0.8deg',
+              animationDelay: spiked ? `${i * 250}ms` : '0ms',
+            } as React.CSSProperties}
           >
           {/* Tier bar — colored left edge so the three agents feel visually distinct at a glance */}
           <div className={`absolute left-0 top-0 bottom-0 w-1 ${q.tierColor}`} aria-hidden />
@@ -176,6 +210,6 @@ export default function AgentQuotePreview() {
           />
         ))}
       </div>
-    </>
+    </div>
   );
 }
