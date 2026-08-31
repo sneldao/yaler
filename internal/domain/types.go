@@ -152,6 +152,10 @@ type Supplier struct {
 	PriceTier        string      `json:"priceTier" firestore:"priceTier"`
 	Evidence         []string    `json:"evidence" firestore:"evidence"`
 	Status           string      `json:"status" firestore:"status"`
+	// Persona is a short character brief used by the LLM-powered supplier
+	// agent to generate independent quotes. Empty for verified suppliers
+	// who respond via the concierge console.
+	Persona string `json:"persona,omitempty" firestore:"persona,omitempty"`
 	// Verified is true only after a human has checked the supplier
 	// (register lookup + capability/capacity confirmation). Only verified
 	// suppliers take real callouts; unverified (synthetic) roster suppliers

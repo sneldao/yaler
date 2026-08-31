@@ -300,6 +300,100 @@ func (c *Client) ExtractEvidence(ctx context.Context, submission string, require
 	return &res, nil
 }
 
+// SupplierQuoteResult is the structured output from a supplier agent's
+// quote-generation call. It mirrors the JSON schema in
+// SystemPromptSupplierQuote.
+type SupplierQuoteResult struct {
+	WillQuote     bool     `json:"willQuote"`
+	Price         float64  `json:"price"`
+	Currency      string   `json:"currency"`
+	Availability  string   `json:"availability"`
+	Terms         string   `json:"terms"`
+	Evidence      []string `json:"evidence"`
+	DeclineReason string   `json:"declineReason"`
+}
+
+// GenerateSupplierQuote asks Gemini to role-play as a specific supplier
+// agent and generate an independent quote for a mission callout. The
+// supplier's persona, capabilities, and price tier shape the response.
+// Returns a deterministic fallback if Gemini is unavailable or the
+// response is malformed.
+func (c *Client) GenerateSupplierQuote(ctx context.Context, mission *domain.Mission, supplier *domain.Supplier) (*SupplierQuoteResult, error) {
+	if c.genaiClient == nil {
+		return c.fallbackSupplierQuote(supplier), nil
+	}
+
+	deadline := "24 hours"
+	if !mission.Mandate.LatestCompletionAt.IsZero() {
+		deadline = mission.Mandate.LatestCompletionAt.Format("2006-01-02 15:04 MST")
+	}
+
+	persona := supplier.Persona
+	if persona == "" {
+		persona = fmt.Sprintf("A %s supplier with %s availability and %s pricing.", supplier.PriceTier, supplier.Availability, strings.Join(supplier.Capabilities, ", "))
+	}
+
+	prompt := fmt.Sprintf(`Job callout from Yaler's buyer agent:
+
+Job: %s
+Location: %s
+Budget: %.0f %s
+Deadline: %s
+Service category: %s
+
+Your business: %s
+Your capabilities: %s
+Your availability: %s
+Your price tier: %s
+Your certifications: %s
+
+Your persona: %s
+
+Do you want this job? If yes, generate a quote in character.`,
+		mission.Goal,
+		mission.Mandate.ServiceArea.PostalDistrict,
+		mission.Mandate.Budget.MaxAmount,
+		mission.Mandate.Budget.Currency,
+		deadline,
+		mission.Mandate.ServiceCategory,
+		supplier.DisplayName,
+		strings.Join(supplier.Capabilities, ", "),
+		supplier.Availability,
+		supplier.PriceTier,
+		strings.Join(supplier.Evidence, ", "),
+		persona,
+	)
+
+	respText, err := c.generateContent(ctx, SystemPromptSupplierQuote, prompt)
+	if err != nil {
+		return c.fallbackSupplierQuote(supplier), nil
+	}
+
+	var res SupplierQuoteResult
+	if err := json.Unmarshal([]byte(respText), &res); err != nil {
+		return c.fallbackSupplierQuote(supplier), nil
+	}
+	if res.Currency == "" {
+		res.Currency = "GBP"
+	}
+	return &res, nil
+}
+
+func (c *Client) fallbackSupplierQuote(supplier *domain.Supplier) *SupplierQuoteResult {
+	price := 350.0
+	if supplier.PriceTier == "PREMIUM" {
+		price = 420.0
+	}
+	return &SupplierQuoteResult{
+		WillQuote:    true,
+		Price:        price,
+		Currency:     "GBP",
+		Availability: supplier.Availability,
+		Terms:        "AI agent quote — LLM-powered supplier response (fallback)",
+		Evidence:     supplier.Evidence,
+	}
+}
+
 func (c *Client) generateContent(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
 	reqCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()

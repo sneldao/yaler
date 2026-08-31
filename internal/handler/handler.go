@@ -33,6 +33,10 @@ type Handler struct {
 	mediaStore       storage.MediaStore
 	mediaTokens      map[string]mediaToken
 	mediaTokensMu    sync.Mutex
+	// missionRateLimiter caps POST /api/missions per IP to prevent
+	// unbounded Gemini spend from automated traffic. 20 per hour is
+	// generous for a demo and costs ~$0.02 at worst.
+	missionRateLimiter *rateLimiter
 }
 
 type mediaToken struct {
@@ -43,13 +47,14 @@ type mediaToken struct {
 
 func NewHandler(st store.Store, pe *policy.Engine, gc *gemini.Client, tc tasks.Client) *Handler {
 	return &Handler{
-		store:            st,
-		policyEngine:     pe,
-		geminiClient:     gc,
-		taskClient:       tc,
-		discoveryService: discovery.NewDiscoveryService(),
-		mediaStore:       &storage.LocalStore{Root: "./uploads"},
-		mediaTokens:      make(map[string]mediaToken),
+		store:              st,
+		policyEngine:       pe,
+		geminiClient:       gc,
+		taskClient:         tc,
+		discoveryService:   discovery.NewDiscoveryService(),
+		mediaStore:         &storage.LocalStore{Root: "./uploads"},
+		mediaTokens:        make(map[string]mediaToken),
+		missionRateLimiter: newRateLimiter(20, time.Hour),
 	}
 }
 
@@ -165,6 +170,15 @@ func (h *Handler) HandleCredentials(w http.ResponseWriter, r *http.Request) {
 
 // 1. Create Mission (Goal -> Gemini Extract Mandate -> Draft Mission)
 func (h *Handler) HandleCreateMission(w http.ResponseWriter, r *http.Request) {
+	// Rate limit: 20 mission creations per IP per hour. Each mission
+	// triggers multiple Gemini calls (mandate + diagnostic brief + 3
+	// supplier quotes + ranking). This caps unbounded spend from
+	// automated traffic without affecting normal demo usage.
+	if !h.missionRateLimiter.allow(clientIP(r)) {
+		writeError(w, http.StatusTooManyRequests, "Rate limit: too many missions from this IP. Try again later.")
+		return
+	}
+
 	var req struct {
 		Goal             string                   `json:"goal"`
 		BuyerID          string                   `json:"buyerId"`
@@ -1122,9 +1136,11 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			// Unverified roster supplier (synthetic seed): auto-generate a
-			// clearly labelled simulated quote so the flow stays runnable
-			// without a real roster. Never presented as a real quote.
+			// Unverified roster supplier: the LLM-powered supplier agent
+			// generates an independent quote based on its persona and the
+			// callout details. Falls back to a deterministic price if Gemini
+			// is unavailable. Never presented as a real quote from a real
+			// business — the Simulated flag stays true.
 			co.Simulated = true
 			co.Status = domain.CalloutOffered
 			co.RespondedAt = now
@@ -1132,29 +1148,14 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 				log.Printf("[Worker] Failed to save callout for mission %s: %v", m.ID, saveErr)
 			}
 
-			price := 350.0 - float64(simulated)*40.0
-			if sup.PriceTier == "PREMIUM" {
-				price = 420.0
+			off := h.generateSupplierOffer(ctx, m, sup, co, now)
+			if off != nil {
+				if saveErr := h.store.SaveOffer(ctx, off); saveErr != nil {
+					log.Printf("[Worker] Failed to save offer for mission %s: %v", m.ID, saveErr)
+				}
+				h.recordEvent(ctx, m.ID, "OFFER_RECEIVED", sup.ID, off, "ALLOW", "")
+				simulated++
 			}
-			off := &domain.Offer{
-				ID:              fmt.Sprintf("off_%s_%d", sup.ID, now.Unix()),
-				MissionID:       m.ID,
-				SupplierAgentID: sup.ID,
-				CalloutID:       co.ID,
-				Price:           price,
-				Currency:        "GBP",
-				Availability:    sup.Availability,
-				Terms:           "Simulated quote - synthetic roster, not a real offer",
-				Status:          "SUBMITTED",
-				Evidence:        []string{"synthetic_roster"},
-				CreatedAt:       now,
-				Simulated:       true,
-			}
-			if saveErr := h.store.SaveOffer(ctx, off); saveErr != nil {
-				log.Printf("[Worker] Failed to save offer for mission %s: %v", m.ID, saveErr)
-			}
-			h.recordEvent(ctx, m.ID, "OFFER_RECEIVED", sup.ID, off, "ALLOW", "")
-			simulated++
 		}
 		h.recordEvent(ctx, m.ID, "SUPPLIERS_SOURCED", "DEMAND_AGENT", fmt.Sprintf("Asked %d suppliers (%d simulated)", len(active), simulated), "ALLOW", payload.IdempotencyKey)
 
@@ -1444,6 +1445,77 @@ func (h *Handler) gatherSupplierCalloutOutcomes(ctx context.Context, supplierID 
 	return outcomes
 }
 
+// generateSupplierOffer calls the LLM-powered supplier agent to produce an
+// independent quote for a mission callout, then wraps the result in an Offer.
+// If the supplier agent declines, returns nil (no offer). If Gemini is
+// unavailable or errors, falls back to a deterministic price based on the
+// supplier's price tier. The Simulated flag is always true — these are
+// AI-generated quotes, not real business offers.
+func (h *Handler) generateSupplierOffer(ctx context.Context, m *domain.Mission, sup *domain.Supplier, co *domain.Callout, now time.Time) *domain.Offer {
+	var quote *gemini.SupplierQuoteResult
+	if h.geminiClient != nil {
+		var err error
+		quote, err = h.geminiClient.GenerateSupplierQuote(ctx, m, sup)
+		if err != nil {
+			log.Printf("[Worker] Supplier agent %s failed for mission %s: %v", sup.ID, m.ID, err)
+			quote = nil // fall through to deterministic fallback below
+		}
+	}
+
+	if quote != nil && !quote.WillQuote {
+		// The supplier agent declined — record it as a declined callout.
+		co.Status = domain.CalloutDeclined
+		_ = h.store.SaveCallout(ctx, co)
+		h.recordEvent(ctx, m.ID, "CALLOUT_DECLINED", sup.ID, map[string]string{"supplier": sup.DisplayName, "reason": quote.DeclineReason}, "ALLOW", "")
+		return nil
+	}
+
+	price := 0.0
+	terms := "AI agent quote — LLM-powered supplier response"
+	availability := sup.Availability
+	evidence := sup.Evidence
+
+	if quote != nil && quote.WillQuote {
+		price = quote.Price
+		if price <= 0 {
+			price = 350.0
+			if sup.PriceTier == "PREMIUM" {
+				price = 420.0
+			}
+		}
+		if quote.Terms != "" {
+			terms = quote.Terms
+		}
+		if quote.Availability != "" {
+			availability = quote.Availability
+		}
+		if len(quote.Evidence) > 0 {
+			evidence = quote.Evidence
+		}
+	} else {
+		// Fallback when Gemini is unavailable
+		price = 350.0
+		if sup.PriceTier == "PREMIUM" {
+			price = 420.0
+		}
+	}
+
+	return &domain.Offer{
+		ID:              fmt.Sprintf("off_%s_%d", sup.ID, now.Unix()),
+		MissionID:       m.ID,
+		SupplierAgentID: sup.ID,
+		CalloutID:       co.ID,
+		Price:           price,
+		Currency:        "GBP",
+		Availability:    availability,
+		Terms:           terms,
+		Status:          "SUBMITTED",
+		Evidence:        evidence,
+		CreatedAt:       now,
+		Simulated:       true,
+	}
+}
+
 // calloutTTL is how long a real callout waits for a response before it is
 // considered expired. The structural incentive design (see INCENTIVES.md):
 // a short, visible accept window removes the leverage that makes
@@ -1626,8 +1698,9 @@ func (h *Handler) SweepStalledSourcing(ctx context.Context) {
 					log.Printf("[Sweeper] Sequential arm: sent next callout to %s for %s", next.DisplayName, m.ID)
 					continue // don't escalate — the next callout is in flight
 				}
-				// Simulated supplier: auto-generate the quote immediately
-				// (same as the worker does in the parallel arm).
+				// Simulated supplier: the LLM-powered supplier agent
+				// generates the quote (same as the worker does in the
+				// parallel arm).
 				co.Simulated = true
 				co.Status = domain.CalloutOffered
 				co.RespondedAt = now
@@ -1635,26 +1708,11 @@ func (h *Handler) SweepStalledSourcing(ctx context.Context) {
 					log.Printf("[Sweeper] Failed to save simulated callout for %s: %v", m.ID, saveErr)
 					continue
 				}
-				price := 350.0
-				if next.PriceTier == "PREMIUM" {
-					price = 420.0
+				off := h.generateSupplierOffer(ctx, m, next, co, now)
+				if off != nil {
+					_ = h.store.SaveOffer(ctx, off)
+					h.recordEvent(ctx, m.ID, "OFFER_RECEIVED", next.ID, off, "ALLOW", "")
 				}
-				off := &domain.Offer{
-					ID:              fmt.Sprintf("off_%s_%d", next.ID, now.Unix()),
-					MissionID:       m.ID,
-					SupplierAgentID: next.ID,
-					CalloutID:       co.ID,
-					Price:           price,
-					Currency:        "GBP",
-					Availability:    next.Availability,
-					Terms:           "Simulated quote - synthetic roster, not a real offer",
-					Status:          "SUBMITTED",
-					Evidence:        []string{"synthetic_roster"},
-					CreatedAt:       now,
-					Simulated:       true,
-				}
-				_ = h.store.SaveOffer(ctx, off)
-				h.recordEvent(ctx, m.ID, "OFFER_RECEIVED", next.ID, off, "ALLOW", "")
 				// Advance to evaluation.
 				if err := domain.Transition(m, domain.StatusOffersReceived); err == nil {
 					if uerr := h.updateMissionWithRetry(ctx, m); uerr == nil {
@@ -2228,4 +2286,61 @@ func (h *Handler) HandleListWaitlist(w http.ResponseWriter, r *http.Request) {
 		"count":   len(waitlistEntries),
 		"entries": waitlistEntries,
 	})
+}
+
+// rateLimiter is a simple in-memory sliding-window rate limiter.
+// It tracks request timestamps per key (e.g. client IP) and rejects
+// when the count exceeds max within the window. Not distributed —
+// sufficient for a single Cloud Run instance demo.
+type rateLimiter struct {
+	mu       sync.Mutex
+	max      int
+	window   time.Duration
+	requests map[string][]time.Time
+}
+
+func newRateLimiter(max int, window time.Duration) *rateLimiter {
+	return &rateLimiter{
+		max:      max,
+		window:   window,
+		requests: make(map[string][]time.Time),
+	}
+}
+
+func (rl *rateLimiter) allow(key string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	now := time.Now()
+	cutoff := now.Add(-rl.window)
+	// Filter to requests within the window
+	recent := rl.requests[key][:0]
+	for _, t := range rl.requests[key] {
+		if t.After(cutoff) {
+			recent = append(recent, t)
+		}
+	}
+	if len(recent) >= rl.max {
+		rl.requests[key] = recent
+		return false
+	}
+	recent = append(recent, now)
+	rl.requests[key] = recent
+	return true
+}
+
+// clientIP extracts the client IP from a request, respecting the
+// X-Forwarded-For header that Cloud Run sets.
+func clientIP(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		if idx := strings.Index(xff, ","); idx > 0 {
+			return strings.TrimSpace(xff[:idx])
+		}
+		return strings.TrimSpace(xff)
+	}
+	// Strip port if present
+	host := r.RemoteAddr
+	if idx := strings.LastIndex(host, ":"); idx > 0 {
+		return host[:idx]
+	}
+	return host
 }

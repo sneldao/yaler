@@ -21,7 +21,8 @@
       "refcom_registered",
       "public_liability_5m"
     ],
-    "status": "ACTIVE"
+    "status": "ACTIVE",
+    "persona": "Premium refrigeration specialist with F-gas and Refcom certifications. Known for fast 2-hour response in N1 and surrounding boroughs. Tends to quote at the higher end of the market but includes full certification paperwork and a 12-month parts warranty. Will not take jobs under £350. Confident, professional, slightly proud of response times."
   },
   {
     "id": "sup_capital_kitchen",
@@ -44,7 +45,8 @@
       "safe_contractor_approved",
       "public_liability_2m"
     ],
-    "status": "ACTIVE"
+    "status": "ACTIVE",
+    "persona": "Established catering equipment firm covering central London. Next-day service is their standard slot — reliable but not an emergency responder. Quotes are mid-market and include a callout fee. Willing to negotiate on price for repeat customers. Practical, no-nonsense, values long-term relationships over one-off jobs."
   },
   {
     "id": "sup_east_catering",
@@ -67,6 +69,7 @@
       "nvq_level_3_technicians",
       "public_liability_2m"
     ],
-    "status": "ACTIVE"
+    "status": "ACTIVE",
+    "persona": "Budget-friendly East London outfit with NVQ Level 3 technicians. Covers N1 from E1 — willing to travel for the work. Quotes aggressively to win jobs, sometimes cutting margins thin. Same-day 4-hour response. Less paperwork than premium competitors but gets the job done. Hungry for work, direct, occasionally pushes back on tight deadlines."
   }
 ]
