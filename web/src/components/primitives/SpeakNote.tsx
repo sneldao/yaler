@@ -215,7 +215,7 @@ export default function SpeakNote({ onTranscript, onMandateExtracted, label = 'S
         onClick={toggle}
         className={`px-3 py-2 rounded-xl border text-xs font-medium transition-colors ${
           overlayOpen
-            ? 'bg-purple-50 text-purple-600 border-purple-200'
+            ? 'bg-mandate-light text-mandate border-mandate/30'
             : 'bg-paper text-ink border-ink/10 hover:border-ink/25'
         }`}
       >
