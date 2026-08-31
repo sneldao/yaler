@@ -17,6 +17,7 @@ export default function ProofVaultShowcase() {
             The quote sat £{LAST_TUESDAY.overBy} over your £{LAST_TUESDAY.ceiling} ceiling. We stopped,
             you raised the line, and {LAST_TUESDAY.supplier} finished. Names stay hidden until you share.
           </p>
+          <p className="text-[10px] text-ink-muted/60 mt-1.5">Demo data — illustrative job from the Cafe Noor story.</p>
         </div>
         <div className="flex items-center gap-2">
           <HearReceipt
@@ -79,9 +80,9 @@ export default function ProofVaultShowcase() {
             </p>
           </div>
           <div>
-            <p className="text-xs text-ink-muted">Engineer</p>
+            <p className="text-xs text-ink-muted">Supplier agent</p>
             <p className="font-medium text-ink">
-              {redacted ? 'Checked engineer' : 'Dave M., R017485'}
+              {redacted ? 'Checked supplier agent' : 'Dave M., R017485'}
             </p>
           </div>
           <div>

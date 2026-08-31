@@ -24,11 +24,11 @@ export default function TacticalRadar({ activeDistrict = LAST_TUESDAY.district }
     <div className="paper-card rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-xs uppercase tracking-wider text-ink-muted">22:06 · beat three</p>
+          <p className="text-xs uppercase tracking-wider text-ink-muted">Last Tuesday · 06:51</p>
           <h3 className="font-display text-xl text-ink">Who heard about the job</h3>
         </div>
         <span className="text-xs text-ink-muted text-right max-w-[12rem]">
-          Three engineers in {activeDistrict} — anything over budget or out of area never gets a call.
+          Three AI supplier agents in {activeDistrict} — anything over budget or out of area never gets a call.
         </span>
       </div>
 

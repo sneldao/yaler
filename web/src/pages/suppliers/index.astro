@@ -12,14 +12,14 @@ try {
 }
 ---
 
-<Layout title="Engineers — Yaler">
+<Layout title="Supplier agents — Yaler">
   <div class="space-y-8 py-2">
     <!-- Header (consistent rhythm: label → headline → subtext) -->
     <div class="space-y-2">
-      <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">The engineers Priya's agent found</p>
-      <h1 class="font-display text-3xl text-ink">Local. Checked. Ready.</h1>
+      <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">The AI supplier agent roster</p>
+      <h1 class="font-display text-3xl text-ink">Three agents. Three personas. One mandate.</h1>
       <p class="text-ink-muted text-sm max-w-xl">
-        These are the people who get clear, scoped jobs from Yaler — not fishing expeditions. They know what's broken, the budget, and the deadline before they respond.
+        Each supplier agent is an LLM-powered persona that reasons independently about the callout, budget, and deadline — then quotes in its own voice. Premium specialist, mid-market generalist, budget direct fixer.
       </p>
     </div>
 
@@ -30,46 +30,58 @@ try {
 
     <div class="receipt-perf"></div>
 
-    <!-- How engineers experience Yaler -->
+    <!-- How supplier agents work -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <div class="paper-card rounded-xl p-4 space-y-1.5">
         <p class="text-mandate font-medium text-xs uppercase tracking-wider">Clear scope</p>
-        <p class="text-sm text-ink-muted leading-relaxed">Every request has a structured mandate: what's broken, the budget, the deadline, the district. No guesswork.</p>
+        <p class="text-sm text-ink-muted leading-relaxed">Every request has a structured mandate: what's broken, the budget, the deadline, the district. The agent reasons about fit before quoting.</p>
       </div>
       <div class="paper-card rounded-xl p-4 space-y-1.5">
-        <p class="text-mandate font-medium text-xs uppercase tracking-wider">Fair ranking</p>
-        <p class="text-sm text-ink-muted leading-relaxed">Quotes ranked on price, availability, and reliability. Premium work gets premium rates.</p>
+        <p class="text-mandate font-medium text-xs uppercase tracking-wider">Persona-driven</p>
+        <p class="text-sm text-ink-muted leading-relaxed">Each agent has a distinct voice — premium, practical, or budget. Quotes reflect real reasoning, not a price formula.</p>
       </div>
       <div class="paper-card rounded-xl p-4 space-y-1.5">
         <p class="text-mandate font-medium text-xs uppercase tracking-wider">Verified record</p>
-        <p class="text-sm text-ink-muted leading-relaxed">Every completed job builds your score. Photo evidence and AI verification mean your work speaks for itself.</p>
+        <p class="text-sm text-ink-muted leading-relaxed">Every completed job builds the agent's reliability score. Photo evidence and AI verification mean the work speaks for itself.</p>
       </div>
     </div>
 
     {suppliers.length > 0 && (
       <section class="space-y-3">
-        <p class="text-xs uppercase tracking-wider text-ink-muted">On the roster</p>
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-xs uppercase tracking-wider text-ink-muted">On the roster</p>
+          <span class="text-[10px] uppercase tracking-wider text-ink-muted/70">Demo data — Gemini 3.5 Flash personas</span>
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {suppliers.map((s) => (
             <div class="paper-card rounded-2xl p-4 space-y-2.5">
               <div class="flex items-center justify-between gap-3">
                 <span class="text-[11px] text-ink-muted">
-                  {s.priceTier === 'PREMIUM' && 'Premium'}{s.priceTier === 'BUDGET' && 'Budget'}{s.priceTier !== 'PREMIUM' && s.priceTier !== 'BUDGET' && 'Mid range'}
+                  {s.priceTier === 'PREMIUM' && 'Premium specialist'}{s.priceTier === 'BUDGET' && 'Budget direct fixer'}{s.priceTier !== 'PREMIUM' && s.priceTier !== 'BUDGET' && 'Mid-market generalist'}
                 </span>
                 <span class="text-[11px] text-mandate font-medium">{Math.round(s.reliabilityScore * 100)}% on time</span>
               </div>
               <div>
                 <div class="flex items-center gap-2">
-                  <p class="font-medium text-ink">{s.displayName}</p>
+                  <p class="font-medium text-ink">{s.displayName.replace(/\s*\(Synthetic\)\s*$/i, '')}</p>
                   {s.verified && (
                     <span class="text-[10px] bg-mandate/10 text-mandate px-1.5 py-0.5 rounded-full border border-mandate/25 font-medium">Verified</span>
                   )}
                   {!s.verified && (
-                    <span class="text-[10px] bg-ink/5 text-ink-muted px-1.5 py-0.5 rounded-full border border-ink/10">Synthetic</span>
+                    <span class="text-[10px] bg-mandate/10 text-mandate px-1.5 py-0.5 rounded-full border border-mandate/25 font-medium">AI agent</span>
                   )}
                 </div>
                 <p class="text-xs text-ink-muted mt-0.5">{s.serviceArea.postalDistrict} · {s.serviceArea.radiusKm} km</p>
               </div>
+              {s.evidence && s.evidence.length > 0 && (
+                <div class="flex flex-wrap gap-1.5">
+                  {s.evidence.map((ev) => (
+                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-mandate/10 text-mandate border border-mandate/20 font-medium">
+                      {ev.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div class="flex flex-wrap gap-1.5">
                 {s.capabilities.map((c) => (
                   <span class="text-[10px] bg-mandate/5 text-ink-muted px-2 py-0.5 rounded-full border border-mandate/15">
@@ -81,7 +93,7 @@ try {
                 <p class="text-[10px] text-ink-muted italic">Reliability earned from real completed jobs.</p>
               )}
               {!s.verified && (
-                <p class="text-[10px] text-ink-muted italic">Synthetic profile — keeps the demo running. Not a real business.</p>
+                <p class="text-[10px] text-ink-muted italic">AI supplier agent — Gemini 3.5 Flash persona. Quotes are generated, not hardcoded.</p>
               )}
             </div>
           ))}
@@ -94,29 +106,32 @@ try {
         <div class="flex justify-center">
           <span class="receipt-punch"></span>
         </div>
-        <p class="font-display text-xl text-ink">No engineers loaded</p>
-        <p class="text-xs text-ink-muted max-w-sm mx-auto leading-relaxed">Start the Go backend, or <a href="/rehearsal" class="text-mandate hover:text-ink">try the rehearsal</a> for synthetic data.</p>
+        <p class="font-display text-xl text-ink">No supplier agents loaded</p>
+        <p class="text-xs text-ink-muted max-w-sm mx-auto leading-relaxed">Start the Go backend, or <a href="/rehearsal" class="text-mandate hover:text-ink">try the rehearsal</a> for the demo roster.</p>
       </div>
     )}
 
     <!-- Market stats -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
-        <p class="font-display text-xl text-ink">12,000+</p>
-        <p class="text-[10px] text-ink-muted">London food businesses</p>
+    <div class="space-y-2">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
+          <p class="font-display text-xl text-ink">12,000+</p>
+          <p class="text-[10px] text-ink-muted">London food businesses</p>
+        </div>
+        <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
+          <p class="font-display text-xl text-ink">3-4 hrs</p>
+          <p class="text-[10px] text-ink-muted">Manual repair sourcing</p>
+        </div>
+        <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
+          <p class="font-display text-xl text-mandate">15 min</p>
+          <p class="text-[10px] text-ink-muted">With Yaler</p>
+        </div>
+        <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
+          <p class="font-display text-xl text-ink">85%</p>
+          <p class="text-[10px] text-ink-muted">Same-day urgent</p>
+        </div>
       </div>
-      <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
-        <p class="font-display text-xl text-ink">3-4 hrs</p>
-        <p class="text-[10px] text-ink-muted">Manual repair sourcing</p>
-      </div>
-      <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
-        <p class="font-display text-xl text-mandate">15 min</p>
-        <p class="text-[10px] text-ink-muted">With Yaler</p>
-      </div>
-      <div class="paper-card rounded-xl p-3 text-center space-y-0.5">
-        <p class="font-display text-xl text-ink">85%</p>
-        <p class="text-[10px] text-ink-muted">Same-day urgent</p>
-      </div>
+      <p class="text-[10px] text-ink-muted/60 text-center">Industry estimates — London commercial food sector.</p>
     </div>
 
     <!-- Forward CTA -->

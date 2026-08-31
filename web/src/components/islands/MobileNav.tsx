@@ -40,7 +40,7 @@ export default function MobileNav({ currentPage }: Props) {
   const navItems: { path: string; label: string }[] = [
     { path: '/rehearsal', label: 'Try the rehearsal' },
     { path: '/story', label: 'How it works' },
-    { path: '/suppliers', label: 'Engineers' },
+    { path: '/suppliers', label: 'Supplier agents' },
     { path: '/play', label: 'Play the game' },
     { path: '/missions/new', label: 'Start a real job' },
   ];

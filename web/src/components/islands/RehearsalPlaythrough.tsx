@@ -208,9 +208,9 @@ export default function RehearsalPlaythrough({ autoplay }: Props) {
             <div className="flex justify-center">
               <span className="receipt-punch" />
             </div>
-            <h3 className="font-display text-xl text-ink">Asking nearby engineers</h3>
+            <h3 className="font-display text-xl text-ink">Asking AI supplier agents</h3>
             <p className="text-sm text-ink-muted max-w-md mx-auto leading-relaxed">
-              In a real job this can take a few minutes. Here it is last Tuesday, sped up.
+              Three AI supplier agents are preparing quotes. In a real job this takes a few minutes. Here it is last Tuesday, sped up.
             </p>
             <div className="flex justify-center pt-1">
               <LoaderGrid />

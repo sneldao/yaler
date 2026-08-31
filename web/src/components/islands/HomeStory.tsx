@@ -30,7 +30,7 @@ const BEATS: Beat[] = [
     clock: '06:51',
     tag: 'The search',
     title: 'We knock on the right doors.',
-    body: 'Three refrigeration engineers within a mile hear about the job. Anything out of area or over budget is never sent in the first place.',
+    body: 'Three AI supplier agents within a mile hear about the job. Each reasons independently about the callout, budget, and deadline — then quotes in its own voice. Anything out of area or over budget is never sent in the first place.',
   },
   {
     clock: '07:14',
