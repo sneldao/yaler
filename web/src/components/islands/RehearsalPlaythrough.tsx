@@ -3,9 +3,7 @@ import { LoaderGrid } from '../primitives/LoaderGrid';
 import type { CredentialCheck, Mission, Offer } from '../../lib/api';
 import { checkCredential } from '../../lib/api';
 import {
-  REHEARSAL_MANDATE,
   REHEARSAL_OFFERS,
-  rehearsalEvents,
   rehearsalMission,
   rehearsalReceipt,
   saveMandate,
@@ -13,9 +11,8 @@ import {
 } from '../../lib/rehearsal';
 import { applyExtractedMandate, type ExtractedMandate } from '../../lib/mandateExtract';
 import MandateEditor from './MandateEditor';
-import MissionTimeline from './MissionTimeline';
 import OfferComparison from './OfferComparison';
-import RehearsalBanner from '../primitives/RehearsalBanner';
+
 const SpeakNote = lazy(() => import('../primitives/SpeakNote'));
 import HearReceipt from '../primitives/HearReceipt';
 import WaitlistCapture from './WaitlistCapture';
@@ -169,9 +166,6 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
     window.setTimeout(() => setToast(null), 5000);
   };
 
-  const lookingMission: Mission = { ...mission, status: 'SOURCING' };
-  const quoteMission: Mission = { ...mission, status: 'AWAITING_APPROVAL' };
-  const doneMission: Mission = { ...mission, status: 'COMPLETED' };
   const receipt = rehearsalReceipt(
     booked?.supplierAgentId?.replace(/^sup[_-]?/i, '').replace(/[^a-zA-Z0-9 ]/g, ' ').trim() || 'London Rapid ColdCare',
     booked?.price || 480,
@@ -199,7 +193,6 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
           </div>
         </div>
       )}
-      <RehearsalBanner />
 
       <ol className="flex items-center justify-between gap-2 text-[11px] uppercase tracking-wider text-ink-muted">
         {PHASES.map((step, idx) => {
@@ -292,11 +285,6 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
 
       {phase === 'looking' && (
         <>
-          <MissionTimeline
-            rehearsal
-            mission={lookingMission}
-            events={rehearsalEvents('sourcing')}
-          />
           <div className="paper-card rounded-2xl p-8 text-center space-y-3 animate-pop-in">
             <div className="flex justify-center">
               <span className="receipt-punch" />
@@ -314,11 +302,6 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
 
       {phase === 'quotes' && (
         <>
-          <MissionTimeline
-            rehearsal
-            mission={quoteMission}
-            events={rehearsalEvents('quotes')}
-          />
           <OfferComparison
             rehearsal
             offers={REHEARSAL_OFFERS}
@@ -329,12 +312,6 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
 
       {phase === 'receipt' && booked && (
         <>
-          <MissionTimeline
-            rehearsal
-            mission={doneMission}
-            events={rehearsalEvents('done', booked.supplierAgentId)}
-          />
-
           <article className="receipt-sheet rounded-sm relative overflow-hidden animate-receipt-print">
             <div className="receipt-stamp">Verified</div>
             <div className="receipt-fold" style={{ top: '33%' }} />

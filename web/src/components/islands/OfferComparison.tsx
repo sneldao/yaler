@@ -191,8 +191,10 @@ export default function OfferComparison({
   }, [missionId, offersProp]);
 
   useEffect(() => {
+    // Skip web discovery in rehearsal — it adds noise to the demo
+    if (rehearsal) return;
     findNearby(category, district).then(setFound).catch(() => setFound([]));
-  }, [category, district]);
+  }, [category, district, rehearsal]);
 
   // Roster lookup for the Past Reliability sub-signal.
   useEffect(() => {
@@ -351,19 +353,22 @@ export default function OfferComparison({
           // Prefer a real (non-simulated) quote as the default selection —
           // a simulated quote is never auto-selected over a real one.
           return (
-            <button
+            <div
               key={offer.id}
-              type="button"
-              onClick={() => setSelectedId(offer.id)}
-              className={`w-full min-h-[11rem] text-left paper-card rounded-2xl p-4 transition-colors ${
+              className={`min-h-[11rem] text-left paper-card rounded-2xl p-4 transition-colors ${
                 isSelected && isBlocked
                   ? 'border-escalate animate-shake-slow animate-pulse-border'
                   : isSelected
                     ? 'border-mandate'
                     : 'hover:border-ink/20'
-              }`}
-              disabled={isBlocked}
+              } ${isBlocked ? 'opacity-75' : ''}`}
             >
+              <button
+                type="button"
+                onClick={() => setSelectedId(offer.id)}
+                disabled={isBlocked}
+                className="w-full text-left"
+              >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   {offer.status === 'BLOCKED' ? (
@@ -429,7 +434,28 @@ export default function OfferComparison({
                     </>
                   )}
               </p>
-            </button>
+              </button>
+              {/* Book button — directly on the card when selected and not blocked */}
+              {isSelected && !isBlocked && !isAlreadyBooked && (
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={submitting}
+                  className="btn-primary text-sm py-2.5 w-full mt-3 animate-pop-in"
+                >
+                  {submitting
+                    ? 'Booking…'
+                    : rehearsal
+                      ? 'Yes — book this one'
+                      : 'Yes, book them'}
+                </button>
+              )}
+              {isSelected && isBlocked && (
+                <p className="text-xs text-escalate mt-3 text-center font-medium">
+                  Blocked by your rules — £{Math.round(offer.price - (budgetMax || 0))} over your ceiling
+                </p>
+              )}
+            </div>
           );
         })}
       </div>
@@ -459,6 +485,8 @@ export default function OfferComparison({
         </div>
       )}
 
+      {/* Sticky booking bar — hidden in rehearsal (button is on the card) */}
+      {!rehearsal && (
       <div className="paper-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:static sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 bg-paper/95 backdrop-blur-sm">
         <div>
           <p className="text-sm font-medium text-ink">
@@ -496,6 +524,7 @@ export default function OfferComparison({
                   : 'Yes, book them'}
         </button>
       </div>
+      )}
 
       {message && <p className="text-sm text-ink-muted animate-pop-in">{message}</p>}
 
