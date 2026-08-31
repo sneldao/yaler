@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { KitchenScene, type GameMode } from './scenes/KitchenScene';
+import { COLORS } from './theme';
 
 export function createGame(parent: HTMLElement, mode: GameMode = 'yaler'): Phaser.Game {
   const config: Phaser.Types.Core.GameConfig = {
@@ -8,7 +9,7 @@ export function createGame(parent: HTMLElement, mode: GameMode = 'yaler'): Phase
     width: 480,
     height: 270,
     pixelArt: true,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: COLORS.paper,
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,

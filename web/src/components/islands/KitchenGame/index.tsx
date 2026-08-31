@@ -116,70 +116,70 @@ export default function KitchenGame() {
   return (
     <div className="relative w-full max-w-2xl mx-auto">
       {status === 'loading' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#1a1a2e] rounded-2xl z-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper rounded-2xl z-10">
           <span className="receipt-punch" />
-          <p className="font-display text-lg text-white/80">Loading Café Noor…</p>
-          <p className="text-xs text-white/40">This should only take a moment.</p>
+          <p className="font-display text-lg text-ink">Loading Café Noor…</p>
+          <p className="text-xs text-ink-muted">This should only take a moment.</p>
         </div>
       )}
 
       <div
         ref={containerRef}
-        className="w-full aspect-video rounded-2xl overflow-hidden shadow-paper bg-[#1a1a2e]"
+        className="w-full aspect-video rounded-2xl overflow-hidden shadow-paper bg-paper border border-ink/10"
       />
 
       {status === 'done' && result && (
-        <div className="absolute inset-0 flex items-center justify-center bg-ink/85 rounded-2xl z-20 animate-pop-in backdrop-blur-sm overflow-y-auto">
-          <div className="text-center space-y-3 p-5 max-w-sm w-full">
-            <div>
-              <p className="text-[11px] uppercase tracking-wider text-white/40">Café Noor — Tuesday shift</p>
-              <p className="font-display text-3xl text-white mt-1">
+        <div className="absolute inset-0 flex items-center justify-center bg-paper/90 rounded-2xl z-20 animate-pop-in overflow-y-auto p-4">
+          <div className="receipt-sheet text-center space-y-4 p-6 max-w-sm w-full text-ink">
+            <div className="space-y-1">
+              <p className="text-[11px] uppercase tracking-wider text-ink-muted font-machine">Café Noor — Tuesday shift</p>
+              <p className="font-display text-3xl text-ink mt-1">
                 {result.mode === 'manual' ? 'Phone shift complete' : 'Shift complete'}
               </p>
-              <p className={`text-lg mt-1 ${result.mode === 'manual' ? 'text-white/40' : 'text-mandate'}`}>
+              <p className={`text-lg mt-1 ${result.mode === 'manual' ? 'text-ink-muted' : 'text-mandate'}`}>
                 {'★'.repeat(result.stars)}{'☆'.repeat(3 - result.stars)}
               </p>
             </div>
 
-            <div className="flex items-center justify-center gap-4 sm:gap-6">
+            <div className="flex items-center justify-center gap-4 sm:gap-6 font-machine">
               {result.mode === 'manual' ? (
                 <>
                   <div className="text-center">
-                    <p className="font-display text-2xl text-white/80">{result.calls}</p>
-                    <p className="text-[10px] text-white/50 uppercase tracking-wider">Calls chased</p>
+                    <p className="font-display text-2xl text-ink">{result.calls}</p>
+                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">Calls chased</p>
                   </div>
-                  <span className="text-white/20 text-sm">vs</span>
+                  <span className="text-ink/20 text-sm">vs</span>
                   <div className="text-center">
-                    <p className="font-display text-2xl text-white/60">~11 hrs</p>
-                    <p className="text-[10px] text-white/50 uppercase tracking-wider">Of shift</p>
+                    <p className="font-display text-2xl text-ink-muted">~11 hrs</p>
+                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">Of shift</p>
                   </div>
-                  <span className="text-white/20 text-sm">|</span>
+                  <span className="text-ink/20 text-sm">|</span>
                   <div className="text-center">
-                    <p className="font-display text-2xl text-white/80">£{result.totalAllIn}</p>
-                    <p className="text-[10px] text-white/50 uppercase tracking-wider">All-in</p>
+                    <p className="font-display text-2xl text-ink">£{result.totalAllIn}</p>
+                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">All-in</p>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="text-center">
                     <p className="font-display text-2xl text-mandate">{result.elapsed}s</p>
-                    <p className="text-[10px] text-white/50 uppercase tracking-wider">Your shift</p>
+                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">Your shift</p>
                   </div>
-                  <span className="text-white/20 text-sm">vs</span>
+                  <span className="text-ink/20 text-sm">vs</span>
                   <div className="text-center">
-                    <p className="font-display text-2xl text-white/60">~11 hrs</p>
-                    <p className="text-[10px] text-white/50 uppercase tracking-wider">Manual</p>
+                    <p className="font-display text-2xl text-ink-muted">~11 hrs</p>
+                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">Manual</p>
                   </div>
-                  <span className="text-white/20 text-sm">|</span>
+                  <span className="text-ink/20 text-sm">|</span>
                   <div className="text-center">
-                    <p className="font-display text-2xl text-white/80">£{result.totalCost}</p>
-                    <p className="text-[10px] text-white/50 uppercase tracking-wider">Total cost</p>
+                    <p className="font-display text-2xl text-ink">£{result.totalCost}</p>
+                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">Total cost</p>
                   </div>
                 </>
               )}
             </div>
 
-            <p className="text-white/50 text-xs leading-relaxed">
+            <p className="text-ink-muted text-xs leading-relaxed">
               {result.mode === 'manual'
                 ? 'Every quote chased by phone, every wait unpaid — and the fridge warmed anyway. The agent does this before the kettle boils.'
                 : result.decisions.includes('rerouted')
@@ -190,25 +190,25 @@ export default function KitchenGame() {
             </p>
 
             {result.mode !== 'manual' && (
-              <p className="text-white/40 text-[10px]">
+              <p className="text-ink-muted/80 text-[10px]">
                 By phone, this same shift is ~11 hrs and ~£2,810 all-in — pricier quotes, spoiled stock, lost covers. Prove it to yourself:
               </p>
             )}
 
-            {/* Mandate pill motifs */}
+            {/* Chit / stamp motifs */}
             <div className="flex flex-wrap gap-1.5 justify-center">
-              <span className="text-[11px] bg-white/10 text-white/70 px-2.5 py-1 rounded-full border border-white/20 font-medium">
+              <span className="bg-paper-raised border border-ink/10 rounded-full text-[11px] text-ink px-2.5 py-1 font-medium">
                 Budget: £500
               </span>
-              <span className="text-[11px] bg-white/10 text-white/70 px-2.5 py-1 rounded-full border border-white/20 font-medium">
+              <span className="bg-paper-raised border border-ink/10 rounded-full text-[11px] text-ink px-2.5 py-1 font-medium">
                 District: N1
               </span>
               {result.mode === 'manual' ? (
-                <span className="text-[11px] bg-white/10 text-white/70 px-2.5 py-1 rounded-full border border-white/20 font-medium">
-                  Mode: you, on the phone
+                <span className="stamp text-escalate text-[11px] px-2.5 py-1">
+                  You, on the phone
                 </span>
               ) : (
-                <span className="text-[11px] bg-mandate/20 text-mandate px-2.5 py-1 rounded-full border border-mandate/30 font-medium">
+                <span className="stamp text-mandate text-[11px] px-2.5 py-1">
                   Delegate mode
                 </span>
               )}
