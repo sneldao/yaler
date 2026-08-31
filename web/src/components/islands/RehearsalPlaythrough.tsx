@@ -11,6 +11,7 @@ import {
   saveMandate,
   type SavedMandate,
 } from '../../lib/rehearsal';
+import { applyExtractedMandate, type ExtractedMandate } from '../../lib/mandateExtract';
 import MandateEditor from './MandateEditor';
 import MissionTimeline from './MissionTimeline';
 import OfferComparison from './OfferComparison';
@@ -133,6 +134,13 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
     setPhase('looking');
   };
 
+  const handleMandateExtracted = (extracted: ExtractedMandate) => {
+    setMission((prev) => ({
+      ...prev,
+      mandate: applyExtractedMandate(prev.mandate, extracted),
+    }));
+  };
+
   const handleBooked = (offer: Offer) => {
     setBooked(offer);
     setMission((prev) => ({
@@ -251,7 +259,7 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
           <div className="paper-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <p className="text-sm text-ink">Hands wet? Speak last Tuesday’s job. We’ll still show the written note below.</p>
             <SpeakNote
-              label="Speak last Tuesday’s job"
+              label="Speak last Tuesday's job"
               onTranscript={(text) => {
                 setMission((prev) => ({
                   ...prev,
@@ -259,6 +267,7 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
                   mandate: { ...prev.mandate, goal: text },
                 }));
               }}
+              onMandateExtracted={handleMandateExtracted}
             />
           </div>
           <MandateEditor

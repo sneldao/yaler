@@ -130,6 +130,15 @@
   animation: pop-in 220ms var(--ease) both;
 }
 
+.animate-fade-in {
+  animation: fade-in 200ms ease-out both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .animate-fade-up {
   animation: fade-up 220ms var(--ease) both;
 }
