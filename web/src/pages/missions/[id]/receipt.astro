@@ -44,7 +44,7 @@ const ogDescription = receipt
               Filed on {new Date(receipt.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} · evidence checked
             </p>
           </div>
-          <article class="receipt-sheet rounded-sm relative overflow-hidden animate-receipt-print">
+          <article class="receipt-sheet rounded-sm relative overflow-hidden animate-receipt-print" transition:name="receipt-sheet">
             <div class="receipt-stamp">Verified</div>
             <div class="receipt-fold" style="top: 33%"></div>
             <div class="receipt-fold" style="top: 66%"></div>

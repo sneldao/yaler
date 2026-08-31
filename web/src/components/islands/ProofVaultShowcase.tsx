@@ -8,7 +8,7 @@ export default function ProofVaultShowcase() {
   const [redacted, setRedacted] = useState(true);
 
   return (
-    <div className="paper-card rounded-2xl p-5 sm:p-6 space-y-5">
+    <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-wider text-mandate mb-1">Last Tuesday · 09:12 — the paper</p>
@@ -17,7 +17,6 @@ export default function ProofVaultShowcase() {
             The quote sat £{LAST_TUESDAY.overBy} over your £{LAST_TUESDAY.ceiling} ceiling. We stopped,
             you raised the line, and {LAST_TUESDAY.supplier} finished. Names stay hidden until you share.
           </p>
-          <p className="text-[10px] text-ink-muted/60 mt-1.5">Demo data — illustrative job from the Cafe Noor story.</p>
         </div>
         <div className="flex items-center gap-2">
           <HearReceipt
@@ -65,40 +64,30 @@ export default function ProofVaultShowcase() {
         ]}
       />
 
-      <div className="bg-paper rounded-xl p-4 border border-ink/10 text-sm space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <p className="text-xs text-ink-muted">Kitchen</p>
-            <p className="font-medium text-ink">
-              {redacted ? 'A café in N1' : 'Angel Artisan Cafe & Bakery'}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-ink-muted">Address</p>
-            <p className="font-medium text-ink">
-              {redacted ? 'Upper St, N1' : '142 Upper St, Islington, London N1 1QP'}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-ink-muted">Supplier agent</p>
-            <p className="font-medium text-ink">
-              {redacted ? 'Checked supplier agent' : 'Dave M., R017485'}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-ink-muted">Paid</p>
-            <p className="font-medium text-ink">
-              £{LAST_TUESDAY.doneAt} — you raised the £{LAST_TUESDAY.ceiling} ceiling
-            </p>
-          </div>
+      <div className="grid grid-cols-2 gap-3 text-sm border-t border-ink/10 pt-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-ink-muted">Kitchen</p>
+          <p className="font-medium text-ink">
+            {redacted ? 'A café in N1' : 'Angel Artisan Cafe & Bakery'}
+          </p>
         </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-ink/10 pt-4">
-        <p className="text-sm text-ink-muted">This is last Tuesday's job — see the whole sheet.</p>
-        <a href="/missions/demo/receipt" className="btn-secondary text-xs py-2">
-          See the full paper →
-        </a>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-ink-muted">Supplier</p>
+          <p className="font-medium text-ink">
+            {redacted ? 'Checked supplier agent' : 'Dave M., R017485'}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-ink-muted">Paid</p>
+          <p className="font-medium text-ink">
+            £{LAST_TUESDAY.doneAt} — raised from £{LAST_TUESDAY.ceiling}
+          </p>
+        </div>
+        <div className="flex items-end">
+          <a href="/missions/demo/receipt" className="text-xs text-mandate hover:text-ink transition-colors">
+            See the full paper →
+          </a>
+        </div>
       </div>
     </div>
   );

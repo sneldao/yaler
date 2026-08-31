@@ -1,0 +1,48 @@
+---
+/**
+ * TicketRailSection — the kitchen pass as a full section, not a card.
+ *
+ * The ticket rail (`.ticket-rail`) is a horizontal spike that chits hang
+ * from. Used for: the three agent quotes on the landing page, the job
+ * stage progression on the mission page, any "things lined up" moment.
+ *
+ * This wrapper applies the motif at section level — no `paper-card`
+ * around it. The rail IS the surface. See docs/BRAND.md "Motifs are
+ * sections, not ornaments."
+ *
+ * Slot: the chits (`.chit` elements), typically in a flex row.
+ * Props:
+ *   label  — optional uppercase machine-voice label above the rail
+ *   meta   — optional right-aligned meta text (e.g. "Gemini 3.5 Flash")
+ *   small  — use the small chit variant (`.ticket-rail-sm` / `.chit-sm`)
+ */
+interface Props {
+  label?: string;
+  meta?: string;
+  small?: boolean;
+}
+
+const { label, meta, small = false } = Astro.props;
+const railClass = small ? 'ticket-rail ticket-rail-sm' : 'ticket-rail';
+---
+
+<section class="space-y-3">
+  {(label || meta) && (
+    <div class="flex items-end justify-between gap-3">
+      {label && (
+        <p class="text-xs uppercase tracking-[0.14em] text-ink-muted font-medium">
+          {label}
+        </p>
+      )}
+      {meta && (
+        <span class="text-[10px] uppercase tracking-[0.14em] text-mandate font-medium shrink-0">
+          {meta}
+        </span>
+      )}
+    </div>
+  )}
+
+  <div class={`${railClass} overflow-x-auto hide-scrollbar sm:overflow-visible`}>
+    <slot />
+  </div>
+</section>

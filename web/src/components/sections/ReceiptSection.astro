@@ -1,0 +1,50 @@
+---
+/**
+ * ReceiptSection — the thermal receipt as a full section, not a card.
+ *
+ * The receipt sheet (`.receipt-sheet`) with perforated edges
+ * (`.receipt-perf`), punch holes (`.receipt-punch`), fold lines
+ * (`.receipt-fold`), and the verified stamp (`.receipt-stamp`). This
+ * is the completion artifact — the thing people share.
+ *
+ * The receipt page (`/missions/[id]/receipt`) already does this inline;
+ * this wrapper generalizes it so other pages can use the same motif
+ * without wrapping it in a `paper-card`. See docs/BRAND.md "Motifs are
+ * sections, not ornaments."
+ *
+ * Slot: the receipt contents (header, summary, evidence, rating).
+ * Props:
+ *   stamp     — text for the verified stamp (e.g. "Verified", "Filed")
+ *   folds     — show fold lines at 33% and 66% (default true)
+ *   punches   — show punch holes on the sides (default true)
+ *   animate   — play the thermal-printer feed animation (default true)
+ */
+interface Props {
+  stamp?: string;
+  folds?: boolean;
+  punches?: boolean;
+  animate?: boolean;
+}
+
+const { stamp = 'Verified', folds = true, punches = true, animate = true } = Astro.props;
+const animClass = animate ? 'animate-receipt-print' : '';
+---
+
+<section class="receipt-sheet rounded-sm relative overflow-hidden {animClass}">
+  {stamp && <div class="receipt-stamp">{stamp}</div>}
+  {folds && (
+    <>
+      <div class="receipt-fold" style="top: 33%"></div>
+      <div class="receipt-fold" style="top: 66%"></div>
+    </>
+  )}
+  {punches && (
+    <>
+      <div class="absolute -left-2 top-16 receipt-punch"></div>
+      <div class="absolute -right-2 top-16 receipt-punch"></div>
+    </>
+  )}
+  <div class="receipt-perf"></div>
+  <slot />
+  <div class="receipt-perf"></div>
+</section>

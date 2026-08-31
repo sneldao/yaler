@@ -17,24 +17,36 @@ function isActive(path: string, currentPage: string): boolean {
  * Only mounts on client (used with client:load).
  */
 
-export default function MobileNav({ currentPage }: Props) {
+export default function MobileNav({ currentPage: initialPage }: Props) {
   const [open, setOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(initialPage);
 
-  // Close on route change (Astro view transitions)
+  // Track the current page across view-transition navigations.
+  // The header is transition:persist, so the initial prop goes stale
+  // after a swap. astro:page-load fires after both initial load and
+  // view transitions — read the real URL from location.
   useEffect(() => {
+    const update = () => {
+      const path = window.location.pathname.replace(/\?.*$/, '').replace(/\/$/, '') || '/';
+      setCurrentPage(path);
+    };
     const close = () => setOpen(false);
+    document.addEventListener('astro:page-load', update);
     document.addEventListener('astro:after-swap', close);
-    return () => document.removeEventListener('astro:after-swap', close);
+    return () => {
+      document.removeEventListener('astro:page-load', update);
+      document.removeEventListener('astro:after-swap', close);
+    };
   }, []);
 
-  // Prevent body scroll when open
+  // Prevent body scroll when open — save/restore the previous value
+  // so we don't clobber a scroll-lock set by another component.
   useEffect(() => {
     if (open) {
+      const prev = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+      return () => { document.body.style.overflow = prev; };
     }
-    return () => { document.body.style.overflow = ''; };
   }, [open]);
 
   const navItems: { path: string; label: string }[] = [
@@ -51,7 +63,7 @@ export default function MobileNav({ currentPage }: Props) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center justify-center w-10 h-10 -mr-2 rounded-lg text-ink hover:bg-paper-inset transition-colors"
+        className="flex items-center justify-center w-11 h-11 -mr-2 rounded-lg text-ink hover:bg-paper-inset transition-colors"
         aria-label={open ? 'Close menu' : 'Open menu'}
         aria-expanded={open}
       >
@@ -73,7 +85,7 @@ export default function MobileNav({ currentPage }: Props) {
             className="fixed inset-0 bg-ink/30 z-40 animate-pop-in"
             onClick={() => setOpen(false)}
           />
-          <div className="fixed top-12 left-0 right-0 z-50 bg-paper border-b border-ink/10 shadow-paper animate-pop-in">
+          <div className="fixed top-12 left-0 right-0 z-50 bg-paper border-b border-ink/10 shadow-paper animate-pop-in overscroll-contain safe-top">
             <nav className="max-w-3xl mx-auto px-5 py-4 flex flex-col gap-1" aria-label="Main navigation">
               {navItems.map(({ path, label }) => {
                 const active = isActive(path, currentPage);

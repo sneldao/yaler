@@ -68,6 +68,8 @@
 
   body {
     @apply bg-paper text-ink antialiased min-h-screen selection:bg-mandate/20 selection:text-ink relative overflow-x-hidden;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
   h1,
@@ -639,6 +641,14 @@
   min-height: 44px;
 }
 
+/* Utility for bare links and small icon buttons that don't use .btn-*.
+   Apply with className="min-touch" — gives 44x44 without changing
+   the visual size of the element (padding expands the hit box). */
+.min-touch {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 @media (max-width: 639px) {
   /* Ensure nav links and small buttons meet 44px on mobile */
   nav a,
@@ -647,6 +657,21 @@
     display: inline-flex;
     align-items: center;
   }
+
+  /* Bare text links in cards — expand the tap target without
+     changing the visual text size. */
+  .min-touch-link {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* ─── Overscroll containment for modals and drawers ──────
+   Prevents the page behind a drawer/modal from bouncing on iOS
+   when the drawer content reaches its scroll boundary. */
+.overscroll-contain {
+  overscroll-behavior-y: contain;
 }
 
 

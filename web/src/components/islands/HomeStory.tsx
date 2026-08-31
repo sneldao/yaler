@@ -1,10 +1,17 @@
-import React, { useRef, useState } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGSAP } from '@gsap/react';
+import React, { useState, useEffect, useRef } from 'react';
 
-gsap.registerPlugin(ScrollTrigger);
-gsap.registerPlugin(useGSAP);
+/**
+ * HomeStory — the Cafe Noor Tuesday-morning story as a horizontal stepper.
+ *
+ * Five clock times as split-flap board tiles across the top; one beat's
+ * content visible below. Click a time to flip to that beat. The clocks
+ * ARE the navigation — this is the split-flap motif as a section primitive,
+ * not a scroll-driven card deck.
+ *
+ * Replaces the previous GSAP ScrollTrigger vertical timeline, which
+ * elongated the page with five stacked article cards. This is ~70%
+ * shorter vertically and interactive instead of passive.
+ */
 
 interface Beat {
   clock: string;
@@ -47,107 +54,141 @@ const BEATS: Beat[] = [
 ];
 
 export default function HomeStory() {
-  const root = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const [autoAdvance, setAutoAdvance] = useState(true);
+  const sectionRef = useRef<HTMLElement>(null);
 
-  useGSAP(
-    () => {
-      const fill = root.current?.querySelector('.story-rail-fill');
-      const steps = root.current?.querySelector('.story-steps');
-      const mm = gsap.matchMedia();
+  // Auto-advance through beats when the section is in view, like a
+  // split-flap board flipping through the morning. Pauses on hover/focus
+  // and when the user manually selects a beat.
+  useEffect(() => {
+    if (!autoAdvance) return;
+    const section = sectionRef.current;
+    if (!section) return;
 
-      // Reduced motion: the rail shows complete and no scroll-linked motion
-      // runs. Every beat stays fully readable in the static column.
-      mm.add('(prefers-reduced-motion: reduce)', () => {
-        if (fill) gsap.set(fill, { scaleY: 1 });
-      });
+    let inView = false;
+    const observer = new IntersectionObserver(
+      ([entry]) => { inView = entry.isIntersecting; },
+      { threshold: 0.4 },
+    );
+    observer.observe(section);
 
-      mm.add('(prefers-reduced-motion: no-preference)', () => {
-        root.current?.querySelectorAll('.story-beat').forEach((el, i) => {
-          ScrollTrigger.create({
-            trigger: el,
-            start: 'top 62%',
-            end: 'bottom 38%',
-            onToggle: (self) => self.isActive && setActive(i),
-          });
-        });
+    const interval = setInterval(() => {
+      if (!inView) return;
+      setActive((prev) => (prev + 1) % BEATS.length);
+    }, 4000);
 
-        if (fill && steps) {
-          gsap.fromTo(
-            fill,
-            { scaleY: 0 },
-            {
-              scaleY: 1,
-              ease: 'none',
-              scrollTrigger: { trigger: steps, start: 'top 60%', end: 'bottom 65%', scrub: 0.4 },
-            },
-          );
-        }
-      });
+    return () => { observer.disconnect(); clearInterval(interval); };
+  }, [autoAdvance]);
 
-      return () => mm.revert();
-    },
-    { scope: root },
-  );
+  // Re-enable auto-advance after a period of inactivity following a
+  // manual selection, so the board resumes flipping on its own.
+  const manualSelect = (i: number) => {
+    setActive(i);
+    setAutoAdvance(false);
+  };
 
   const current = BEATS[active] ?? BEATS[0];
 
   return (
-    <section ref={root} className="paper-card rounded-2xl p-5 sm:p-8" id="story">
-      <div className="mb-8">
+    <section
+      ref={sectionRef}
+      className="space-y-5"
+      id="story"
+      onMouseLeave={() => { /* resume auto-advance after leaving the section */ }}
+    >
+      <div>
         <p className="text-xs uppercase tracking-[0.16em] text-mandate font-medium">Last Tuesday · N1</p>
         <h2 className="font-display text-3xl sm:text-4xl text-ink tracking-tight mt-1">How last Tuesday went</h2>
         <p className="text-ink-muted text-sm sm:text-base leading-relaxed max-w-xl mt-2">
-          One fridge. One kitchen. Scroll through the night exactly as it happened — nothing booked, nothing spent.
+          One fridge. One kitchen. Step through the morning as it happened — nothing booked, nothing spent.
         </p>
       </div>
 
-      <div className="grid md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-8 md:gap-10">
-        <div className="hidden md:block">
-          <div className="sticky top-28">
-            <p className="text-xs uppercase tracking-wider text-ink-muted">{current.tag}</p>
-            <p className="font-display text-6xl text-ink tabular-nums mt-2" aria-live="polite">
-              {current.clock}
-            </p>
-            <div className="h-px bg-ink/10 my-5 max-w-[12rem]" />
-            <p className="font-display text-lg text-ink-muted leading-snug max-w-[14rem] italic">{current.title}</p>
-          </div>
-        </div>
+      {/* The split-flap clock board — 5 times as flip tiles.
+          Click a time to jump to that beat. The connecting line shows
+          progression through the morning. */}
+      <div className="relative">
+        {/* Progress line behind the tiles */}
+        <div className="absolute top-[18px] left-0 right-0 h-px bg-ink/10" aria-hidden />
+        <div
+          className="absolute top-[18px] left-0 h-px bg-mandate transition-all duration-500"
+          style={{ width: `${(active / (BEATS.length - 1)) * 100}%` }}
+          aria-hidden
+        />
 
-        <div className="relative story-steps pl-7 space-y-5">
-          <div className="absolute left-[6px] top-3 bottom-3 w-px bg-ink/12">
-            <div className="story-rail-fill w-full h-full bg-mandate origin-top scale-y-0 rounded-full" />
-          </div>
-
-          {BEATS.map((b, i) => (
-            <article
-              key={b.clock}
-              data-beat
-              className={`story-beat relative rounded-xl border p-4 sm:p-5 transition-all duration-500 ${
-                i === active
-                  ? 'bg-paper-raised border-mandate/35 shadow-[0_10px_28px_-18px_rgba(18,33,43,0.28)]'
-                  : 'bg-paper/60 border-ink/10 opacity-55'
-              }`}
-            >
-              <span
-                className={`absolute -left-7 top-6 w-3 h-3 -translate-x-[5px] rounded-full border-2 transition-colors duration-500 ${
-                  i <= active ? 'bg-mandate border-paper' : 'bg-paper border-ink/25'
-                }`}
-                style={{ boxShadow: '0 0 0 2px var(--paper)' }}
-                aria-hidden="true"
-              />
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="text-[11px] uppercase tracking-wider text-mandate font-medium">{b.tag}</p>
-                <p className="text-xs text-ink-muted tabular-nums md:hidden">{b.clock}</p>
-              </div>
-              <h3 className="font-display text-xl sm:text-2xl text-ink mt-1.5 leading-snug">{b.title}</h3>
-              <p className="text-sm text-ink-muted leading-relaxed mt-2">{b.body}</p>
-            </article>
-          ))}
+        <div className="relative flex justify-between gap-1">
+          {BEATS.map((b, i) => {
+            const state = i < active ? 'done' : i === active ? 'active' : 'future';
+            return (
+              <button
+                key={b.clock}
+                type="button"
+                onClick={() => manualSelect(i)}
+                onMouseEnter={() => setAutoAdvance(false)}
+                aria-label={`${b.tag} at ${b.clock}`}
+                aria-pressed={i === active}
+                className="group flex flex-col items-center gap-1.5 shrink-0"
+              >
+                <span
+                  className={[
+                    'flex items-center justify-center w-9 h-9 rounded-lg border-2 font-machine text-[11px] tabular-nums transition-all duration-300',
+                    state === 'active'
+                      ? 'border-mandate bg-mandate text-paper scale-110 shadow-[0_4px_14px_-4px_rgba(18,33,43,0.3)]'
+                      : state === 'done'
+                        ? 'border-mandate/40 bg-mandate/10 text-mandate'
+                        : 'border-ink/15 bg-paper text-ink-muted group-hover:border-ink/30',
+                  ].join(' ')}
+                >
+                  {state === 'done' ? (
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24" aria-hidden>
+                      <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : (
+                    b.clock
+                  )}
+                </span>
+                <span
+                  className={[
+                    'text-[9px] uppercase tracking-wider transition-colors duration-300 hidden sm:block',
+                    state === 'active' ? 'text-mandate font-medium' : 'text-ink-muted',
+                  ].join(' ')}
+                >
+                  {b.tag.split(',')[0]}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-3 border-t border-ink/10 pt-6">
+      {/* The active beat — one content panel, not five stacked cards.
+          Fades in on beat change for a flip-board feel. */}
+      <div
+        key={active}
+        className="animate-fade-up rounded-xl border border-mandate/20 bg-paper-raised p-5 sm:p-6 shadow-[0_10px_28px_-18px_rgba(18,33,43,0.18)]"
+      >
+        <div className="flex items-baseline justify-between gap-3 mb-2">
+          <p className="text-[11px] uppercase tracking-wider text-mandate font-medium">{current.tag}</p>
+          <p className="font-machine text-sm text-ink-muted tabular-nums">{current.clock}</p>
+        </div>
+        <h3 className="font-display text-xl sm:text-2xl text-ink leading-snug">{current.title}</h3>
+        <p className="text-sm text-ink-muted leading-relaxed mt-2">{current.body}</p>
+      </div>
+
+      {/* Beat indicators — dots for mobile where the tag labels are hidden */}
+      <div className="flex justify-center gap-1.5 sm:hidden" aria-hidden>
+        {BEATS.map((_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 rounded-full transition-all duration-200 ${
+              i === active ? 'w-4 bg-mandate' : 'w-1.5 bg-ink/15'
+            }`}
+          />
+        ))}
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-t border-ink/10 pt-5">
         <a href="/rehearsal" className="btn-primary text-sm py-3 px-5">
           Walk it yourself in the rehearsal
         </a>

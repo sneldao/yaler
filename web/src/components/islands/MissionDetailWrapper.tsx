@@ -454,17 +454,31 @@ export default function MissionDetailWrapper({ initialMissionId }: Props) {
           {mission.status === 'ESCALATED' && (
             <EscalatedRetry mission={mission} onResumed={(next) => setMission(next)} />
           )}
-          <AgentStatusStrip mission={mission} offerCount={offerCount} lastEventAt={lastEventAt} />
-          <div className="sticky top-16 sm:top-20 z-30 -my-3">
-            <ToolTraceRail events={events} />
+
+          {/* Sticky split: live status pinned right, timeline scrolling left.
+              On mobile this collapses to a single column — the status strip
+              and watch bar sit above the timeline, same order as before. */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-6 items-start">
+            {/* Left — the scrolling narrative */}
+            <div className="space-y-6 min-w-0">
+              <MissionTimeline mission={mission} events={events} />
+              <OfferComparison
+                missionId={mission.id}
+                missionStatus={mission.status}
+                budgetMax={mission.mandate?.budget?.maxAmount}
+              />
+            </div>
+
+            {/* Right — sticky live status. Stays visible while the
+                timeline scrolls. lg only — on mobile it flows inline. */}
+            <aside className="space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto hide-scrollbar">
+              <AgentStatusStrip mission={mission} offerCount={offerCount} lastEventAt={lastEventAt} />
+              <LiveWatchBar mission={mission} />
+              <div className="lg:block hidden">
+                <ToolTraceRail events={events} />
+              </div>
+            </aside>
           </div>
-          <LiveWatchBar mission={mission} />
-          <MissionTimeline mission={mission} events={events} />
-          <OfferComparison
-            missionId={mission.id}
-            missionStatus={mission.status}
-            budgetMax={mission.mandate?.budget?.maxAmount}
-          />
         </>
       ))}
       {(mission.status !== 'DRAFT' && (

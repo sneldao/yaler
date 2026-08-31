@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { navigate } from 'astro:transitions/client';
+import { useStore } from '@nanostores/react';
 import { createMission, uploadImage, type DiagnosticMedia } from '../../lib/api';
 import { broadcastMissionsChanged } from '../../lib/cache';
 import { loadSavedMandate } from '../../lib/rehearsal';
-import { DISTRICT_EVENT, getDistrict } from './DistrictPicker';
+import { districtStore } from '../../stores';
 import { LoaderGrid } from '../primitives/LoaderGrid';
 import SponsorCallout from '../primitives/SponsorCallout';
 import OnboardingTooltip from '../primitives/OnboardingTooltip';
@@ -25,21 +26,11 @@ export default function MissionForm() {
   const [confirmed, setConfirmed] = useState(false);
   const [diagnosticMedia, setDiagnosticMedia] = useState<DiagnosticMedia[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
-  const [district, setDistrict] = useState('N1');
+  // District flows into the sample jobs — picking a district in the picker
+  // updates the presets live via the shared nanostore, no reload.
+  const district = useStore(districtStore);
   const typingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // District flows into the sample jobs — picking a district in the picker
-  // updates the presets live, no reload.
-  useEffect(() => {
-    setDistrict(getDistrict());
-    const onDistrict = (e: Event) => {
-      const next = (e as CustomEvent<string>).detail;
-      if (next) setDistrict(next);
-    };
-    window.addEventListener(DISTRICT_EVENT, onDistrict);
-    return () => window.removeEventListener(DISTRICT_EVENT, onDistrict);
-  }, []);
 
   useEffect(() => {
     return () => { if (typingRef.current) clearInterval(typingRef.current); };

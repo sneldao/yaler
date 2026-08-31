@@ -70,7 +70,7 @@ export default function ThemeToggle() {
       aria-label={LABEL[choice]}
       aria-pressed={choice === 'dark'}
       title={LABEL[choice]}
-      className="inline-flex items-center gap-1.5 text-ink-muted hover:text-ink transition-colors"
+      className="inline-flex items-center gap-1.5 min-h-11 px-1 -mx-1 text-ink-muted hover:text-ink transition-colors"
     >
       {choice === 'dark' ? (
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>

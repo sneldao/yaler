@@ -70,15 +70,16 @@ export default function TimeCompare() {
   const mm = String(minutes % 60).padStart(2, '0');
 
   return (
-    <div ref={ref} className="paper-card rounded-2xl p-5 sm:p-6 relative overflow-hidden">
+    <div ref={ref} className="space-y-3">
       {/* Machine-voice header row, like a kitchen clock board */}
       <div className="flex items-center justify-between gap-3 font-machine text-[10px] uppercase tracking-[0.14em] text-ink-muted">
         <span>Time to an engineer booked</span>
         <span className="text-escalate">every min down ≈ £13</span>
       </div>
 
-      {/* The service clock — big thermal digits counting to the booking */}
-      <div className="mt-3 flex items-end justify-between gap-4">
+      {/* The service clock — big thermal digits counting to the booking.
+          No paper-card wrapper: the clock IS the section. */}
+      <div className="flex items-end justify-between gap-4">
         <p className="clock-digits text-6xl sm:text-7xl text-mandate" aria-hidden>
           {h}
           <span className="clock-colon">:</span>
@@ -94,7 +95,7 @@ export default function TimeCompare() {
       </div>
 
       {/* Clock sweep — the same number as a shape, for glanceability */}
-      <div className="mt-4 h-1.5 rounded-full bg-paper-inset overflow-hidden" aria-hidden>
+      <div className="h-1.5 rounded-full bg-paper-inset overflow-hidden" aria-hidden>
         <div
           className={`h-full rounded-full bg-mandate ${done ? '' : 'transition-none'}`}
           style={{

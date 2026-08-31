@@ -157,7 +157,7 @@ function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullab
         {brief.diagnosticMedia && brief.diagnosticMedia.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1">
             {brief.diagnosticMedia.map((media) => (
-              <button key={media.url} type="button" onClick={async () => { try { const access = await createMediaAccess(missionId || '', media.objectKey || ''); window.open(access.url, '_blank', 'noopener,noreferrer'); } catch { /* unavailable media stays non-blocking */ } }} className="text-[10px] text-mandate border border-mandate/20 rounded-full px-2 py-1">{media.label}</button>
+              <button key={media.url} type="button" onClick={async () => { try { const access = await createMediaAccess(missionId || '', media.objectKey || ''); window.open(access.url, '_blank', 'noopener,noreferrer'); } catch { /* unavailable media stays non-blocking */ } }} className="text-[10px] text-mandate border border-mandate/20 rounded-full px-3 min-h-9 inline-flex items-center">{media.label}</button>
             ))}
           </div>
         )}
@@ -609,7 +609,11 @@ export default function MissionTimeline({
                       <div className="hole-punch-row" aria-hidden />
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <a href={`/missions/${mission.id}/receipt`} className="btn-primary text-sm py-2.5">
+                      <a
+                        href={`/missions/${mission.id}/receipt`}
+                        className="btn-primary text-sm py-2.5"
+                        style={{ viewTransitionName: 'receipt-sheet' } as React.CSSProperties}
+                      >
                         Get the receipt
                       </a>
                     </div>

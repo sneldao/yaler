@@ -25,7 +25,7 @@ export default function KitchenModeToggle() {
       type="button"
       onClick={toggle}
       title={enabled ? 'Sound on (kitchen mode)' : 'Sound off'}
-      className={`flex items-center justify-center w-7 h-7 rounded-lg transition-colors duration-150 ${
+      className={`flex items-center justify-center w-11 h-11 -mr-1 rounded-lg transition-colors duration-150 ${
         enabled ? 'bg-mandate/10 text-mandate' : 'text-ink-muted hover:text-ink hover:bg-paper-inset'
       }`}
       aria-label={enabled ? 'Disable kitchen mode sounds' : 'Enable kitchen mode sounds'}

@@ -8,6 +8,7 @@ import DeferredWaitlist from '../components/islands/DeferredWaitlist';
 import AgentQuotePreview from '../components/islands/AgentQuotePreview';
 import HeroStepFlow from '../components/islands/HeroStepFlow';
 import AgentDiagram from '../components/islands/AgentDiagram';
+import TicketRailSection from '../components/sections/TicketRailSection.astro';
 ---
 
 <Layout title="Yaler — Get the job done">
@@ -37,7 +38,7 @@ import AgentDiagram from '../components/islands/AgentDiagram';
         <HeroStepFlow client:visible />
       </div>
 
-      <ActivityPulse client:load />
+      <ActivityPulse client:visible />
 
       <div class="flex flex-col sm:flex-row gap-3">
         <a href="/rehearsal?autoplay" class="btn-primary text-sm py-3 px-6 text-center">Watch the demo</a>
@@ -53,13 +54,21 @@ import AgentDiagram from '../components/islands/AgentDiagram';
         <span class="text-mandate">✓</span> A receipt on every job
       </p>
 
-      <TimeCompare client:load />
+      <TimeCompare client:visible />
     </section>
 
     <!-- ═══ Act 1.5 — The product, visible ═══ -->
-    <section class="space-y-3 reveal-on-scroll">
-      <AgentQuotePreview client:load />
-    </section>
+    <div class="reveal-on-scroll">
+      <TicketRailSection
+        label="Three AI agents. Three quotes. In their own words."
+        meta="Gemini 3.5 Flash"
+      >
+        <AgentQuotePreview client:visible />
+      </TicketRailSection>
+      <p class="text-[11px] text-ink-muted mt-3">
+        Each agent reasons independently about the job, budget, and deadline — then quotes in its own voice.
+      </p>
+    </div>
 
     <!-- ═══ Act 2.5 — Play ═══ -->
     <div class="reveal-on-scroll">
@@ -73,38 +82,39 @@ import AgentDiagram from '../components/islands/AgentDiagram';
     <!-- ═══ Act 3 — Deep dive ═══ -->
     <section class="space-y-3 reveal-on-scroll">
       <p class="text-xs uppercase tracking-[0.14em] text-ink-muted font-medium">What fires on every job</p>
-      <SponsorChips client:load />
+      <SponsorChips client:visible />
     </section>
 
     <div class="reveal-on-scroll">
-      <StoryTeaser client:load />
+      <StoryTeaser client:visible />
     </div>
 
-    <!-- Market — one confident stat, the rest a thin strip -->
-    <section class="paper-card rounded-2xl p-5 sm:p-6 space-y-4 reveal-on-scroll">
+    <!-- Market — honest framing of the problem, not vanity numbers.
+         No paper-card: the stamps sit directly on the paper. -->
+    <section class="space-y-4 reveal-on-scroll">
       <div class="text-center space-y-2">
         <AgentDiagram client:visible />
         <p class="font-display text-4xl sm:text-5xl text-mandate leading-none">1 agent</p>
         <p class="text-sm text-ink">3 AI supplier quotes. 0 phone calls. That's the whole point.</p>
       </div>
-      <div class="flex justify-center gap-6 sm:gap-10 text-center border-t border-ink/5 pt-3">
-        <div>
-          <p class="font-display text-lg text-ink">12,000+</p>
-          <p class="text-[10px] text-ink-muted">London food businesses</p>
+      <div class="flex justify-center gap-6 sm:gap-10 text-center border-t border-ink/10 pt-4">
+        <div class="space-y-1">
+          <p class="font-machine text-lg text-ink tabular-nums">3 hrs</p>
+          <p class="text-[10px] text-ink-muted uppercase tracking-wider">avg time to book, the old way</p>
         </div>
-        <div>
-          <p class="font-display text-lg text-ink">85%</p>
-          <p class="text-[10px] text-ink-muted">need same-day repair</p>
+        <div class="space-y-1">
+          <p class="font-machine text-lg text-ink tabular-nums">15 min</p>
+          <p class="text-[10px] text-ink-muted uppercase tracking-wider">with Yaler, in the demo</p>
         </div>
-        <div>
-          <p class="font-display text-lg text-ink">£800+</p>
-          <p class="text-[10px] text-ink-muted">lost per hour down</p>
+        <div class="space-y-1">
+          <p class="font-machine text-lg text-ink tabular-nums">£0</p>
+          <p class="text-[10px] text-ink-muted uppercase tracking-wider">booked without your yes</p>
         </div>
       </div>
     </section>
 
     <!-- Waitlist — not in the DOM until the visitor has seen the hero -->
-    <DeferredWaitlist client:load />
+    <DeferredWaitlist client:idle />
   </div>
 
   {/* Scroll-triggered reveals between acts. No library — IntersectionObserver

@@ -72,6 +72,14 @@ HTML head (Astro layout, later):
 <meta name="twitter:card" content="summary_large_image">
 ```
 
+## Motifs are sections, not ornaments
+
+Yaler ships a set of kitchen/office motifs in `web/src/styles/global.css`: `.ticket-rail` / `.chit` (the kitchen pass), `.clock-digits` / `.clock-colon` (the service clock), `.folder` / `.dossier-sheet` / `.hole-punch-row` (the compliance folder), `.stamp` (inked status impressions), `.hand-note` (Caveat sharpie margin notes), `.receipt-sheet` / `.receipt-perf` / `.receipt-punch` (the thermal receipt), `.shuffle-papers` (verifying state). Each was built with real craft — the stamp thuds in with a blurred second ink pass, the receipt feeds out of a slot, the colon blinks, the chits tilt on the rail.
+
+The rule that makes them read as a kitchen system rather than "cards with decorations": **a motif must be the section, not live inside a section.** A `.ticket-rail` wrapped in a `paper-card` reads as "a card with a rail in it." A `.ticket-rail` *as* the section reads as the kitchen pass. The receipt page is the model — the `.folder` wraps the `.receipt-sheet` with no `paper-card` around it. Every other page should follow that pattern: promote the motif to the section wrapper, drop the surrounding `paper-card`.
+
+Concretely: `AgentQuotePreview` should be a ticket rail, not three stacked cards. `TimeCompare`'s `clock-digits` should escape its `paper-card`. The market stats should be a stamped ledger row, not three `paper-card rounded-xl` blocks. The evidence dossier in `MissionTimeline` should be a `folder` section, not a `folder` nested in a `paper-card`.
+
 ## Shipped UI
 
 The Astro app must look like this document, not like an agent dashboard.
@@ -88,6 +96,11 @@ The Astro app must look like this document, not like an agent dashboard.
 - **Animated receipt:** the proof receipt is the completion artifact. It prints out of a slot (thermal-printer animation), a verified stamp thuds down with a slight rotation, and fold lines fade in suggesting it was carried in a pocket. The buyer’s rating appears on the receipt. This is the thing people share.
 - **District-agnostic:** the home page has a district picker (defaults to N1, stored in localStorage). Any UK postcode works. The N1/Cafe Noor story is the default rehearsal, but the product is not London-locked — the district picker makes it universal.
 - **Motion:** Astro view transitions and in-app `navigate()`. No aurora, no pointer-tracking backdrop, no page reload after mandate confirm. Honor `prefers-reduced-motion`.
+- **Width variation:** `Layout.astro`'s `max-w-3xl mx-auto` on `<main>` must not be a monopoly. Pages opt into `narrow` (forms, receipt), `default` (most pages), `wide` (mission detail — sticky split), or `full-bleed` (landing hero). A single narrow column across every page is what makes the app feel like a deck of cards. The constraint is one prop, not a rewrite.
+- **Persistent context:** every page gets a sticky context strip that survives scroll — status, elapsed time, current stage. The mission page's `LifecycleScrubber` is the model. Context that disappears when you scroll is what makes a marketing site feel like a slide deck and an app feel like a series of forms. Generalize the scrubber.
+- **Cross-island state:** islands that should respond to each other (`HeroStepFlow`, `AgentQuotePreview`, `TimeCompare`, `ActiveJobPill`, `DistrictPicker`) share state via nanostores, not React Context (which does not cross island boundaries in Astro). One store for the selected scenario, one for the active job count, one for the current district. This is what lets the landing quotes re-render for the visitor's chosen scenario and the nav pill reflect real state everywhere.
+- **View transitions for real:** `<ViewTransitions />` is enabled but only `transition:persist` on the header and `transition:animate="fade"` on main are wired. Add `transition:name` to elements that appear on multiple pages — a quote card on the landing morphs into the same card on `/missions/new`; the receipt sheet morphs from the mission page's "Get the receipt" button. This makes the site feel like one continuous surface, not a series of page loads.
+- **Motion discipline:** the motion library is already good (receipt print-feed, stamp thud, clock count-down, chit tilt). The feedback "make it more dynamic" is not "add more motion" — it is "fix the containers so the motion you already have reads as a kitchen system operating, not as cards that wiggle." Fix structure first; the existing motion will read differently once it is not nested inside identical `paper-card`s.
 
 Copy helpers live in `web/src/lib/copy.ts`. Tokens live in `web/src/styles/global.css` and `web/tailwind.config.mjs`.
 

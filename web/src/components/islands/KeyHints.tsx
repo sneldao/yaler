@@ -88,7 +88,7 @@ export default function KeyHints() {
           type="button"
           onClick={() => setOpen(false)}
           aria-label="Close keyboard shortcuts"
-          className="shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-paper-inset transition-colors text-lg leading-none"
+          className="shrink-0 w-11 h-11 inline-flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-paper-inset transition-colors text-lg leading-none"
         >
           &times;
         </button>

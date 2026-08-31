@@ -6,7 +6,7 @@ import WaitlistCapture from '../components/islands/WaitlistCapture';
 ---
 
 <Layout title="How it works — Cafe Noor's story" description="Follow Priya through a real Tuesday morning breakdown. See how Yaler's agent finds, books, and verifies a repair inside the mandate.">
-  <div class="space-y-8 py-2">
+  <div class="space-y-6 py-2">
     <!-- Header -->
     <div class="space-y-2">
       <p class="text-xs uppercase tracking-[0.16em] text-mandate font-medium">The story</p>
@@ -19,12 +19,8 @@ import WaitlistCapture from '../components/islands/WaitlistCapture';
     <!-- The narrative scroll -->
     <HomeStory client:visible />
 
-    <!-- Proof vault showcase -->
-    <section class="space-y-3">
-      <h2 class="font-display text-2xl text-ink">Evidence and receipts</h2>
-      <p class="text-sm text-ink-muted">Every job produces a verified proof receipt. Photos are checked against the mandate requirements.</p>
-      <ProofVaultShowcase client:load />
-    </section>
+    <!-- Proof vault showcase — no section header, it flows from the story -->
+    <ProofVaultShowcase client:visible />
 
     <!-- CTAs -->
     <div class="flex flex-col sm:flex-row gap-3">
@@ -33,6 +29,6 @@ import WaitlistCapture from '../components/islands/WaitlistCapture';
     </div>
 
     <!-- Waitlist -->
-    <WaitlistCapture client:load variant="operator" source="story" />
+    <WaitlistCapture client:visible variant="operator" source="story" />
   </div>
 </Layout>

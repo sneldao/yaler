@@ -12,6 +12,6 @@ export function getStaticPaths() {
 const { id } = Astro.params;
 ---
 
-<Layout title={`Job ${id} — Yaler`}>
+<Layout title={`Job ${id} — Yaler`} width="wide">
   <MissionDetailWrapper client:load initialMissionId={id} />
 </Layout>

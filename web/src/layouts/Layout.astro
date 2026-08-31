@@ -24,12 +24,32 @@ import { SponsorRail } from '../components/primitives/SponsorCallout';
 interface Props {
   title?: string;
   description?: string;
+  // Page width — see docs/ARCHITECTURE.md "Layout and motif structure".
+  // A single narrow column across every page is what makes the app feel
+  // like a deck of cards. Pages opt into the width they need.
+  //   narrow     — forms, receipt (max-w-xl)
+  //   default    — most pages (max-w-3xl, the original behaviour)
+  //   wide       — mission detail: sticky split (max-w-5xl)
+  //   full-bleed — landing hero: edge-to-edge, inner content constrained
+  width?: 'narrow' | 'default' | 'wide' | 'full-bleed';
 }
 
 const {
   title = 'Yaler — Get the job done',
-  description = 'Tell us what\'s broken. We find a local engineer, stay inside your budget, and give you a receipt when it\'s done.'
+  description = 'Tell us what\'s broken. We find a local engineer, stay inside your budget, and give you a receipt when it\'s done.',
+  width = 'default',
 } = Astro.props;
+
+// Map the width prop to the main column class. full-bleed is special: the
+// <main> goes edge-to-edge and each section constrains its own inner width,
+// so the hero can break out while the rest of the page stays readable.
+const WIDTH_CLASS: Record<string, string> = {
+  narrow: 'max-w-xl',
+  default: 'max-w-3xl',
+  wide: 'max-w-5xl',
+  'full-bleed': 'max-w-none',
+};
+const mainClass = WIDTH_CLASS[width] ?? WIDTH_CLASS.default;
 
 // ─── Nav active-state detection ────────────────────────────────
 // Strips query strings and trailing slashes so /story/?foo=bar still matches.
@@ -55,6 +75,9 @@ const isActive = (path: string): boolean => {
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#F4EFE6" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0D161D" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
     {/* Set the theme class before first paint — stored choice wins,
         otherwise follow the OS. is:inline so it runs synchronously. */}
     <script is:inline>
@@ -66,6 +89,18 @@ const isActive = (path: string): boolean => {
           }
         } catch (e) { /* private mode — default light */ }
       })();
+    </script>
+    {/* View transitions swap the entire <html> element — the new page's
+        <html> has no .dark class (it's added client-side above), so every
+        navigation would flash to light before the inline script re-adds it.
+        Copy the theme class to the new document BEFORE the swap so there's
+        no flash. */}
+    <script is:inline>
+      document.addEventListener('astro:before-swap', (e) => {
+        if (document.documentElement.classList.contains('dark')) {
+          e.newDocument.documentElement.classList.add('dark');
+        }
+      });
     </script>
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -89,8 +124,11 @@ const isActive = (path: string): boolean => {
           </div>
         </a>
 
-        <!-- Desktop nav (hidden on mobile) -->
-        <nav class="hidden sm:flex items-center gap-1 text-sm" aria-label="Main navigation">
+        <!-- Desktop nav (hidden on mobile). The header is transition:persist,
+             so the active state set at SSR time goes stale after a view-
+             transition navigation. The inline script below re-applies it on
+             every astro:page-load (fires after both initial load and swaps). -->
+        <nav class="hidden sm:flex items-center gap-1 text-sm" aria-label="Main navigation" data-nav-active>
           <ActiveJobPill client:load />
           <KitchenModeToggle client:load />
           <ThemeToggle client:load />
@@ -104,6 +142,7 @@ const isActive = (path: string): boolean => {
           ].map(([path, label]) => (
             <a
               href={path}
+              data-nav-path={path}
               class={[
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors',
                   isActive(path)
@@ -130,12 +169,50 @@ const isActive = (path: string): boolean => {
       </div>
     </header>
 
-    <main id="main-content" tabindex="-1" class="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-5 py-6 sm:py-8 relative z-10" transition:animate="fade">
+    {/* Update the desktop nav active state after every navigation.
+        The header is transition:persist so it survives swaps, but the
+        SSR-computed active class goes stale. This re-applies it from
+        the current URL on astro:page-load (initial load + view transitions). */}
+    <script is:inline>
+      (function () {
+        function updateNavActive() {
+          var nav = document.querySelector('[data-nav-active]');
+          if (!nav) return;
+          var path = location.pathname.replace(/\?.*$/, '').replace(/\/$/, '') || '/';
+          var links = nav.querySelectorAll('a[data-nav-path]');
+          links.forEach(function (link) {
+            var linkPath = link.getAttribute('data-nav-path');
+            var active = linkPath === path ||
+              (linkPath === '/missions/new' && path.indexOf('/missions/') === 0);
+            link.classList.toggle('text-mandate', active);
+            link.classList.toggle('font-semibold', active);
+            link.classList.toggle('bg-mandate/8', active);
+            link.classList.toggle('text-ink-muted', !active);
+            if (active) {
+              link.setAttribute('aria-current', 'page');
+              if (!link.querySelector('span')) {
+                var dot = document.createElement('span');
+                dot.className = 'w-1.5 h-1.5 rounded-full bg-mandate shrink-0';
+                dot.setAttribute('aria-hidden', 'true');
+                link.insertBefore(dot, link.firstChild);
+              }
+            } else {
+              link.removeAttribute('aria-current');
+              var dot = link.querySelector('span');
+              if (dot) dot.remove();
+            }
+          });
+        }
+        document.addEventListener('astro:page-load', updateNavActive);
+      })();
+    </script>
+
+    <main id="main-content" tabindex="-1" class={`flex-1 w-full mx-auto px-4 sm:px-5 py-6 sm:py-8 relative z-10 ${mainClass}`} transition:animate="fade">
       <slot />
     </main>
 
-    <KeyHints client:load />
-    <EngagementLayer client:load />
+    <KeyHints client:idle />
+    <EngagementLayer client:idle />
 
     <footer class="border-t border-ink/10 py-5 sm:py-6 text-xs text-ink-muted relative z-10 safe-bottom">
       <div class="max-w-3xl mx-auto px-4 sm:px-5 space-y-3">
@@ -143,7 +220,7 @@ const isActive = (path: string): boolean => {
           <p>&copy; 2026 Yaler. Built for independent kitchens.</p>
           <p class="text-ink-muted/80">Delegate the outcome. Keep the mandate.</p>
         </div>
-        <SponsorRail client:load />
+        <SponsorRail client:idle />
       </div>
     </footer>
   </body>

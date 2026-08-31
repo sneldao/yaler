@@ -41,8 +41,8 @@ const COPY: Record<Variant, { headline: string; description: string; cta: string
     placeholder: 'your@email.com',
   },
   general: {
-    headline: 'Join 40+ London kitchens',
-    description: 'We launch soon. One email when real engineers are bookable through Yaler.',
+    headline: 'We\'re not live yet',
+    description: 'Yaler is in demo. One email when real engineers are bookable in your area. No spam, no countdown.',
     cta: 'Notify me',
     placeholder: 'your@email.com',
   },

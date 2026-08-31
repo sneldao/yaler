@@ -1,0 +1,30 @@
+---
+/**
+ * FolderSection — the compliance folder as a full section, not a card.
+ *
+ * A manilla folder (`.folder`) with a tab (`.folder-tab`) and clip
+ * (`.folder-clip`). Used for: evidence dossiers, filed receipts, any
+ * "this is a document that was handled" moment.
+ *
+ * This wrapper applies the motif at section level — no `paper-card`
+ * around it. The folder IS the surface. See docs/BRAND.md "Motifs are
+ * sections, not ornaments."
+ *
+ * Slot: the folder contents (stamps, sheets, hand-notes).
+ * Props:
+ *   tab  — the text on the folder tab (e.g. "Evidence dossier", "Filed")
+ *   clip — show the binder clip at the top (default true)
+ */
+interface Props {
+  tab?: string;
+  clip?: boolean;
+}
+
+const { tab, clip = true } = Astro.props;
+---
+
+<section class="folder pt-6 pb-4">
+  {tab && <div class="folder-tab">{tab}</div>}
+  {clip && <div class="folder-clip"></div>}
+  <slot />
+</section>

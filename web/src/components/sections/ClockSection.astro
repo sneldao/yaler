@@ -1,0 +1,36 @@
+---
+/**
+ * ClockSection — the service clock as a full section, not a card.
+ *
+ * Big thermal digits (`.clock-digits`) with a blinking colon
+ * (`.clock-colon`), in the machine voice (Space Mono). Used for:
+ * time-to-engineer comparisons, elapsed job timers, any "time is
+ * passing in the kitchen" moment.
+ *
+ * This wrapper applies the motif at section level — no `paper-card`
+ * around it. The clock IS the surface. See docs/BRAND.md "Motifs are
+ * sections, not ornaments."
+ *
+ * Slot: the clock digits and any adjacent content (old-way comparison,
+ * progress bar, hand-notes).
+ * Props:
+ *   label  — optional machine-voice label above the clock (left)
+ *   meta   — optional right-aligned meta text (e.g. "every min down ≈ £13")
+ */
+interface Props {
+  label?: string;
+  meta?: string;
+}
+
+const { label, meta } = Astro.props;
+---
+
+<section class="space-y-3">
+  {(label || meta) && (
+    <div class="flex items-center justify-between gap-3 font-machine text-[10px] uppercase tracking-[0.14em] text-ink-muted">
+      {label && <span>{label}</span>}
+      {meta && <span class="text-escalate">{meta}</span>}
+    </div>
+  )}
+  <slot />
+</section>

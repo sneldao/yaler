@@ -63,6 +63,24 @@ Shared operator copy lives in `web/src/lib/copy.ts`. Rehearsal fixtures live in 
 
 Astro should not become a React application hidden inside a framework. Keep public pages server-rendered and isolate stateful interactions. Route changes use Astro `navigate()` so view transitions run; do not `window.location.reload()` after mandate confirm.
 
+### Layout and motif structure
+
+The biggest UX risk across the app is **structural uniformity**: every page is `space-y-8` of `paper-card rounded-2xl` inside a single `max-w-3xl mx-auto` column in `Layout.astro`. The kitchen motifs (`.ticket-rail`, `.folder`, `.clock-digits`, `.stamp`, `.receipt-sheet` — see `docs/BRAND.md`) exist and are well-crafted, but most are nested *inside* `paper-card`s, so they read as decorations on a uniform substrate rather than as the kitchen system operating.
+
+Three structural rules fix this without a redesign:
+
+1. **Break the `max-w-3xl` monopoly.** `Layout.astro` accepts a `width` prop (`narrow` | `default` | `wide` | `full-bleed`). Forms and the receipt stay narrow; the mission detail page goes wide for a sticky split (timeline left, live status right); the landing hero goes full-bleed. This is one prop in one file and it unlocks every other structural change.
+2. **Promote motifs to section primitives.** Stop wrapping `.ticket-rail`, `.folder`, `.clock-digits`, `.stamp` in `paper-card`. They are the surface. The receipt page (`/missions/[id]/receipt`) is the model — `.folder` wraps `.receipt-sheet` with no card around it. Generalize: a small set of section wrappers (`TicketRailSection`, `FolderSection`, `ReceiptSection`, `ClockSection`) where the motif is the section.
+3. **One persistent context strip per page.** The mission page's `LifecycleScrubber` (sticky, survives scroll, shows stage + progress) is the model. Generalize so every page has a sticky context strip — status, elapsed time, current stage. Context that disappears on scroll is what makes the app feel like a series of forms rather than a live system.
+
+### Cross-island state
+
+React Context does not cross Astro island boundaries — each island is a separate React root. Islands that need to respond to each other (`HeroStepFlow`, `AgentQuotePreview`, `TimeCompare`, `ActiveJobPill`, `DistrictPicker`) share state via **nanostores** (`@nanostores/react`), the Astro-recommended pattern. One store per concern: selected scenario, active job count, current district. This is what lets the landing page re-render quotes for the visitor's chosen scenario and the nav pill reflect real state on every page.
+
+### View transitions
+
+`<ViewTransitions />` is enabled in `Layout.astro` but only `transition:persist` on the header and `transition:animate="fade"` on `<main>` are wired. To make the site feel like one continuous surface, add `transition:name` to elements that appear on multiple pages — a quote card on the landing morphs into the same card on `/missions/new`; the receipt sheet morphs from the mission page's "Get the receipt" button. View transitions are the cheapest "feels like an app" win available.
+
 ## Backend
 
 ### Go mission gateway

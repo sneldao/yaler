@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { type Mission } from '../../lib/api';
 import { listMissionsCached, onMissionsChanged } from '../../lib/cache';
 import { statusLabel } from '../../lib/copy';
+import { setActiveJobCount } from '../../stores';
 
 /**
  * A small pill in the nav bar showing the current active job:
@@ -34,12 +35,19 @@ export default function ActiveJobPill() {
         const missions = await listMissionsCached();
         if (!active) return;
         // Find the most recent non-terminal mission
-        const activeMission = missions.find(
+        const activeMissions = missions.filter(
           (m: Mission) => m.status !== 'COMPLETED' && m.status !== 'CANCELLED'
         );
-        setMission(activeMission || null);
+        const activeMission = activeMissions[0] || null;
+        setMission(activeMission);
+        // Publish the count to the shared store so other islands
+        // (landing page activity pulse, etc.) can read it.
+        setActiveJobCount(activeMissions.length);
       } catch {
-        if (active) setMission(null);
+        if (active) {
+          setMission(null);
+          setActiveJobCount(0);
+        }
       }
     };
 
@@ -74,7 +82,7 @@ export default function ActiveJobPill() {
   return (
     <a
       href={`/missions/${mission.id}`}
-      className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+      className={`flex items-center gap-2 text-xs px-3 min-h-9 sm:min-h-11 py-1.5 rounded-full border transition-colors ${
         isUrgent
           ? 'border-escalate/30 bg-escalate/5 text-escalate hover:bg-escalate/10'
           : 'border-mandate/30 bg-mandate/5 text-mandate hover:bg-mandate/10'
@@ -92,4 +100,3 @@ export default function ActiveJobPill() {
     </a>
   );
 }
-

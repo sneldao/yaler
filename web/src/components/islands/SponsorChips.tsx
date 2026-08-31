@@ -127,7 +127,7 @@ export default function SponsorChips() {
                 type="button"
                 onClick={() => setOpen(null)}
                 aria-label="Close"
-                className="w-8 h-8 inline-flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-paper-inset transition-colors"
+                className="w-11 h-11 inline-flex items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-paper-inset transition-colors"
               >
                 ×
               </button>

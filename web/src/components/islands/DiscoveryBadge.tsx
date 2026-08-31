@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useStore } from '@nanostores/react';
 import SponsorCallout from '../primitives/SponsorCallout';
 import type { FoundEngineer } from '../../lib/api';
-import { DISTRICT_EVENT, getDistrict } from './DistrictPicker';
+import { districtStore } from '../../stores';
 
 /**
  * DiscoveryBadge — surfaces the Exa web search results.
@@ -19,21 +20,11 @@ interface Props {
 }
 
 export default function DiscoveryBadge({ district: districtProp = 'N1' }: Props) {
-  const [district, setDistrict] = useState(districtProp);
+  const storeDistrict = useStore(districtStore);
+  const district = districtProp !== 'N1' ? districtProp : storeDistrict;
   const [results, setResults] = useState<FoundEngineer[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
-
-  // Follow the district picker without a page reload.
-  useEffect(() => {
-    setDistrict(getDistrict());
-    const onDistrict = (e: Event) => {
-      const next = (e as CustomEvent<string>).detail;
-      if (next) setDistrict(next);
-    };
-    window.addEventListener(DISTRICT_EVENT, onDistrict);
-    return () => window.removeEventListener(DISTRICT_EVENT, onDistrict);
-  }, []);
 
   useEffect(() => {
     setLoading(true);

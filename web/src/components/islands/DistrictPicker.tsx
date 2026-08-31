@@ -1,46 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useStore } from '@nanostores/react';
+import { districtStore, setDistrict as setDistrictStore } from '../../stores';
 
 /**
  * DistrictPicker — lets the user set their postal district.
  * Stored in localStorage, defaults to N1. Flows through to
- * DiscoveryBadge, MissionForm presets, and the mandate.
+ * DiscoveryBadge, MissionForm presets, and the mandate via the
+ * shared districtStore (nanostores). See docs/ARCHITECTURE.md
+ * "Cross-island state."
  *
  * For the SF hackathon audience: London N1 is the default
  * (Cafe Noor, Dalston story), but any UK postcode works.
  */
-const STORAGE_KEY = 'yaler-district';
-
-/** Custom event name — islands subscribe to district changes, no reload. */
-export const DISTRICT_EVENT = 'yaler:district';
-
 const POPULAR = ['N1', 'E1', 'SE1', 'SW1', 'W1', 'EC1', 'WC1', 'NW1'];
 
 export default function DistrictPicker() {
-  const [district, setDistrict] = useState('N1');
+  const district = useStore(districtStore);
   const [open, setOpen] = useState(false);
   const [justSet, setJustSet] = useState(false);
 
-  useEffect(() => {
-    const saved = getDistrict();
-    if (saved) setDistrict(saved);
-    // Stay in sync if another picker on the page changes the district.
-    const onDistrict = (e: Event) => {
-      const next = (e as CustomEvent<string>).detail;
-      if (next) setDistrict(next);
-    };
-    window.addEventListener(DISTRICT_EVENT, onDistrict);
-    return () => window.removeEventListener(DISTRICT_EVENT, onDistrict);
-  }, []);
-
   const choose = (d: string) => {
-    const clean = d.trim().toUpperCase();
-    if (!clean) return;
-    setDistrict(clean);
-    localStorage.setItem(STORAGE_KEY, clean);
+    setDistrictStore(d);
     setOpen(false);
-    // No reload — tell every island on the page (MissionForm presets,
-    // DiscoveryBadge…) so the app reads as live, not as a page refresh.
-    window.dispatchEvent(new CustomEvent(DISTRICT_EVENT, { detail: clean }));
     setJustSet(true);
     setTimeout(() => setJustSet(false), 1800);
   };
@@ -104,9 +85,4 @@ export default function DistrictPicker() {
       )}
     </div>
   );
-}
-
-export function getDistrict(): string {
-  if (typeof window === 'undefined') return 'N1';
-  return localStorage.getItem(STORAGE_KEY) || 'N1';
 }
