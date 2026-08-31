@@ -52,19 +52,9 @@ const GUIDE_AUTOPLAY: Record<Phase, string> = {
 };
 
 export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) {
-  // Determine the initial mode:
-  // - Explicit ?autoplay in URL → always autoplay
-  // - No query param + first visit (no localStorage) → autoplay (show them the demo)
-  // - No query param + returning visitor → interactive (let them try)
-  const [mode, setMode] = useState<Mode>(() => {
-    if (autoplayProp) return 'autoplay';
-    if (typeof window === 'undefined') return 'interactive';
-    try {
-      return localStorage.getItem(REHEARSAL_SEEN_KEY) ? 'interactive' : 'autoplay';
-    } catch {
-      return 'interactive';
-    }
-  });
+  // Always start with the SSR-safe value. The actual mode is resolved
+  // in a useEffect after hydration to avoid hydration mismatches.
+  const [mode, setMode] = useState<Mode>(autoplayProp ? 'autoplay' : 'interactive');
   const [autoPlayed, setAutoPlayed] = useState(false);
   const [phase, setPhase] = useState<Phase>('details');
   const [mission, setMission] = useState<Mission>(rehearsalMission('DRAFT'));
@@ -72,6 +62,17 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
   const [saved, setSaved] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [bookedCred, setBookedCred] = useState<CredentialCheck | null>(null);
+
+  // After hydration: if no explicit ?autoplay, check localStorage to decide
+  // whether this is a first-time visitor (autoplay) or returning (interactive).
+  useEffect(() => {
+    if (autoplayProp) return; // explicit override, already set
+    try {
+      if (!localStorage.getItem(REHEARSAL_SEEN_KEY)) {
+        setMode('autoplay');
+      }
+    } catch { /* ignore */ }
+  }, [autoplayProp]);
 
   // Auto-play: advance through the phases on a timer, ending on the receipt.
   useEffect(() => {
