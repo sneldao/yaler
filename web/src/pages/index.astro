@@ -2,21 +2,23 @@
 import Layout from '../layouts/Layout.astro';
 import ActivityPulse from '../components/islands/ActivityPulse';
 import TimeCompare from '../components/islands/TimeCompare';
-import StepsCarousel from '../components/islands/StepsCarousel';
 import SponsorChips from '../components/islands/SponsorChips';
 import StoryTeaser from '../components/islands/StoryTeaser';
 import DeferredWaitlist from '../components/islands/DeferredWaitlist';
-import StatsBar from '../components/islands/StatsBar';
 import AgentQuotePreview from '../components/islands/AgentQuotePreview';
 ---
 
 <Layout title="Yaler — Get the job done">
   {/*
-    Three acts, each earning the next scroll on mobile:
-      1 — Hook:   one headline, one action row, the live pulse, one number.
-      2 — Proof:  swipeable 3-step carousel.
-      3 — Deep:   sponsor chips, story, explore, market — all collapsed.
-    Reveal-on-scroll between acts is handled by the inline script below.
+    Seven sections, each earning the next scroll:
+      1 — Hook:       headline, live pulse, CTAs, trust strip, time compare.
+      2 — Product:    three AI agent quotes visible without clicking.
+      3 — Play:       30-second kitchen game.
+      4 — Stack:      sponsor chips (tap for detail).
+      5 — Story:      Cafe Noor teaser (expand for full story).
+      6 — Market:     one confident stat + thin strip.
+      7 — Waitlist:   deferred until the visitor has seen the hero.
+    Reveal-on-scroll between sections is handled by the inline script below.
   */}
   <div class="space-y-12 sm:space-y-14">
 
@@ -59,16 +61,7 @@ import AgentQuotePreview from '../components/islands/AgentQuotePreview';
       <AgentQuotePreview client:load />
     </section>
 
-    <!-- ═══ Act 2 — Proof ═══ -->
-    <section class="space-y-4 reveal-on-scroll overflow-hidden">
-      <div class="flex items-center justify-between gap-2">
-        <p class="text-xs uppercase tracking-[0.12em] text-ink-muted font-medium">On the rail — how a job prints</p>
-        <span class="text-[10px] uppercase tracking-[0.12em] text-mandate font-medium shrink-0">Live in London</span>
-      </div>
-      <StepsCarousel client:load />
-    </section>
-
-    <!-- ═══ Act 2.5 — Play (moved up, not buried) ═══ -->
+    <!-- ═══ Act 2.5 — Play ═══ -->
     <div class="reveal-on-scroll">
       <a href="/play" class="paper-card paper-card-hover rounded-2xl p-5 block space-y-1">
         <p class="text-xs uppercase tracking-[0.14em] text-mandate font-medium">Play — 30 seconds</p>
@@ -86,19 +79,6 @@ import AgentQuotePreview from '../components/islands/AgentQuotePreview';
     <div class="reveal-on-scroll">
       <StoryTeaser client:load />
     </div>
-
-    <!-- Explore — behind the scenes for the curious -->
-    <div class="reveal-on-scroll">
-      <a href="/ops" class="paper-card paper-card-hover rounded-2xl p-5 block space-y-1">
-        <p class="text-xs uppercase tracking-[0.14em] text-ink-muted font-medium">Behind the scenes</p>
-        <p class="font-display text-lg text-ink">Concierge dispatch desk</p>
-      </a>
-    </div>
-
-    <!-- Social proof — live mission count from the backend -->
-    <section class="reveal-on-scroll py-4">
-      <StatsBar client:load />
-    </section>
 
     <!-- Market — one confident stat, the rest a thin strip -->
     <section class="paper-card rounded-2xl p-5 sm:p-6 space-y-4 reveal-on-scroll">
