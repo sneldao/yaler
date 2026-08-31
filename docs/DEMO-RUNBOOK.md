@@ -1,6 +1,6 @@
-# Demo runbook — the three-minute tour
+# Demo runbook — the four-minute tour
 
-For judges and presenters. Everything below works from a phone or a laptop. Total time: under 3 minutes. Every step has an offline fallback — you cannot be stranded.
+For judges and presenters. Everything below works from a phone or a laptop. Total time: under 4 minutes. Every step has an offline fallback — you cannot be stranded.
 
 ## Before you start (30 seconds)
 

@@ -28,7 +28,7 @@ Speak or type → Check the details → Ask nearby engineers → Book inside the
 
 **Live app**: [yaler.persidian.com](https://yaler.persidian.com) — click **Start here — try a rehearsal**
 
-**Quick 3-minute demo video**: [Watch the demo](https://youtube.com/watch?v=PLACEHOLDER) — create a mission, see the mandate, watch the agent source suppliers, rank offers, and generate a receipt.
+**Quick 4-minute demo video**: [Watch the demo](https://youtube.com/watch?v=PLACEHOLDER) — create a mission, see the mandate, watch the agent source suppliers, rank offers, and generate a receipt. Includes a live Google Cloud backend proof shot.
 
 **For judges** — the fastest path to "wow":
 1. Open [yaler.persidian.com/rehearsal](https://yaler.persidian.com/rehearsal)
@@ -46,6 +46,18 @@ docker-compose up --build
 ```
 
 Open `http://localhost:4321` and tap **Start here — try a rehearsal** (nothing is booked). The live form is under **This is a real job**.
+
+**Or run without Docker** (two terminals):
+
+```bash
+# Terminal 1 — backend on :8081
+cp .env.example .env  # add GEMINI_API_KEY for live mandate extraction
+make dev
+
+# Terminal 2 — frontend on :4321
+npm --prefix web install
+make web
+```
 
 See [docs/DEPLOY.md](docs/DEPLOY.md) for full setup.
 

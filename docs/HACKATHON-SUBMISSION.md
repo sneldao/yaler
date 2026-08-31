@@ -23,7 +23,7 @@ Yaler is an autonomous mission agent for independent kitchens. A café manager s
 |---|---|
 | Gemini 3.5+ | `gemini-3.5-flash` via Google Gen AI SDK |
 | Google Agent Framework | `google.golang.org/genai` (GenAI SDK) |
-| Google Cloud infra | Firestore, Cloud Tasks, Cloud Run |
+| Google Cloud infra | Cloud Run, Cloud Tasks, Firestore, Cloud Storage, Secret Manager, Cloud Build |
 
 ---
 
@@ -79,34 +79,40 @@ npm --prefix web install
 
 # 2. Environment
 cp .env.example .env
-# Fill in at minimum: GEMINI_API_KEY
+# Fill in at minimum: GEMINI_API_KEY (Google AI Studio key — no GCP project needed)
 # See docs/DEPLOY.md for full config
 
-# 3. Start (backend on :8081, frontend on :4321)
+# 3. Start the backend (Go API on :8081)
 make dev
 
-# 4. Seed demo data
-go run ./cmd/seed
+# 4. In a second terminal, start the frontend (Astro on :4321)
+make web
 
-# 5. Open http://localhost:4321
+# 5. Seed demo data (12 missions covering every lifecycle state)
+make seed
+
+# 6. Open http://localhost:4321
 ```
 
-**Zero-GCP path:** The rehearsal (`/rehearsal`) and demo receipt (`/missions/demo/receipt`) work without any API keys — they're fully client-side with stub data.
+**Zero-GCP path:** The rehearsal (`/rehearsal`) and demo receipt (`/missions/demo/receipt`) work without any API keys — they're fully client-side with stub data. The live form at `/missions/new` calls the production backend by default; set `PUBLIC_API_URL=http://localhost:8081` to point at your local server instead.
+
+**Firestore:** Local dev defaults to an in-memory store (no setup needed). To use the Firestore emulator instead, set `FIRESTORE_EMULATOR_HOST=localhost:8080` in `.env` and start it with `gcloud emulators firestore start`. Production uses real Firestore on GCP.
 
 ---
 
 ## Demo video
 
-The live demo is under 3 minutes. Recommended script:
+~4-minute demo following [docs/DEMO-VIDEO-SCRIPT.md](./DEMO-VIDEO-SCRIPT.md). The video covers:
 
-1. **0:00** — Open https://yaler.persidian.com, point at the live pulse
-2. **0:15** — `/rehearsal` → play → watch mandate extract, over-budget stop fire
-3. **0:45** — Approve the blocked quote → booking
-4. **1:00** — `/missions/new` → use sample job → real API call → SOURCING → quotes land
-5. **1:45** — Compare quotes → approve → COMMITTED
-6. **2:15** — `/missions/seed-mission-completed-01/receipt` → share link
-7. **2:45** — `/replay/seed-mission-completed-01` → scrubber playback
-8. **3:00** — Close: "Owners get their evening back"
+1. **The problem** — London café loses £2,000/day when a fridge breaks
+2. **The value prop** — autonomous agent finds, books, and verifies a local engineer
+3. **Speak the job** — Gemini 3.5 Flash extracts the mandate from natural language
+4. **The agent works** — sourcing, ranking, policy checks on the timeline
+5. **The over-budget stop** — the agent refuses to spend beyond the mandate
+6. **Hear the paper** — ElevenLabs reads the proof receipt
+7. **Replay mode** — scrubber playback of a completed mission
+8. **Backend on Google Cloud** (required) — Cloud Run console + live `curl` to the `.run.app` endpoint showing Gemini 3.5 Flash mandate extraction
+9. **The stack** — architecture diagram and spec-driven development story
 
 Full runbook: [docs/DEMO-RUNBOOK.md](./DEMO-RUNBOOK.md)
 
@@ -115,10 +121,11 @@ Full runbook: [docs/DEMO-RUNBOOK.md](./DEMO-RUNBOOK.md)
 ## Findings & learnings
 
 ### What worked
-- **Mandate-as-data** is the right abstraction. Showing the 4 extracted fields as editable chips before any execution built trust immediately. Judges asked about it more than any other screen.
+- **Mandate-as-data** is the right abstraction. Showing the 4 extracted fields as editable chips before any execution built trust immediately — the mandate is a data object, not a chat message.
 - **The over-budget stop** is the single strongest moment. An agent that *refuses* to spend is more credible than one that always complies. It's the product's moral center.
 - **Paper UI > dark console.** Kitchen managers don't want a dashboard. They want a receipt they can stick on the wall. This design decision made the demo feel like a product, not a prototype.
-- **Seeded replay mode** was the right call. A 3-minute live demo is fragile; a 30-second replay is bulletproof.
+- **Seeded replay mode** was the right call. A live demo is fragile; a scrubber replay of a completed mission is bulletproof and lets judges verify the full lifecycle at their own pace.
+- **Gemini proposes, Go decides.** Keeping the model behind a pure-function policy engine meant we could test every decision path deterministically. No Gemini response mutates state directly.
 
 ### What we'd do differently
 - **Voice input (Vapi) is a polish cost.** Speak-in works when the key is set; falls back to Web Speech otherwise. For a hackathon, the text path is sufficient and more reliable.
@@ -126,7 +133,7 @@ Full runbook: [docs/DEMO-RUNBOOK.md](./DEMO-RUNBOOK.md)
 - **Seed data is our demo spine.** The 12 seed missions covering every lifecycle state are what make the replay feature work. Without them, judges see a blank timeline and lose the thread.
 
 ### Technical debt / future work
-- `google.golang.org/genai` is wired and working; `google/adk-go` could be layered in later for tool-calling orchestration, but the current GenAI SDK + pure-function policy engine satisfies the hackathon requirement and keeps the architecture clean.
+- `google.golang.org/genai` (GenAI SDK) is wired and working; Google ADK could be layered in later for tool-calling orchestration, but the current GenAI SDK + pure-function policy engine satisfies the hackathon requirement and keeps the architecture clean.
 - Vertex AI migration is planned for production (D014 decision). Current API-key path is fine for demo.
 - Outbound voice/SMS notifications (milestone calls to engineers) are Horizon 2 — deferred intentionally.
 
@@ -136,9 +143,17 @@ Full runbook: [docs/DEMO-RUNBOOK.md](./DEMO-RUNBOOK.md)
 
 | Criterion (weight) | Evidence |
 |---|---|
-| **Innovation & Operational Utility 40%** | Agent completes a real operational workflow (find → book → verify) autonomously. Over-budget policy stop proves autonomy isn't just compliance. |
-| **Architectural Discipline 30%** | Pure-function policy engine, append-only event log, idempotent worker steps, version-checked writes. Gemini never mutates state directly. |
-| **Demo & Production Readiness 30%** | Live hosted app, public repo, 12 seeded missions covering all states, replay mode, spin-up instructions, architecture diagram, visible Google Cloud backend. |
+| **Innovation & Operational Utility 40%** | Agent completes a real operational workflow (find → book → verify → receipt) autonomously, not just chat. The over-budget policy stop proves autonomy isn't blind compliance — the agent *refuses* to break the owner's rules. Cloud Tasks drives multi-step missions that survive scale-to-zero and run for hours without hand-holding. |
+| **Architectural Discipline 30%** | Pure-function policy engine (`internal/policy/`) validates every Gemini proposal. Append-only event log in Firestore with version-checked writes prevents race conditions. Idempotent worker steps via `ExpectedVersion` + `IdempotencyKey` — safe to retry on both local and Cloud Tasks transports. Gemini never mutates state directly; it proposes typed actions, Go decides. 14-state mission state machine with table-driven tests. |
+| **Demo & Production Readiness 30%** | Live hosted app (yaler.persidian.com), public repo (github.com/sneldao/yaler), 12 seeded missions covering all lifecycle states, replay mode with scrubber, spin-up instructions in README, architecture diagram (SVG + PNG), visible Google Cloud backend (Cloud Run console + live `.run.app` endpoint in the demo video). |
+
+---
+
+## Bonus points (optional)
+
+- [ ] **Published content** — blog post on dev.to or medium.com covering how the project was built, with the required hackathon disclaimer language
+- [ ] **Social media post** — X/LinkedIn post with `#AllThingsAgenticHackathon`
+- [ ] **Google AI model integration** — Gemma, Veo, or Lyria integration (not currently integrated)
 
 ---
 
