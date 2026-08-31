@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { LoaderGrid } from '../primitives/LoaderGrid';
 import type { CredentialCheck, Mission, Offer } from '../../lib/api';
 import { checkCredential } from '../../lib/api';
@@ -16,7 +16,7 @@ import MandateEditor from './MandateEditor';
 import MissionTimeline from './MissionTimeline';
 import OfferComparison from './OfferComparison';
 import RehearsalBanner from '../primitives/RehearsalBanner';
-import SpeakNote from '../primitives/SpeakNote';
+const SpeakNote = lazy(() => import('../primitives/SpeakNote'));
 import HearReceipt from '../primitives/HearReceipt';
 import WaitlistCapture from './WaitlistCapture';
 import { formatMoney, formatWhen, humanizeToken } from '../../lib/copy';
@@ -258,17 +258,19 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
         <>
           <div className="paper-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <p className="text-sm text-ink">Hands wet? Speak last Tuesday’s job. We’ll still show the written note below.</p>
-            <SpeakNote
-              label="Speak last Tuesday's job"
-              onTranscript={(text) => {
-                setMission((prev) => ({
-                  ...prev,
-                  goal: text,
-                  mandate: { ...prev.mandate, goal: text },
-                }));
-              }}
-              onMandateExtracted={handleMandateExtracted}
-            />
+            <Suspense fallback={<span className="text-xs text-ink-muted">Loading voice…</span>}>
+              <SpeakNote
+                label="Speak last Tuesday's job"
+                onTranscript={(text) => {
+                  setMission((prev) => ({
+                    ...prev,
+                    goal: text,
+                    mandate: { ...prev.mandate, goal: text },
+                  }));
+                }}
+                onMandateExtracted={handleMandateExtracted}
+              />
+            </Suspense>
           </div>
           <MandateEditor
             key={mission.goal}
