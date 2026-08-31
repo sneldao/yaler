@@ -306,7 +306,7 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider text-ink-muted">Deadline</p>
-              <p className="text-ink font-medium">{formatWhen(mission.mandate.deadline)}</p>
+              <p className="text-ink font-medium">{formatWhen(mission.mandate.latestCompletionAt)}</p>
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider text-ink-muted">Category</p>
