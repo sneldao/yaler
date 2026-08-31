@@ -212,8 +212,8 @@ export default function KitchenGame() {
                   </button>
                 </>
               )}
-              <a href="/rehearsal?autoplay" className="btn-secondary text-sm py-2.5 flex-1 text-center">
-                Watch flow
+              <a href="/rehearsal" className="btn-secondary text-sm py-2.5 flex-1 text-center">
+                Try the real interface
               </a>
               <button
                 type="button"

@@ -18,9 +18,12 @@ import RehearsalBanner from '../primitives/RehearsalBanner';
 import SpeakNote from '../primitives/SpeakNote';
 import HearReceipt from '../primitives/HearReceipt';
 import WaitlistCapture from './WaitlistCapture';
-import { formatMoney } from '../../lib/copy';
+import { formatMoney, formatWhen, humanizeToken } from '../../lib/copy';
 
 type Phase = 'details' | 'looking' | 'quotes' | 'receipt';
+type Mode = 'autoplay' | 'interactive';
+
+const REHEARSAL_SEEN_KEY = 'yaler_rehearsal_seen';
 
 const PHASES: { id: Phase; label: string }[] = [
   { id: 'details', label: 'Details' },
@@ -41,7 +44,28 @@ const GUIDE: Record<Phase, string> = {
   receipt: 'This is the paper you’d pin up. Save the rules if they look right.',
 };
 
-export default function RehearsalPlaythrough({ autoplay }: Props) {
+const GUIDE_AUTOPLAY: Record<Phase, string> = {
+  details: 'Here’s a real job from last Tuesday. Watch how it flows.',
+  looking: 'Three AI supplier agents are preparing their quotes…',
+  quotes: 'One quote came in £80 over budget. The agent stopped — and picked the in-budget option.',
+  receipt: 'Receipt issued. Nothing was booked — this is practice.',
+};
+
+export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) {
+  // Determine the initial mode:
+  // - Explicit ?autoplay in URL → always autoplay
+  // - No query param + first visit (no localStorage) → autoplay (show them the demo)
+  // - No query param + returning visitor → interactive (let them try)
+  const [mode, setMode] = useState<Mode>(() => {
+    if (autoplayProp) return 'autoplay';
+    if (typeof window === 'undefined') return 'interactive';
+    try {
+      return localStorage.getItem(REHEARSAL_SEEN_KEY) ? 'interactive' : 'autoplay';
+    } catch {
+      return 'interactive';
+    }
+  });
+  const [autoPlayed, setAutoPlayed] = useState(false);
   const [phase, setPhase] = useState<Phase>('details');
   const [mission, setMission] = useState<Mission>(rehearsalMission('DRAFT'));
   const [booked, setBooked] = useState<Offer | null>(null);
@@ -51,7 +75,7 @@ export default function RehearsalPlaythrough({ autoplay }: Props) {
 
   // Auto-play: advance through the phases on a timer, ending on the receipt.
   useEffect(() => {
-    if (!autoplay) return;
+    if (mode !== 'autoplay') return;
     const timers: number[] = [];
     const advance = (delay: number, fn: () => void) => {
       timers.push(window.setTimeout(fn, delay));
@@ -74,18 +98,34 @@ export default function RehearsalPlaythrough({ autoplay }: Props) {
       setBooked(chosen);
       setMission((prev) => ({ ...prev, status: 'COMPLETED', selectedSupplierId: chosen.supplierAgentId }));
       setPhase('receipt');
+      setAutoPlayed(true);
+      try { localStorage.setItem(REHEARSAL_SEEN_KEY, '1'); } catch { /* ignore */ }
       checkCredential(chosen.supplierAgentId).then(setBookedCred).catch(() => {
         setBookedCred({ name: chosen.supplierAgentId, status: 'not_checked' });
       });
     });
     return () => timers.forEach(clearTimeout);
-  }, [autoplay]);
+  }, [mode]);
 
   useEffect(() => {
     if (phase !== 'looking') return;
+    if (mode === 'autoplay') return; // autoplay handles its own timing
     const t = window.setTimeout(() => setPhase('quotes'), 1600);
     return () => window.clearTimeout(t);
-  }, [phase]);
+  }, [phase, mode]);
+
+  const switchToInteractive = () => {
+    setMode('interactive');
+    setPhase('details');
+    setBooked(null);
+    setMission(rehearsalMission('DRAFT'));
+    try { localStorage.setItem(REHEARSAL_SEEN_KEY, '1'); } catch { /* ignore */ }
+  };
+
+  const switchToAutoplay = () => {
+    setAutoPlayed(false);
+    setMode('autoplay');
+  };
 
   const handleStarted = (next: Mission) => {
     setMission({ ...next, status: 'SOURCING' });
@@ -170,10 +210,42 @@ export default function RehearsalPlaythrough({ autoplay }: Props) {
       </ol>
 
       <p className="text-sm text-ink leading-relaxed bg-paper rounded-xl px-4 py-3 border border-ink/10">
-        {GUIDE[phase]}
+        {mode === 'autoplay' ? GUIDE_AUTOPLAY[phase] : GUIDE[phase]}
       </p>
 
-      {phase === 'details' && (
+      {phase === 'details' && mode === 'autoplay' && (
+        // Autoplay: show the mandate as a read-only display, not a form
+        <div className="paper-card rounded-2xl p-5 space-y-4 animate-pop-in">
+          <div className="space-y-1">
+            <p className="text-[11px] uppercase tracking-wider text-ink-muted">The job</p>
+            <p className="text-ink font-medium leading-snug">{mission.goal}</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-ink-muted">Budget</p>
+              <p className="text-ink font-medium">{formatMoney(mission.mandate.budget.maxAmount, mission.mandate.budget.currency)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-ink-muted">Area</p>
+              <p className="text-ink font-medium">{mission.mandate.serviceArea.postalDistrict}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-ink-muted">Deadline</p>
+              <p className="text-ink font-medium">{formatWhen(mission.mandate.deadline)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-ink-muted">Category</p>
+              <p className="text-ink font-medium">{humanizeToken(mission.mandate.serviceCategory)}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-ink-muted">
+            <span className="w-1.5 h-1.5 rounded-full bg-mandate animate-pulse" />
+            Starting automatically…
+          </div>
+        </div>
+      )}
+
+      {phase === 'details' && mode === 'interactive' && (
         <>
           <div className="paper-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <p className="text-sm text-ink">Hands wet? Speak last Tuesday’s job. We’ll still show the written note below.</p>
@@ -194,6 +266,15 @@ export default function RehearsalPlaythrough({ autoplay }: Props) {
             rehearsal
             onStarted={handleStarted}
           />
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={switchToAutoplay}
+              className="text-xs text-ink-muted hover:text-mandate transition-colors"
+            >
+              ↺ Watch the demo instead
+            </button>
+          </div>
         </>
       )}
 
@@ -323,21 +404,44 @@ export default function RehearsalPlaythrough({ autoplay }: Props) {
             {/* Always-visible next steps */}
             <div className="border-t border-ink/10 pt-4 space-y-3">
               <p className="text-xs uppercase tracking-wider text-ink-muted">What next?</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <a href="/missions/new" className="btn-primary text-sm text-center py-2.5">
-                  Start a real job
-                </a>
-                <button
-                  type="button"
-                  onClick={() => window.location.reload()}
-                  className="btn-secondary text-sm py-2.5"
-                >
-                  Try again
-                </button>
-                <a href="/" className="btn-secondary text-sm text-center py-2.5">
-                  Back home
-                </a>
-              </div>
+              {mode === 'autoplay' && autoPlayed ? (
+                <>
+                  <p className="text-sm text-ink-muted leading-relaxed">
+                    You just watched the whole flow. Now try it yourself — change the budget, pick a different supplier, feel the stop.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={switchToInteractive}
+                      className="btn-primary text-sm py-2.5"
+                    >
+                      Try it yourself
+                    </button>
+                    <a href="/missions/new" className="btn-secondary text-sm text-center py-2.5">
+                      Start a real job
+                    </a>
+                    <a href="/" className="btn-secondary text-sm text-center py-2.5">
+                      Back home
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <a href="/missions/new" className="btn-primary text-sm text-center py-2.5">
+                    Start a real job
+                  </a>
+                  <button
+                    type="button"
+                    onClick={switchToInteractive}
+                    className="btn-secondary text-sm py-2.5"
+                  >
+                    Try again
+                  </button>
+                  <a href="/" className="btn-secondary text-sm text-center py-2.5">
+                    Back home
+                  </a>
+                </div>
+              )}
             </div>
           </div>
 
