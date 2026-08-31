@@ -63,22 +63,23 @@ export default function EvidenceForm({ missionId }: Props) {
   };
 
   return (
-    <div className="paper-card rounded-2xl p-5 sm:p-7 space-y-5">
-      <div>
-        <p className="text-xs uppercase tracking-wider text-mandate mb-1">For the engineer</p>
-        <h2 className="font-display text-2xl text-ink">Send photos</h2>
-        <p className="text-sm text-ink-muted mt-1">A short note and a photo is enough. We’ll check them against what was agreed.</p>
-      </div>
+    <div className="folder">
+      <div className="folder-tab">Evidence dossier</div>
+      <div className="folder-clip" />
+      <div className="paper-card rounded-2xl p-5 sm:p-7 space-y-5 relative">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-mandate mb-1">For the engineer</p>
+          <h2 className="font-display text-2xl text-ink">Send photos</h2>
+          <p className="text-sm text-ink-muted mt-1">A short note and a photo is enough. We’ll check them against what was agreed.</p>
+        </div>
 
-      {mission?.diagnosticBrief && (
-        <details className="group rounded-xl border border-ink/10 bg-paper-inset/50">
-          <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between text-sm text-ink">
-            <span className="font-medium">Brief from the manager</span>
-            <span className="text-[11px] text-ink-muted group-open:hidden">{mission.diagnosticBrief.confidence}</span>
-            <span className="text-[11px] text-ink-muted hidden group-open:inline">collapse</span>
-          </summary>
-          <div className="px-3 pb-3 pt-2.5 border-t border-ink/10 space-y-2 text-xs">
-            <div className="space-y-1.5">
+        {mission?.diagnosticBrief && (
+          <div className="dossier-sheet space-y-2">
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-machine text-[10px] uppercase tracking-[0.14em] text-ink-muted">Case notes</p>
+              <p className="hand-note" aria-hidden>for the engineer</p>
+            </div>
+            <div className="text-xs text-ink space-y-1.5">
               <p><span className="text-ink-muted">Reported:</span> {mission.diagnosticBrief.reportedSummary}</p>
               {mission.diagnosticBrief.known.length > 0 && <p><span className="text-ink-muted">Known:</span> {mission.diagnosticBrief.known.join(' · ')}</p>}
               {mission.diagnosticBrief.extractedSignals && mission.diagnosticBrief.extractedSignals.length > 0 && (
@@ -96,104 +97,114 @@ export default function EvidenceForm({ missionId }: Props) {
             )}
             <p className="text-[10px] text-ink-muted italic">Possible areas are suggestions, not a confirmed diagnosis.</p>
           </div>
-        </details>
-      )}
+        )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs uppercase tracking-wider text-ink-muted mb-1.5">
-            What did you do?
-          </label>
-          <textarea
-            value={report}
-            onChange={(e) => setReport(e.target.value)}
-            rows={4}
-            className="field-input text-sm leading-relaxed"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="block text-xs uppercase tracking-wider text-ink-muted">
-            Completion photo
-          </label>
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-            className="bg-paper border border-dashed border-ink/20 hover:border-mandate/50 rounded-xl p-5 text-center transition-colors relative"
-          >
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
-              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-              aria-label="Take or choose a completion photo"
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider text-ink-muted mb-1.5">
+              What did you do?
+            </label>
+            <textarea
+              value={report}
+              onChange={(e) => setReport(e.target.value)}
+              rows={4}
+              className="field-input text-sm leading-relaxed"
             />
-            <div className="space-y-2 pointer-events-none">
-              {previewUrl ? (
-                <img src={previewUrl} alt="Selected completion photo" className="mx-auto h-24 w-24 rounded-lg object-cover border border-ink/10" />
-              ) : (
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-mandate-light text-mandate" aria-hidden>📷</div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-xs uppercase tracking-wider text-ink-muted">
+              Completion photo
+            </label>
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
+              className="dossier-sheet border-dashed border-ink/20 hover:border-mandate/40 text-center transition-colors relative group"
+            >
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                aria-label="Take or choose a completion photo"
+              />
+              <div className="space-y-2 pointer-events-none py-5">
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Selected completion photo" className="mx-auto h-24 w-24 rounded-lg object-cover border border-ink/10" />
+                ) : (
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-mandate-light text-mandate" aria-hidden>📷</div>
+                )}
+                <p className="text-sm text-ink">
+                  {uploading ? 'Uploading…' : previewUrl ? 'Tap to retake or replace' : 'Take a photo or choose one'}
+                </p>
+                {previewFilename && <p className="text-xs text-mandate">{previewFilename}</p>}
+                {!previewUrl && <p className="text-[11px] text-ink-muted">A clear after-work photo helps close the job.</p>}
+              </div>
+              {uploading && (
+                <div className="absolute inset-0 bg-paper/80 flex items-center justify-center" aria-hidden>
+                  <span className="font-machine text-[10px] uppercase tracking-wider text-ink-muted animate-pulse">Developing…</span>
+                </div>
               )}
-              <p className="text-sm text-ink">
-                {uploading ? 'Uploading…' : previewUrl ? 'Tap to retake or replace' : 'Take a photo or choose one'}
-              </p>
-              {previewFilename && <p className="text-xs text-mandate">{previewFilename}</p>}
-              {!previewUrl && <p className="text-[11px] text-ink-muted">A clear after-work photo helps close the job.</p>}
             </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowUrl((open) => !open)}
-            className="min-h-11 text-xs text-ink-muted hover:text-ink"
-          >
-            {showUrl ? 'Hide photo link' : 'Use a photo link instead'}
-          </button>
-          {showUrl && (
-            <input
-              type="text"
-              value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)}
-              className="field-input text-xs"
-            />
-          )}
-        </div>
-
-        {error && (
-          <div className="p-3 bg-escalate-light border border-escalate/25 text-escalate rounded-xl text-sm">
-            {error}
-          </div>
-        )}
-
-        {result && (
-          <div className="p-4 bg-mandate-light border border-mandate/20 text-ink rounded-xl text-sm space-y-2 animate-pop-in">
-            <p className="font-medium text-mandate">Photos look good.</p>
-            {result.evidence?.confidenceScore && (
-              <p className="text-xs text-ink-muted">
-                Match {(result.evidence.confidenceScore * 100).toFixed(0)}%
-              </p>
+            <button
+              type="button"
+              onClick={() => setShowUrl((open) => !open)}
+              className="min-h-11 text-xs text-ink-muted hover:text-ink"
+            >
+              {showUrl ? 'Hide photo link' : 'Use a photo link instead'}
+            </button>
+            {showUrl && (
+              <input
+                type="text"
+                value={photoUrl}
+                onChange={(e) => setPhotoUrl(e.target.value)}
+                className="field-input text-xs"
+              />
             )}
-            <p className="text-xs text-ink-muted">Taking you back to the job…</p>
           </div>
-        )}
 
-        <div className="sticky bottom-0 -mx-5 sm:mx-0 px-5 sm:px-0 pb-[env(safe-area-inset-bottom)] pt-3 bg-paper/95 backdrop-blur-sm">
-        <button
-          type="submit"
-          disabled={loading || uploading}
-          className="btn-primary w-full min-h-12"
-        >
-          {loading ? (
-            <>
-              <LoaderGrid />
-              <span>Checking the photos…</span>
-            </>
-          ) : (
-            <span>Send and finish</span>
+          {error && (
+            <div className="p-3 bg-escalate-light border border-escalate/25 text-escalate rounded-xl text-sm">
+              {error}
+            </div>
           )}
-        </button>
-        </div>
-      </form>
+
+          {result && (
+            <div className="dossier-sheet space-y-2 animate-pop-in" aria-live="polite">
+              <div className="flex items-center justify-between">
+                <span className="stamp text-mandate">Received</span>
+                <div className="hole-punch-row" aria-hidden />
+              </div>
+              <p className="font-medium text-ink">Photos look good.</p>
+              {result.evidence?.confidenceScore && (
+                <p className="text-xs text-ink-muted">
+                  Match {(result.evidence.confidenceScore * 100).toFixed(0)}%
+                </p>
+              )}
+              <p className="text-xs text-ink-muted">Taking you back to the job…</p>
+              <p className="hand-note" aria-hidden>Sent to buyer for checking.</p>
+            </div>
+          )}
+
+          <div className="sticky bottom-0 -mx-5 sm:mx-0 px-5 sm:px-0 pb-[env(safe-area-inset-bottom)] pt-3 bg-paper/95 backdrop-blur-sm">
+            <button
+              type="submit"
+              disabled={loading || uploading}
+              className="btn-primary w-full min-h-12"
+            >
+              {loading ? (
+                <>
+                  <LoaderGrid />
+                  <span>Checking the photos…</span>
+                </>
+              ) : (
+                <span>Send and finish</span>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

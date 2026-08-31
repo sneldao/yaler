@@ -594,6 +594,19 @@
 
   .receipt-punch { display: none; }
 
+  /* Folder chrome should not appear on the printed receipt. */
+  .folder {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .folder-tab,
+  .folder-clip {
+    display: none !important;
+  }
+
   a[href]::after {
     content: none !important;
   }
@@ -804,4 +817,91 @@
 
 .hand-note--warn {
   color: rgb(var(--escalate-rgb) / 0.9);
+}
+
+
+/* ─── Compliance folder — evidence dossier motif ─────────
+   A manilla folder that opens, gets clipped, stamped and filed.
+   Built from the same paper/ink tokens as the rest of the system. */
+
+.folder {
+  position: relative;
+  background: rgb(var(--paper-inset-rgb));
+  border: 1px solid rgb(var(--ink-rgb) / 0.12);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgb(var(--shadow-rgb) / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.4);
+  padding: 1.25rem;
+}
+
+.folder-tab {
+  position: absolute;
+  top: -0.6rem;
+  left: 1rem;
+  padding: 0.25rem 0.6rem;
+  background: rgb(var(--paper-raised-rgb));
+  border: 1px solid rgb(var(--ink-rgb) / 0.12);
+  border-radius: 4px;
+  font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgb(var(--ink-muted-rgb));
+  box-shadow: 0 1px 2px rgb(var(--shadow-rgb) / 0.05);
+}
+
+.folder-clip {
+  position: absolute;
+  top: -0.3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 34px;
+  border: 2px solid rgb(var(--ink-rgb) / 0.35);
+  border-bottom-left-radius: 999px;
+  border-bottom-right-radius: 999px;
+  border-top: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.dossier-sheet {
+  position: relative;
+  background: rgb(var(--paper-raised-rgb));
+  border: 1px solid rgb(var(--ink-rgb) / 0.1);
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgb(var(--shadow-rgb) / 0.04);
+  padding: 1rem;
+}
+
+.hole-punch-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.hole-punch-row::before,
+.hole-punch-row::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgb(var(--paper-inset-rgb));
+  box-shadow: inset 0 1px 2px rgb(var(--shadow-rgb) / 0.15);
+}
+
+/* Shuffling-papers animation for the verifying state. */
+@keyframes shuffle-papers {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(0.5deg); }
+  50% { transform: translateY(0) rotate(-0.5deg); }
+  75% { transform: translateY(2px) rotate(0.5deg); }
+}
+
+.shuffle-papers {
+  animation: shuffle-papers 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shuffle-papers { animation: none; }
 }

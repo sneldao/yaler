@@ -510,11 +510,6 @@ export default function MissionTimeline({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 shrink-0">
-              {mission.status === 'COMPLETED' && !rehearsal && (
-                <a href={`/missions/${mission.id}/receipt`} className="btn-primary text-sm py-2.5">
-                  Get the receipt
-                </a>
-              )}
               {(mission.status === 'IN_PROGRESS' || mission.status === 'EVIDENCE_PENDING') && !rehearsal && (
                 <a href={`/evidence/${mission.id}`} className="btn-secondary text-sm py-2.5">
                   Send photos
@@ -566,6 +561,63 @@ export default function MissionTimeline({
                 style={{ width: `${Math.min(100, ((activeStageIdx + 1) / stages.length) * 100)}%` }}
               />
             </div>
+
+            {/* Evidence-state folder: opened, checking, filed. */}
+            {(mission.status === 'EVIDENCE_PENDING' || mission.status === 'VERIFYING' || mission.status === 'COMPLETED') && (
+              <div className="folder pt-6 pb-4 mt-4">
+                {mission.status === 'EVIDENCE_PENDING' && (
+                  <>
+                    <div className="folder-tab">Evidence dossier</div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <span className="stamp text-escalate">Waiting</span>
+                        <p className="text-xs text-ink-muted pt-1">For completion photos from the engineer.</p>
+                      </div>
+                      <div className="hidden sm:block text-right">
+                        <p className="hand-note" aria-hidden>Waiting for engineer’s photo evidence.</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {mission.status === 'VERIFYING' && (
+                  <>
+                    <div className="folder-tab">Evidence dossier</div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <span className="stamp text-mandate">Checking</span>
+                        <p className="text-xs text-ink-muted pt-1">Photos are being checked against what was agreed.</p>
+                      </div>
+                      <div className="hidden sm:flex items-center gap-2" aria-hidden>
+                        <div className="dossier-sheet w-10 h-10 flex items-center justify-center shuffle-papers">
+                          <svg className="w-5 h-5 text-ink-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 12a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" />
+                            <path d="M21 12a9 9 0 1 0-3.6 7.2" />
+                            <path d="M12 3v9" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {mission.status === 'COMPLETED' && (
+                  <>
+                    <div className="folder-tab">Filed</div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <span className="stamp text-mandate">Verified</span>
+                        <p className="text-xs text-ink-muted pt-1">Evidence checked and receipt issued.</p>
+                      </div>
+                      <div className="hole-punch-row" aria-hidden />
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <a href={`/missions/${mission.id}/receipt`} className="btn-primary text-sm py-2.5">
+                        Get the receipt
+                      </a>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
