@@ -1,5 +1,4 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
-import { LoaderGrid } from '../primitives/LoaderGrid';
 import type { CredentialCheck, Mission, Offer } from '../../lib/api';
 import { checkCredential } from '../../lib/api';
 import {
@@ -43,11 +42,18 @@ const GUIDE: Record<Phase, string> = {
 };
 
 const GUIDE_AUTOPLAY: Record<Phase, string> = {
-  details: 'Here’s a real job from last Tuesday. Watch how it flows.',
-  looking: 'Three AI supplier agents are preparing their quotes…',
-  quotes: 'One quote came in £80 over budget. The agent stopped — and picked the in-budget option.',
+  details: 'Here’s a real job from last Tuesday. The agent takes it from here.',
+  looking: 'Three AI supplier agents are preparing their quotes. Watch them come in.',
+  quotes: 'One quote came in £80 over budget. The agent stopped. Now pick who to book.',
   receipt: 'Receipt issued. Nothing was booked — this is practice.',
 };
+
+/** The three supplier agents shown during the looking phase */
+const LOOKING_AGENTS = [
+  { name: 'London Rapid ColdCare', tier: 'Premium emergency specialist', delay: 0, eta: '2hr same-day' },
+  { name: 'Capital Kitchen Services', tier: 'Mid-market generalist', delay: 400, eta: 'Next day' },
+  { name: 'East London Catering', tier: 'Budget direct fixer', delay: 800, eta: '4hr same-day' },
+];
 
 export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) {
   // Always start with the SSR-safe value. The actual mode is resolved
@@ -60,6 +66,8 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
   const [saved, setSaved] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [bookedCred, setBookedCred] = useState<CredentialCheck | null>(null);
+  const [paused, setPaused] = useState(false);
+  const [agentProgress, setAgentProgress] = useState<number>(0); // 0-3 agents responded
 
   // After hydration: if no explicit ?autoplay, check localStorage to decide
   // whether this is a first-time visitor (autoplay) or returning (interactive).
@@ -72,39 +80,39 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
     } catch { /* ignore */ }
   }, [autoplayProp]);
 
-  // Auto-play: advance through the phases on a timer, ending on the receipt.
+  // Auto-play: advance details → looking → quotes, then STOP.
+  // The user must pick a quote — that's the moment of agency.
   useEffect(() => {
     if (mode !== 'autoplay') return;
+    if (paused) return;
     const timers: number[] = [];
     const advance = (delay: number, fn: () => void) => {
       timers.push(window.setTimeout(fn, delay));
     };
 
-    // details 1s → looking, looking 2s → quotes (auto-picks the in-budget offer), quotes 2.5s → receipt
     setPhase('details');
     setMission(rehearsalMission('DRAFT'));
     setBooked(null);
-    advance(1200, () => {
+    setAgentProgress(0);
+
+    // details: 1.5s to read the job
+    advance(1500, () => {
       setPhase('looking');
       setMission((prev) => ({ ...prev, status: 'SOURCING' }));
     });
-    advance(4400, () => {
+
+    // looking: agents respond one by one over 3s, then advance to quotes
+    advance(1900, () => setAgentProgress(1));
+    advance(2700, () => setAgentProgress(2));
+    advance(3500, () => setAgentProgress(3));
+    advance(4200, () => {
       setPhase('quotes');
       setMission((prev) => ({ ...prev, status: 'AWAITING_APPROVAL' }));
+      // STOP HERE — user must pick a quote
     });
-    advance(7200, () => {
-      const chosen = REHEARSAL_OFFERS[1]; // in-budget pick
-      setBooked(chosen);
-      setMission((prev) => ({ ...prev, status: 'COMPLETED', selectedSupplierId: chosen.supplierAgentId }));
-      setPhase('receipt');
-      setAutoPlayed(true);
-      try { localStorage.setItem(REHEARSAL_SEEN_KEY, '1'); } catch { /* ignore */ }
-      checkCredential(chosen.supplierAgentId).then(setBookedCred).catch(() => {
-        setBookedCred({ name: chosen.supplierAgentId, status: 'not_checked' });
-      });
-    });
+
     return () => timers.forEach(clearTimeout);
-  }, [mode]);
+  }, [mode, paused]);
 
   useEffect(() => {
     if (phase !== 'looking') return;
@@ -124,6 +132,31 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
   const switchToAutoplay = () => {
     setAutoPlayed(false);
     setMode('autoplay');
+  };
+
+  /** Jump to a phase — used by the tappable stepper in autoplay mode */
+  const jumpTo = (target: Phase) => {
+    if (mode !== 'autoplay') return;
+    setPaused(true);
+    setPhase(target);
+    if (target === 'details') {
+      setMission(rehearsalMission('DRAFT'));
+      setBooked(null);
+      setAgentProgress(0);
+    } else if (target === 'looking') {
+      setMission((prev) => ({ ...prev, status: 'SOURCING' }));
+      setAgentProgress(3); // show all agents responded
+    } else if (target === 'quotes') {
+      setMission((prev) => ({ ...prev, status: 'AWAITING_APPROVAL' }));
+    }
+  };
+
+  /** Skip from details/looking directly to quotes */
+  const skipToQuotes = () => {
+    setPaused(true);
+    setPhase('quotes');
+    setMission((prev) => ({ ...prev, status: 'AWAITING_APPROVAL' }));
+    setAgentProgress(3);
   };
 
   const handleStarted = (next: Mission) => {
@@ -146,6 +179,8 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
       selectedSupplierId: offer.supplierAgentId,
     }));
     setPhase('receipt');
+    setAutoPlayed(true);
+    try { localStorage.setItem(REHEARSAL_SEEN_KEY, '1'); } catch { /* ignore */ }
     checkCredential(offer.supplierAgentId).then(setBookedCred).catch(() => {
       setBookedCred({ name: offer.supplierAgentId, status: 'not_checked' });
     });
@@ -198,14 +233,32 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
         {PHASES.map((step, idx) => {
           const isCurrent = step.id === phase;
           const isPassed = idx < activeIdx;
+          const canJump = mode === 'autoplay' && step.id !== 'receipt';
           return (
             <li key={step.id} className="flex items-center gap-1.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${
-                isCurrent ? 'bg-mandate' : isPassed ? 'bg-mandate/50' : 'bg-ink/15'
-              }`} />
-              <span className={isCurrent ? 'text-ink font-medium' : isPassed ? 'text-ink-muted' : 'text-ink/30'}>
-                {idx + 1}. {step.label}
-              </span>
+              {canJump ? (
+                <button
+                  type="button"
+                  onClick={() => jumpTo(step.id)}
+                  className="flex items-center gap-1.5 hover:text-mandate transition-colors"
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    isCurrent ? 'bg-mandate' : isPassed ? 'bg-mandate/50' : 'bg-ink/15'
+                  }`} />
+                  <span className={isCurrent ? 'text-ink font-medium' : isPassed ? 'text-ink-muted' : 'text-ink/30'}>
+                    {idx + 1}. {step.label}
+                  </span>
+                </button>
+              ) : (
+                <>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    isCurrent ? 'bg-mandate' : isPassed ? 'bg-mandate/50' : 'bg-ink/15'
+                  }`} />
+                  <span className={isCurrent ? 'text-ink font-medium' : isPassed ? 'text-ink-muted' : 'text-ink/30'}>
+                    {idx + 1}. {step.label}
+                  </span>
+                </>
+              )}
             </li>
           );
         })}
@@ -214,6 +267,26 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
       <p className="text-sm text-ink leading-relaxed bg-paper rounded-xl px-4 py-3 border border-ink/10">
         {mode === 'autoplay' ? GUIDE_AUTOPLAY[phase] : GUIDE[phase]}
       </p>
+
+      {/* Autoplay controls — skip ahead or take over */}
+      {mode === 'autoplay' && phase !== 'quotes' && phase !== 'receipt' && (
+        <div className="flex items-center justify-between gap-3 text-xs">
+          <button
+            type="button"
+            onClick={skipToQuotes}
+            className="text-ink-muted hover:text-mandate transition-colors font-medium"
+          >
+            Skip to quotes →
+          </button>
+          <button
+            type="button"
+            onClick={switchToInteractive}
+            className="text-ink-muted hover:text-mandate transition-colors font-medium"
+          >
+            Let me do it →
+          </button>
+        </div>
+      )}
 
       {phase === 'details' && mode === 'autoplay' && (
         // Autoplay: show the mandate as a read-only display, not a form
@@ -284,20 +357,68 @@ export default function RehearsalPlaythrough({ autoplay: autoplayProp }: Props) 
       )}
 
       {phase === 'looking' && (
-        <>
-          <div className="paper-card rounded-2xl p-8 text-center space-y-3 animate-pop-in">
-            <div className="flex justify-center">
-              <span className="receipt-punch" />
+        <div className="paper-card rounded-2xl p-5 space-y-4 animate-pop-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-mandate animate-pulse" />
+              <h3 className="font-display text-lg text-ink">Agent is sourcing quotes</h3>
             </div>
-            <h3 className="font-display text-xl text-ink">Asking AI supplier agents</h3>
-            <p className="text-sm text-ink-muted max-w-md mx-auto leading-relaxed">
-              Three AI supplier agents are preparing quotes. In a real job this takes a few minutes. Here it is last Tuesday, sped up.
-            </p>
-            <div className="flex justify-center pt-1">
-              <LoaderGrid />
-            </div>
+            <span className="text-xs text-ink-muted tabular-nums">
+              {agentProgress}/3 responded
+            </span>
           </div>
-        </>
+
+          {/* Progress bar */}
+          <div className="h-1 rounded-full bg-ink/10 overflow-hidden">
+            <div
+              className="h-full bg-mandate transition-all duration-500 ease-out"
+              style={{ width: `${(agentProgress / 3) * 100}%` }}
+            />
+          </div>
+
+          {/* Three agents — light up as they respond */}
+          <div className="space-y-2">
+            {LOOKING_AGENTS.map((agent, idx) => {
+              const responded = idx < agentProgress;
+              const isResponding = idx === agentProgress;
+              return (
+                <div
+                  key={agent.name}
+                  className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-all duration-300 ${
+                    responded
+                      ? 'border-mandate/30 bg-mandate/5'
+                      : isResponding
+                        ? 'border-ink/20 bg-paper'
+                        : 'border-ink/10 bg-paper opacity-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`w-2 h-2 rounded-full ${
+                      responded ? 'bg-mandate' : isResponding ? 'bg-mandate animate-pulse' : 'bg-ink/20'
+                    }`} />
+                    <div>
+                      <p className="text-sm font-medium text-ink">{agent.name}</p>
+                      <p className="text-[11px] text-ink-muted">{agent.tier}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {responded ? (
+                      <span className="text-xs text-mandate font-medium">Quote in ✓</span>
+                    ) : isResponding ? (
+                      <span className="text-xs text-ink-muted">Preparing…</span>
+                    ) : (
+                      <span className="text-xs text-ink-muted">{agent.eta}</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="text-xs text-ink-muted text-center">
+            In a real job this takes a few minutes. Here it is last Tuesday, sped up.
+          </p>
+        </div>
       )}
 
       {phase === 'quotes' && (
