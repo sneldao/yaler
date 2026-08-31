@@ -52,12 +52,17 @@ type EvidenceExtractionResult struct {
 }
 
 type Client struct {
-	genaiClient *genai.Client
-	modelName   string
+	genaiClient    *genai.Client
+	modelName      string // Gemini 3.5 Flash — mandate extraction, offer ranking, evidence
+	gemmaModelName string // Gemma 3 27B — supplier agent quote generation
 }
 
 func NewClient(ctx context.Context) (*Client, error) {
 	modelName := "gemini-3.5-flash"
+	// Gemma 3 27B (instruction-tuned) — Google's open model, available via the
+	// same GenAI SDK. Used for supplier agent quote generation so each engineer
+	// "agent" is powered by a distinct Google AI model, not just Gemini.
+	gemmaModelName := "gemma-3-27b-it"
 
 	// Prefer Vertex AI when GCP_PROJECT_ID is set (production / Cloud Run).
 	// Vertex AI uses Application Default Credentials — no API key needed.
@@ -76,13 +81,13 @@ func NewClient(ctx context.Context) (*Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Vertex AI client: %w", err)
 		}
-		return &Client{genaiClient: gc, modelName: modelName}, nil
+		return &Client{genaiClient: gc, modelName: modelName, gemmaModelName: gemmaModelName}, nil
 	}
 
 	// Fall back to Gemini API key for local development.
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
-		return &Client{modelName: modelName}, nil
+		return &Client{modelName: modelName, gemmaModelName: gemmaModelName}, nil
 	}
 
 	cfg := &genai.ClientConfig{
@@ -94,9 +99,16 @@ func NewClient(ctx context.Context) (*Client, error) {
 	}
 
 	return &Client{
-		genaiClient: gc,
-		modelName:   modelName,
+		genaiClient:    gc,
+		modelName:      modelName,
+		gemmaModelName: gemmaModelName,
 	}, nil
+}
+
+// GemmaModelName returns the Gemma model identifier used for supplier quotes.
+// Exposed so the handler can badge supplier-agent events with the model name.
+func (c *Client) GemmaModelName() string {
+	return c.gemmaModelName
 }
 
 func (c *Client) ExtractMandate(ctx context.Context, goal string) (*domain.Mandate, error) {
@@ -336,11 +348,15 @@ type SupplierQuoteResult struct {
 	DeclineReason string   `json:"declineReason"`
 }
 
-// GenerateSupplierQuote asks Gemini to role-play as a specific supplier
+// GenerateSupplierQuote asks Gemma 3 27B to role-play as a specific supplier
 // agent and generate an independent quote for a mission callout. The
 // supplier's persona, capabilities, and price tier shape the response.
-// Returns a deterministic fallback if Gemini is unavailable or the
+// Returns a deterministic fallback if Gemma is unavailable or the
 // response is malformed.
+//
+// Gemma 3 is Google's open-weight model — using it here means each supplier
+// "agent" is powered by a distinct Google AI model, separate from the Gemini
+// 3.5 Flash that handles mandate extraction and offer ranking.
 func (c *Client) GenerateSupplierQuote(ctx context.Context, mission *domain.Mission, supplier *domain.Supplier) (*SupplierQuoteResult, error) {
 	if c.genaiClient == nil {
 		return c.fallbackSupplierQuote(supplier), nil
@@ -387,7 +403,8 @@ Do you want this job? If yes, generate a quote in character.`,
 		persona,
 	)
 
-	respText, err := c.generateContent(ctx, SystemPromptSupplierQuote, prompt)
+	// Route to Gemma 3 27B for supplier quote generation.
+	respText, err := c.generateContentWithModel(ctx, c.gemmaModelName, SystemPromptSupplierQuote, prompt)
 	if err != nil {
 		return c.fallbackSupplierQuote(supplier), nil
 	}
@@ -418,12 +435,19 @@ func (c *Client) fallbackSupplierQuote(supplier *domain.Supplier) *SupplierQuote
 }
 
 func (c *Client) generateContent(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
+	return c.generateContentWithModel(ctx, c.modelName, systemPrompt, userPrompt)
+}
+
+// generateContentWithModel calls the GenAI SDK with an explicit model name.
+// Used to route supplier quote generation to Gemma 3 while keeping Gemini 3.5
+// Flash for mandate extraction, offer ranking, and evidence verification.
+func (c *Client) generateContentWithModel(ctx context.Context, model, systemPrompt, userPrompt string) (string, error) {
 	reqCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	temp := float32(0.1)
 
-	resp, err := c.genaiClient.Models.GenerateContent(reqCtx, c.modelName, genai.Text(userPrompt), &genai.GenerateContentConfig{
+	resp, err := c.genaiClient.Models.GenerateContent(reqCtx, model, genai.Text(userPrompt), &genai.GenerateContentConfig{
 		SystemInstruction: &genai.Content{
 			Parts: []*genai.Part{genai.NewPartFromText(systemPrompt)},
 		},

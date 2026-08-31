@@ -5,7 +5,7 @@ import { LoadingStatus } from '../primitives/LoaderGrid';
 import ToolChips, { type ToolChipCall } from '../primitives/ToolChips';
 import StatusBadge from '../primitives/StatusBadge';
 import { AGENT_TOOLS, EMPTY_STATE_COPY, eventLabel, formatMoney, nextActionLabel, supplierLabel } from '../../lib/copy';
-import { SponsorRail, type SponsorId } from '../primitives/SponsorCallout';
+import SponsorCallout, { SponsorRail, type SponsorId } from '../primitives/SponsorCallout';
 import { celebrate, shake, playUiSound, markJobCompleted } from '../../lib/delight';
 
 /** Rotating "still knocking" messages during SOURCING — the longest wait.
@@ -408,15 +408,15 @@ export default function MissionTimeline({
   const statusSponsors: Record<string, { active?: SponsorId; done?: SponsorId[] }> = {
     DRAFT: { active: 'vapi' },
     MANDATE_CONFIRMED: { done: ['vapi', 'gemini'] },
-    SOURCING: { done: ['vapi', 'gemini'], active: 'exa' },
-    OFFERS_RECEIVED: { done: ['vapi', 'gemini', 'exa'], active: 'apify' },
-    NEGOTIATING: { done: ['vapi', 'gemini', 'exa', 'apify'] },
-    COMMITTED: { done: ['vapi', 'gemini', 'exa', 'apify'] },
-    AWAITING_APPROVAL: { done: ['vapi', 'gemini', 'exa', 'apify'] },
-    IN_PROGRESS: { done: ['vapi', 'gemini', 'exa', 'apify'] },
-    EVIDENCE_PENDING: { done: ['vapi', 'gemini', 'exa', 'apify'], active: 'gemini' },
-    VERIFYING: { done: ['vapi', 'gemini', 'exa', 'apify'], active: 'gemini' },
-    COMPLETED: { done: ['vapi', 'gemini', 'exa', 'apify', 'elevenlabs'] },
+    SOURCING: { done: ['vapi', 'gemini'], active: 'gemma' },
+    OFFERS_RECEIVED: { done: ['vapi', 'gemini', 'gemma', 'exa'], active: 'apify' },
+    NEGOTIATING: { done: ['vapi', 'gemini', 'gemma', 'exa', 'apify'] },
+    COMMITTED: { done: ['vapi', 'gemini', 'gemma', 'exa', 'apify'] },
+    AWAITING_APPROVAL: { done: ['vapi', 'gemini', 'gemma', 'exa', 'apify'] },
+    IN_PROGRESS: { done: ['vapi', 'gemini', 'gemma', 'exa', 'apify'] },
+    EVIDENCE_PENDING: { done: ['vapi', 'gemini', 'gemma', 'exa', 'apify'], active: 'gemini' },
+    VERIFYING: { done: ['vapi', 'gemini', 'gemma', 'exa', 'apify'], active: 'gemini' },
+    COMPLETED: { done: ['vapi', 'gemini', 'gemma', 'exa', 'apify', 'elevenlabs'] },
   };
   const sponsorState = statusSponsors[mission?.status || ''] || {};
   const activeSponsor = sponsorState.active;
@@ -701,6 +701,12 @@ export default function MissionTimeline({
             ))}
           </div>
           <SourcingPulse />
+          <SponsorCallout
+            sponsor="gemma"
+            status="working"
+            label="Gemma 3 27B is generating each supplier agent's quote"
+            detail="Google's open model role-plays as each engineer — persona, capabilities, and price tier shape an independent quote. Separate from the Gemini 3.5 Flash that extracted your mandate."
+          />
         </div>
       )}
 

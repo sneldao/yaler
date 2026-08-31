@@ -21,7 +21,8 @@ Yaler is an autonomous mission agent for independent kitchens. A café manager s
 **Google tech gates met:**
 | Requirement | Implementation |
 |---|---|
-| Gemini 3.5+ | `gemini-3.5-flash` via Google Gen AI SDK |
+| Gemini 3.5+ | `gemini-3.5-flash` via Google Gen AI SDK — mandate extraction, offer ranking, evidence verification |
+| Additional Google AI model | `gemma-3-27b-it` via the same GenAI SDK — supplier agent quote generation (role-playing distinct engineer personas) |
 | Google Agent Framework | `google.golang.org/genai` (GenAI SDK) |
 | Google Cloud infra | Cloud Run, Cloud Tasks, Firestore, Cloud Storage, Secret Manager, Cloud Build |
 
@@ -47,10 +48,10 @@ See [docs/ARCHITECTURE.md](./ARCHITECTURE.md) and [docs/architecture.svg](./arch
 Core flow:
 
 ```
-Buyer speaks/types → Gemini extracts mandate → Policy checks rules →
-Cloud Tasks queues worker → Worker calls 3 supplier agents (Gemini) →
+Buyer speaks/types → Gemini 3.5 Flash extracts mandate → Policy checks rules →
+Cloud Tasks queues worker → Worker calls 3 supplier agents (Gemma 3 27B) →
 Each supplier agent role-plays a persona, generates independent quote →
-Gemini ranks offers → Policy enforces ceiling → Booking committed →
+Gemini 3.5 Flash ranks offers → Policy enforces ceiling → Booking committed →
 Engineer submits evidence → Gemini verifies → Receipt issued
 ```
 
@@ -127,7 +128,7 @@ Full runbook: [docs/DEMO-RUNBOOK.md](./DEMO-RUNBOOK.md)
 - **Paper UI > dark console.** Kitchen managers don't want a dashboard. They want a receipt they can stick on the wall. This design decision made the demo feel like a product, not a prototype.
 - **Seeded replay mode** was the right call. A live demo is fragile; a scrubber replay of a completed mission is bulletproof and lets judges verify the full lifecycle at their own pace.
 - **Gemini proposes, Go decides.** Keeping the model behind a pure-function policy engine meant we could test every decision path deterministically. No Gemini response mutates state directly.
-- **Multi-agent supplier quotes.** Each supplier agent gets an independent Gemini 3.5 Flash call with its own persona (premium specialist, mid-market firm, budget outfit). The quotes are genuinely LLM-generated — different prices, different terms, different voices — and the buyer agent ranks them. This turned the sourcing step from deterministic code into real agent-to-agent interaction.
+- **Multi-agent supplier quotes.** Each supplier agent gets an independent Gemma 3 27B call with its own persona (premium specialist, mid-market firm, budget outfit). The quotes are genuinely LLM-generated — different prices, different terms, different voices — and the buyer agent (Gemini 3.5 Flash) ranks them. Using two distinct Google AI models (Gemini for the buyer, Gemma for the suppliers) makes the agent-to-agent interaction architecturally visible, not just a prompt trick.
 
 ### What we'd do differently
 - **Voice input (Vapi) is a polish cost.** Speak-in works when the key is set; falls back to Web Speech otherwise. For a hackathon, the text path is sufficient and more reliable.
@@ -145,7 +146,7 @@ Full runbook: [docs/DEMO-RUNBOOK.md](./DEMO-RUNBOOK.md)
 
 | Criterion (weight) | Evidence |
 |---|---|
-| **Innovation & Operational Utility 40%** | Agent completes a real operational workflow (find → book → verify → receipt) autonomously, not just chat. Multi-agent sourcing: 3 independent Gemini-powered supplier agents role-play different business personas and generate independent quotes — the buyer agent then ranks them. The over-budget policy stop proves autonomy isn't blind compliance — the agent *refuses* to break the owner's rules. Cloud Tasks drives multi-step missions that survive scale-to-zero and run for hours without hand-holding. |
+| **Innovation & Operational Utility 40%** | Agent completes a real operational workflow (find → book → verify → receipt) autonomously, not just chat. Multi-agent sourcing: 3 independent Gemma 3 27B-powered supplier agents role-play different business personas and generate independent quotes — the buyer agent (Gemini 3.5 Flash) then ranks them. Two distinct Google AI models in the same pipeline. The over-budget policy stop proves autonomy isn't blind compliance — the agent *refuses* to break the owner's rules. Cloud Tasks drives multi-step missions that survive scale-to-zero and run for hours without hand-holding. |
 | **Architectural Discipline 30%** | Pure-function policy engine (`internal/policy/`) validates every Gemini proposal. Append-only event log in Firestore with version-checked writes prevents race conditions. Idempotent worker steps via `ExpectedVersion` + `IdempotencyKey` — safe to retry on both local and Cloud Tasks transports. Gemini never mutates state directly; it proposes typed actions, Go decides. 14-state mission state machine with table-driven tests. |
 | **Demo & Production Readiness 30%** | Live hosted app (yaler.persidian.com), public repo (github.com/sneldao/yaler), 12 seeded missions covering all lifecycle states, replay mode with scrubber, spin-up instructions in README, architecture diagram (SVG + PNG), visible Google Cloud backend (Cloud Run console + live `.run.app` endpoint in the demo video). |
 
@@ -155,7 +156,7 @@ Full runbook: [docs/DEMO-RUNBOOK.md](./DEMO-RUNBOOK.md)
 
 - [ ] **Published content** — blog post on dev.to or medium.com covering how the project was built, with the required hackathon disclaimer language
 - [ ] **Social media post** — X/LinkedIn post with `#AllThingsAgenticHackathon`
-- [ ] **Google AI model integration** — Gemma, Veo, or Lyria integration (not currently integrated)
+- [x] **Google AI model integration** — Gemma 3 27B (`gemma-3-27b-it`) integrated for supplier agent quote generation, alongside Gemini 3.5 Flash for mandate extraction and offer ranking. Two distinct Google AI models in the same pipeline.
 
 ---
 

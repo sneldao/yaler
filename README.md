@@ -132,7 +132,7 @@ Install the commit-time system hooks once: `brew install gitleaks`.
 ## 🚀 Key Frontiers Built
 
 1. **🎬 N1 fridge rehearsal**: Speak last Tuesday’s job, feel the over-budget stop, hear the paper. Nothing is booked.
-2. **⚡ Gemini 3.5 Mandate Engine**: Converts messy speech/text into structured policy mandates with budget ceilings and SLAs. Surfaces as a branded callout when active.
+2. **⚡ Gemini 3.5 + Gemma 3 Dual-Model**: Gemini 3.5 Flash converts messy speech/text into structured policy mandates and ranks offers. Gemma 3 27B (Google's open model) powers each supplier agent's quote generation — role-playing distinct engineer personas. Two Google AI models in one pipeline.
 3. **🤝 Agent-to-Agent (A2A) Protocol**: Standardized JSON-RPC 2.0 endpoint (`/api/a2a`) — protocol-ready, signature verification in progress (see `docs/A2A-PROTOCOL.md`).
 4. **🛡️ Go Policy Guardrails**: Enforces hard budget ceilings, geographic postal boundaries, and mandatory safety escalations.
 5. **☁️ Real Cloud Tasks Queue**: Production durable queue with OIDC auth to Cloud Run; local dev uses a labelled direct call (`CLOUD_TASKS_EMULATOR` flag).
@@ -147,6 +147,7 @@ Install the commit-time system hooks once: `brew install gitleaks`.
 | Sponsor Technology | Integration & Usage |
 |---|---|
 | **Gemini / Google DeepMind** | Mandate extraction, supplier offer ranking, counter-offer drafting, photo evidence verification, and privacy redaction. |
+| **Gemma 3 27B (Google open model)** | Supplier agent quote generation — each engineer "agent" is powered by Gemma 3, role-playing a persona to produce an independent quote. Separate from Gemini 3.5 Flash. |
 | **GCP Cloud Run & Cloud Storage** | Serverless backend/frontend container deployment with Secret Manager binding and direct Cloud Storage bucket uploads. |
 | **Vapi** | Speak a job on rehearsal and the live form (Web Speech fallback). |
 | **ElevenLabs** | `Hear the paper` on rehearsal and live receipts (`POST /api/tts`). |
@@ -168,7 +169,7 @@ Install the commit-time system hooks once: `brew install gitleaks`.
 | Demo runbook | [docs/DEMO-RUNBOOK.md](docs/DEMO-RUNBOOK.md) |
 | Spin-up guide | [docs/DEPLOY.md](docs/DEPLOY.md) |
 
-**Google tech gates:** Gemini 3.5 Flash via `google.golang.org/genai` (GenAI SDK) · Firestore · Cloud Tasks · Cloud Run — all verified in CI.
+**Google tech gates:** Gemini 3.5 Flash + Gemma 3 27B via `google.golang.org/genai` (GenAI SDK) · Firestore · Cloud Tasks · Cloud Run — all verified in CI.
 
 Full details: [docs/HACKATHON-SUBMISSION.md](docs/HACKATHON-SUBMISSION.md)
 

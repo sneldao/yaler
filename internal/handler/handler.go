@@ -1136,9 +1136,9 @@ func (h *Handler) HandleWorkerStep(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			// Unverified roster supplier: the LLM-powered supplier agent
+			// Unverified roster supplier: the Gemma-powered supplier agent
 			// generates an independent quote based on its persona and the
-			// callout details. Falls back to a deterministic price if Gemini
+			// callout details. Falls back to a deterministic price if Gemma
 			// is unavailable. Never presented as a real quote from a real
 			// business — the Simulated flag stays true.
 			co.Simulated = true
@@ -1445,9 +1445,9 @@ func (h *Handler) gatherSupplierCalloutOutcomes(ctx context.Context, supplierID 
 	return outcomes
 }
 
-// generateSupplierOffer calls the LLM-powered supplier agent to produce an
+// generateSupplierOffer calls the Gemma-powered supplier agent to produce an
 // independent quote for a mission callout, then wraps the result in an Offer.
-// If the supplier agent declines, returns nil (no offer). If Gemini is
+// If the supplier agent declines, returns nil (no offer). If Gemma is
 // unavailable or errors, falls back to a deterministic price based on the
 // supplier's price tier. The Simulated flag is always true — these are
 // AI-generated quotes, not real business offers.
@@ -1471,7 +1471,7 @@ func (h *Handler) generateSupplierOffer(ctx context.Context, m *domain.Mission, 
 	}
 
 	price := 0.0
-	terms := "AI agent quote — LLM-powered supplier response"
+	terms := "AI agent quote — Gemma 3 supplier response"
 	availability := sup.Availability
 	evidence := sup.Evidence
 
@@ -1698,7 +1698,7 @@ func (h *Handler) SweepStalledSourcing(ctx context.Context) {
 					log.Printf("[Sweeper] Sequential arm: sent next callout to %s for %s", next.DisplayName, m.ID)
 					continue // don't escalate — the next callout is in flight
 				}
-				// Simulated supplier: the LLM-powered supplier agent
+				// Simulated supplier: the Gemma-powered supplier agent
 				// generates the quote (same as the worker does in the
 				// parallel arm).
 				co.Simulated = true

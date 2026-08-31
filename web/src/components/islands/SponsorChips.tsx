@@ -25,6 +25,13 @@ const CHIPS: Chip[] = [
     color: 'text-blue-600',
   },
   {
+    id: 'gemma',
+    name: 'Gemma',
+    descriptor: 'Suppliers',
+    detail: "Google's open model role-plays as each supplier agent — persona, capabilities, and price tier shape an independent quote.",
+    color: 'text-teal-600',
+  },
+  {
     id: 'vapi',
     name: 'Vapi',
     descriptor: 'Voice',

@@ -15,7 +15,7 @@ import { LoaderGrid } from './LoaderGrid';
  *   <SponsorCallout sponsor="exa" status="done" label="Found 3 engineers near N1" />
  */
 
-export type SponsorId = 'gemini' | 'vapi' | 'exa' | 'apify' | 'elevenlabs';
+export type SponsorId = 'gemini' | 'gemma' | 'vapi' | 'exa' | 'apify' | 'elevenlabs';
 
 /**
  * Inline SVG monogram per sponsor — simple geometric marks in currentColor.
@@ -28,6 +28,15 @@ export function SponsorMark({ id, className = 'w-4 h-4' }: { id: SponsorId; clas
       return (
         <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
           <path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z" />
+        </svg>
+      );
+    case 'gemma':
+      // Gemma — faceted gem (open model)
+      return (
+        <svg viewBox="0 0 24 24" className={className} aria-hidden="true" fill="currentColor">
+          <path d="M12 2L4 9l8 13 8-13z" opacity="0.9" />
+          <path d="M12 2L8 9h8z" opacity="0.5" />
+          <path d="M4 9l8 4 8-4" opacity="0.6" />
         </svg>
       );
     case 'vapi':
@@ -82,6 +91,13 @@ const SPONSORS: Record<SponsorId, SponsorMeta> = {
     bg: 'bg-blue-50',
     border: 'border-blue-200',
     description: 'Google DeepMind',
+  },
+  gemma: {
+    name: 'Gemma',
+    color: 'text-teal-600',
+    bg: 'bg-teal-50',
+    border: 'border-teal-200',
+    description: 'Google open model',
   },
   vapi: {
     name: 'Vapi',
