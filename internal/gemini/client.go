@@ -59,7 +59,7 @@ type Client struct {
 func NewClient(ctx context.Context) (*Client, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
-		return &Client{modelName: "gemini-2.5-flash"}, nil
+		return &Client{modelName: "gemini-3.5-flash"}, nil
 	}
 
 	cfg := &genai.ClientConfig{
@@ -72,7 +72,7 @@ func NewClient(ctx context.Context) (*Client, error) {
 
 	return &Client{
 		genaiClient: gc,
-		modelName:   "gemini-2.5-flash",
+		modelName:   "gemini-3.5-flash",
 	}, nil
 }
 

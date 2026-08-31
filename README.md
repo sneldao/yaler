@@ -70,7 +70,7 @@ Install the commit-time system hooks once: `brew install gitleaks`.
 ## 🚀 Key Frontiers Built
 
 1. **🎬 N1 fridge rehearsal**: Speak last Tuesday’s job, feel the over-budget stop, hear the paper. Nothing is booked.
-2. **⚡ Gemini 2.5 Mandate Engine**: Converts messy speech/text into structured policy mandates with budget ceilings and SLAs. Surfaces as a branded callout when active.
+2. **⚡ Gemini 3.5 Mandate Engine**: Converts messy speech/text into structured policy mandates with budget ceilings and SLAs. Surfaces as a branded callout when active.
 3. **🤝 Agent-to-Agent (A2A) Protocol**: Standardized JSON-RPC 2.0 endpoint (`/api/a2a`) — protocol-ready, signature verification in progress (see `docs/A2A-PROTOCOL.md`).
 4. **🛡️ Go Policy Guardrails**: Enforces hard budget ceilings, geographic postal boundaries, and mandatory safety escalations.
 5. **☁️ Real Cloud Tasks Queue**: Production durable queue with OIDC auth to Cloud Run; local dev uses a labelled direct call (`CLOUD_TASKS_EMULATOR` flag).
@@ -106,7 +106,7 @@ Install the commit-time system hooks once: `brew install gitleaks`.
 | Demo runbook | [docs/DEMO-RUNBOOK.md](docs/DEMO-RUNBOOK.md) |
 | Spin-up guide | [docs/DEPLOY.md](docs/DEPLOY.md) |
 
-**Google tech gates:** Gemini 2.5 Flash via `google.golang.org/genai` (GenAI SDK) · Firestore · Cloud Tasks · Cloud Run — all verified in CI.
+**Google tech gates:** Gemini 3.5 Flash via `google.golang.org/genai` (GenAI SDK) · Firestore · Cloud Tasks · Cloud Run — all verified in CI.
 
 Full details: [docs/HACKATHON-SUBMISSION.md](docs/HACKATHON-SUBMISSION.md)
 

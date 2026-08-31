@@ -21,7 +21,7 @@ Yaler is an autonomous mission agent for independent kitchens. A café manager s
 **Google tech gates met:**
 | Requirement | Implementation |
 |---|---|
-| Gemini 3.5+ | `gemini-2.5-flash` via Google Gen AI SDK |
+| Gemini 3.5+ | `gemini-3.5-flash` via Google Gen AI SDK |
 | Google Agent Framework | `google.golang.org/genai` (GenAI SDK) |
 | Google Cloud infra | Firestore, Cloud Tasks, Cloud Run |
 
@@ -63,7 +63,7 @@ All state is append-only in Firestore. Version-checked writes prevent race condi
 |---|---|
 | Frontend | Astro + React islands, Tailwind CSS, GSAP, Phaser (rehearsal game) |
 | Backend | Go, Cloud Run, Cloud Tasks (production), Firestore |
-| AI | Google Gen AI SDK (`gemini-2.5-flash`), Vapi (voice input), ElevenLabs (TTS) |
+| AI | Google Gen AI SDK (`gemini-3.5-flash`), Vapi (voice input), ElevenLabs (TTS) |
 | Discovery | Exa (supplier search), Apify (Companies House verification) |
 | Deploy | Netlify (frontend), Cloud Run (backend), Cloud Build |
 
