@@ -70,12 +70,11 @@ function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullab
     ['To confirm', brief.toConfirm],
   ] as const;
   return (
-    <details className="group rounded-xl border border-ink/10 bg-paper-inset/50">
-      <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-3 text-sm text-ink">
+    <div className="group rounded-xl border border-ink/10 bg-paper-inset/50">
+      <div className="px-3 py-2.5 flex items-center justify-between gap-3 text-sm text-ink">
         <span className="font-medium">Issue brief</span>
-        <span className="text-[11px] text-ink-muted group-open:hidden">{brief.confidence || 'preliminary'} · for the engineer</span>
-        <span className="text-[11px] text-ink-muted hidden group-open:inline">collapse</span>
-      </summary>
+        <span className="text-[11px] text-ink-muted">{brief.confidence || 'preliminary'} · for the engineer</span>
+      </div>
       <div className="px-3 pb-3 space-y-2.5 border-t border-ink/10 pt-2.5">
         <div className="rounded-lg bg-paper border border-ink/10 px-2.5 py-2">
           <p className="text-[10px] uppercase tracking-wider text-ink-muted mb-0.5">Reported</p>
@@ -164,7 +163,7 @@ function DiagnosticBriefCard({ brief, missionId, onUpdated }: { brief: NonNullab
         )}
         <p className="text-[10px] text-ink-muted italic">Possible areas are suggestions, not a confirmed diagnosis.</p>
       </div>
-    </details>
+    </div>
   );
 }
 
@@ -699,26 +698,25 @@ export default function MissionTimeline({
           <SponsorRail active={activeSponsor} completed={completedSponsors} />
 
           {showWork && (
-            <details className="border-t border-ink/10 pt-3 group">
-              <summary className="cursor-pointer list-none text-xs font-medium text-ink-muted uppercase tracking-wider">How Yaler is handling this <span className="normal-case font-normal ml-1 group-open:hidden">· show details</span><span className="normal-case font-normal ml-1 hidden group-open:inline">· hide details</span></summary>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3">
-              <div className="space-y-3" aria-live="polite" aria-atomic="false">
-                <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wider">Reasoning</h3>
-                <ThinkingTrace
-                  activeTitle="Working through the job"
-                  doneTitle={`${traceRows.length} steps completed`}
-                  working={isWorking}
-                  rows={traceRows}
-                  defaultExpanded={true}
-                />
-              </div>
+            <div className="border-t border-ink/10 pt-3 space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-3" aria-live="polite" aria-atomic="false">
+                  <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wider">Reasoning</h3>
+                  <ThinkingTrace
+                    activeTitle="Working through the job"
+                    doneTitle={`${traceRows.length} steps completed`}
+                    working={isWorking}
+                    rows={traceRows}
+                    defaultExpanded={true}
+                  />
+                </div>
 
-              <div className="space-y-3">
-                <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wider">Policy checks</h3>
-                <ToolChips calls={toolCalls} />
+                <div className="space-y-3">
+                  <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wider">Policy checks</h3>
+                  <ToolChips calls={toolCalls} />
+                </div>
               </div>
-              </div>
-            </details>
+            </div>
           )}
         </div>
       )}

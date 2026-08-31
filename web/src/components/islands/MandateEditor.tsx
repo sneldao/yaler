@@ -40,7 +40,6 @@ export default function MandateEditor({ initialMission, onStarted, rehearsal = f
   const [policyNote, setPolicyNote] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [showHowMuch, setShowHowMuch] = useState(false);
-  const [showChecklist, setShowChecklist] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -182,12 +181,11 @@ export default function MandateEditor({ initialMission, onStarted, rehearsal = f
       </p>
 
       {mission.diagnosticBrief && (
-        <details className="group rounded-xl border border-ink/10 bg-paper-inset/50">
-          <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-3 text-sm text-ink">
+        <div className="group rounded-xl border border-ink/10 bg-paper-inset/50">
+          <div className="px-3 py-2.5 flex items-center justify-between gap-3 text-sm text-ink">
             <span className="font-medium">What we heard</span>
-            <span className="text-[11px] text-ink-muted group-open:hidden">{mission.diagnosticBrief.confidence}</span>
-            <span className="text-[11px] text-ink-muted hidden group-open:inline">collapse</span>
-          </summary>
+            <span className="text-[11px] text-ink-muted">{mission.diagnosticBrief.confidence}</span>
+          </div>
           <div className="px-3 pb-3 pt-2.5 border-t border-ink/10 space-y-2">
             <p className="text-xs text-ink-muted">{mission.diagnosticBrief.reportedSummary}</p>
             {mission.diagnosticBrief.known.length > 0 && (
@@ -198,7 +196,7 @@ export default function MandateEditor({ initialMission, onStarted, rehearsal = f
             )}
             <p className="text-[10px] text-ink-muted italic">Possible areas are not a confirmed diagnosis.</p>
           </div>
-        </details>
+        </div>
       )}
 
       {/* Mandate as data — four editable chip-rows, not a paragraph */}
@@ -307,14 +305,21 @@ export default function MandateEditor({ initialMission, onStarted, rehearsal = f
       </div>
 
       <div className="space-y-2">
-        <button
-          type="button"
-          onClick={() => setShowHowMuch((open) => !open)}
-          className="text-sm text-ink hover:text-mandate transition-colors"
-          aria-expanded={showHowMuch}
-        >
-          {showHowMuch ? 'Hide involvement' : 'Change how much I want to be involved'}
-        </button>
+        {/* Current mode — always visible as a labeled chip, not hidden behind a toggle */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs uppercase tracking-wider text-ink-muted">Involvement</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-mandate/10 border border-mandate/20 px-3 py-1 text-sm text-ink font-medium">
+            {mode.label}
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowHowMuch((open) => !open)}
+            className="text-xs text-ink-muted hover:text-mandate transition-colors"
+            aria-expanded={showHowMuch}
+          >
+            {showHowMuch ? 'Hide options' : 'Change'}
+          </button>
+        </div>
         <p className="text-xs text-ink-muted">{mode.help}</p>
         {showHowMuch && (
           <div className="space-y-2 animate-pop-in">
@@ -342,24 +347,15 @@ export default function MandateEditor({ initialMission, onStarted, rehearsal = f
         )}
       </div>
 
-      <div>
-        <button
-          type="button"
-          onClick={() => setShowChecklist((open) => !open)}
-          className="text-sm text-ink-muted hover:text-ink transition-colors"
-          aria-expanded={showChecklist}
-        >
-          {showChecklist ? 'Hide what we’ll ask for' : 'What we’ll ask the engineer for'}
-        </button>
-        {showChecklist && (
-          <div className="mt-2 flex flex-wrap gap-2 animate-pop-in">
-            {mandate.requiredEvidence.map((ev) => (
-              <span key={ev} className="text-xs bg-paper border border-ink/10 text-ink px-3 py-1 rounded-full">
-                {humanizeToken(ev)}
-              </span>
-            ))}
-          </div>
-        )}
+      <div className="space-y-2">
+        <p className="text-xs uppercase tracking-wider text-ink-muted">What we’ll ask the engineer for</p>
+        <div className="flex flex-wrap gap-2">
+          {mandate.requiredEvidence.map((ev) => (
+            <span key={ev} className="text-xs bg-paper border border-ink/10 text-ink px-3 py-1 rounded-full">
+              {humanizeToken(ev)}
+            </span>
+          ))}
+        </div>
       </div>
 
       {error && (
