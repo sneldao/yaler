@@ -28,6 +28,7 @@ export default function SpeakNote({ onTranscript, onMandateExtracted, label = 'S
   onTranscriptRef.current = onTranscript;
   const onMandateRef = useRef(onMandateExtracted);
   onMandateRef.current = onMandateExtracted;
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -109,6 +110,7 @@ export default function SpeakNote({ onTranscript, onMandateExtracted, label = 'S
       recognition.onend = () => {
         setVoicePhase('done');
       };
+      recognitionRef.current = recognition;
       recognition.start();
     } catch {
       setError('Could not start the microphone.');
@@ -159,25 +161,50 @@ export default function SpeakNote({ onTranscript, onMandateExtracted, label = 'S
     setVoicePhase('connecting');
   };
 
+  const handleStop = () => {
+    if (vapi) vapi.stop();
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { /* ignore */ }
+    }
+    // Don't close — let the call-end/onend event transition to 'done'
+    // so the user sees what was captured and can edit it.
+  };
+
   const handleClose = () => {
     if (vapi) vapi.stop();
     setOverlayOpen(false);
     resetState();
   };
 
-  const handleUse = () => {
+  const handleUse = (editedFields: Record<string, string>) => {
     if (finalText) onTranscriptRef.current(finalText);
-    if (extracted) onMandateRef.current?.(extracted);
+    if (extracted) {
+      // Apply user edits on top of the extracted values
+      const merged: ExtractedMandate = { ...extracted };
+      if (editedFields.budget) {
+        const num = Number(editedFields.budget.replace(/[^0-9.]/g, ''));
+        if (Number.isFinite(num) && num > 0) merged.budget = num;
+      }
+      if (editedFields.area) merged.postalDistrict = editedFields.area.toUpperCase();
+      if (editedFields.deadline) merged.deadlineHint = editedFields.deadline;
+      if (editedFields.category) {
+        // Allow free-text category — try to match known categories
+        const lower = editedFields.category.toLowerCase().replace(/\s+/g, '_');
+        const known = ['commercial_refrigeration', 'freezer_maintenance', 'extraction_cleaning', 'catering_equipment', 'emergency_repair', 'equipment_repair', 'general_maintenance', 'scheduled_maintenance'];
+        merged.category = known.includes(lower) ? lower : editedFields.category;
+      }
+      onMandateRef.current?.(merged);
+    }
     setOverlayOpen(false);
     resetState();
   };
 
   const extractedFields = extracted
     ? [
-        { label: 'Budget', value: extracted.budget ? `£${extracted.budget}` : null },
-        { label: 'Area', value: extracted.postalDistrict },
-        { label: 'Needed by', value: extracted.deadlineHint?.replace(/-/g, ' ') || null },
-        { label: 'Trade', value: extracted.category ? extracted.category.replace(/_/g, ' ') : null },
+        { key: 'budget', label: 'Budget', value: extracted.budget ? `£${extracted.budget}` : null },
+        { key: 'area', label: 'Area', value: extracted.postalDistrict },
+        { key: 'deadline', label: 'Needed by', value: extracted.deadlineHint?.replace(/-/g, ' ') || null },
+        { key: 'category', label: 'Trade', value: extracted.category ? extracted.category.replace(/_/g, ' ') : null },
       ]
     : [];
 
@@ -204,6 +231,7 @@ export default function SpeakNote({ onTranscript, onMandateExtracted, label = 'S
           error={error}
           onClose={handleClose}
           onUse={handleUse}
+          onStop={handleStop}
         />
       )}
     </div>

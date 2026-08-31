@@ -14,8 +14,6 @@ export interface ExtractedMandate {
   category: string | null;
 }
 
-const POSTCODE_RE = /\b([A-Z]{1,2}\d{1,2}[A-Z]?)\b/g;
-
 const CATEGORY_KEYWORDS: { pattern: RegExp; category: string }[] = [
   { pattern: /\bfridge\b|\brefrigerat/i, category: 'commercial_refrigeration' },
   { pattern: /\bfreezer\b/i, category: 'freezer_maintenance' },
@@ -50,12 +48,12 @@ export function extractMandate(transcript: string): ExtractedMandate {
     : null;
   const finalBudget = budgetNum || (budgetPhraseMatch ? Number(budgetPhraseMatch[1]) : null);
 
-  // Postcode district
+  // Postcode district — handles "N1", "EC2", "EC 2", "SW 1" etc.
   const upperText = text.toUpperCase();
-  const postcodeMatches = [...upperText.matchAll(POSTCODE_RE)];
-  // Filter out common false positives (single letters like "I" or "A")
+  // First try without spaces, then with optional space between letters and digits
+  const postcodeMatches = [...upperText.matchAll(/\b([A-Z]{1,2})\s*(\d{1,2}[A-Z]?)\b/g)];
   const validPostcodes = postcodeMatches
-    .map((m) => m[1])
+    .map((m) => (m[1] + m[2]).replace(/\s/g, ''))
     .filter((pc) => /^[A-Z]{1,2}\d/.test(pc));
   const postalDistrict = validPostcodes[0] || null;
 
