@@ -50,3 +50,9 @@ OPS.md
 
 # Agent tooling
 .qoder/
+
+# Demo video binaries (scripts + card PNGs are tracked; raw/rendered video is not)
+demo-video/clips/
+demo-video/*.mp4
+demo-video/*.webm
+demo-video/node_modules/

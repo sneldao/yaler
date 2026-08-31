@@ -61,6 +61,56 @@ make web
 
 See [docs/DEPLOY.md](docs/DEPLOY.md) for full setup.
 
+### 🧪 Reproducible Testing
+
+All tests run **offline with zero API keys** — the Gemini client falls back to a
+deterministic local extractor when `GEMINI_API_KEY` is empty, so the full test
+suite is reproducible on any machine with Go + Node installed.
+
+```bash
+# 1. Clone
+git clone https://github.com/sneldao/yaler.git
+cd yaler
+
+# 2. Backend tests — Go unit + integration + e2e (no API keys needed)
+make test              # == go test -v ./...
+
+# 3. Frontend type-check + build
+make check-web         # == tsc --noEmit + astro build
+
+# 4. Full CI gate (same as .github/workflows/ci.yml)
+make check             # == make test + make check-web
+```
+
+**What the test suite covers** (18 test files, all passing):
+
+| Layer | Test file | What it verifies |
+|---|---|---|
+| End-to-end | `internal/handler/e2e_test.go` | Full mission lifecycle: create → mandate → source → rank → approve → evidence → receipt. Drives the worker via `POST /api/worker/step` exactly as Cloud Tasks would, with the offline Gemini fallback. |
+| Policy engine | `internal/policy/engine_test.go` | Budget ceiling enforcement, geographic boundary checks, safety escalation triggers. Table-driven. |
+| State machine | `internal/domain/state_machine_test.go` | All 14 state transitions — valid paths succeed, invalid paths rejected. |
+| Gemini client | `internal/gemini/client_test.go` | Offline fallback mandate extraction + offer ranking (deterministic, no API key). |
+| Handler routes | `internal/handler/*_test.go` | Approve, reject, feedback, callout, upload, diagnostic, A2A, sweep, followup — each route tested in isolation. |
+| Cloud Tasks | `internal/tasks/cloudtasks_test.go` | Local direct client (dev) vs Cloud Tasks client (prod) switching. |
+| Discovery | `internal/discovery/client_test.go` | Exa supplier discovery with mock responses. |
+| Storage | `internal/storage/media_test.go` | Media upload + PII redaction. |
+
+**CI pipeline** (`.github/workflows/ci.yml`) runs on every push and PR:
+1. `go vet ./...` + `go test ./...`
+2. `tsc --noEmit` (TypeScript type-check)
+3. `astro build` (fails on any compiler error)
+
+**Local demo verification** (no backend required):
+
+```bash
+docker-compose up --build   # http://localhost:4321
+# Open /rehearsal → click "Start here" → full flow runs on stub data
+```
+
+The rehearsal page uses deterministic stub data (`rehearsalMission()`) — no
+Firestore, no Gemini, no external API calls. It is the fastest way to verify
+the UI end-to-end without any cloud setup.
+
 ### 🪝 Hooks & quality gates
 
 `pre-commit` runs lightweight checks on every commit — fast, offline, no
