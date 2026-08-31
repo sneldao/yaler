@@ -38,11 +38,11 @@ export default function MobileNav({ currentPage }: Props) {
   }, [open]);
 
   const navItems: { path: string; label: string }[] = [
-    { path: '/rehearsal', label: 'Try the rehearsal' },
+    { path: '/rehearsal', label: 'Try it' },
     { path: '/story', label: 'How it works' },
-    { path: '/suppliers', label: 'Supplier agents' },
-    { path: '/play', label: 'Play the game' },
-    { path: '/missions/new', label: 'Start a real job' },
+    { path: '/suppliers', label: 'Suppliers' },
+    { path: '/play', label: 'Play' },
+    { path: '/missions/new', label: 'Start a job' },
   ];
 
   return (
