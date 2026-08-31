@@ -129,134 +129,110 @@ export default function KitchenGame() {
       />
 
       {status === 'done' && result && (
-        <div className="absolute inset-0 flex items-center justify-center bg-paper/90 rounded-2xl z-20 animate-pop-in overflow-y-auto p-4">
-          <div className="receipt-sheet text-center space-y-4 p-6 max-w-sm w-full text-ink">
-            <div className="space-y-1">
-              <p className="text-[11px] uppercase tracking-wider text-ink-muted font-machine">Café Noor — Tuesday shift</p>
-              <p className="font-display text-3xl text-ink mt-1">
-                {result.mode === 'manual' ? 'Phone shift complete' : 'Shift complete'}
-              </p>
-              <p className={`text-lg mt-1 ${result.mode === 'manual' ? 'text-ink-muted' : 'text-mandate'}`}>
-                {'★'.repeat(result.stars)}{'☆'.repeat(3 - result.stars)}
-              </p>
+        <div className="absolute inset-0 flex items-center justify-center p-4 z-20 animate-pop-in overflow-y-auto">
+          <div className="receipt-sheet max-w-sm w-full p-6 space-y-4 relative">
+            <div className="absolute -left-1.5 top-10 receipt-punch" />
+            <div className="absolute -right-1.5 top-10 receipt-punch" />
+
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.14em] text-ink-muted font-machine">Café Noor — N1</p>
+                <h2 className="font-display text-2xl text-ink mt-0.5">
+                  {result.mode === 'manual' ? 'Phone shift' : 'Shift complete'}
+                </h2>
+              </div>
+              <span className={`stamp ${result.mode === 'manual' ? 'text-escalate' : 'text-mandate'}`}>
+                {result.mode === 'manual' ? 'Phone' : 'Delegate'}
+              </span>
             </div>
 
-            <div className="flex items-center justify-center gap-4 sm:gap-6 font-machine">
-              {result.mode === 'manual' ? (
-                <>
-                  <div className="text-center">
-                    <p className="font-display text-2xl text-ink">{result.calls}</p>
-                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">Calls chased</p>
-                  </div>
-                  <span className="text-ink/20 text-sm">vs</span>
-                  <div className="text-center">
-                    <p className="font-display text-2xl text-ink-muted">~11 hrs</p>
-                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">Of shift</p>
-                  </div>
-                  <span className="text-ink/20 text-sm">|</span>
-                  <div className="text-center">
-                    <p className="font-display text-2xl text-ink">£{result.totalAllIn}</p>
-                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">All-in</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="text-center">
-                    <p className="font-display text-2xl text-mandate">{result.elapsed}s</p>
-                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">Your shift</p>
-                  </div>
-                  <span className="text-ink/20 text-sm">vs</span>
-                  <div className="text-center">
-                    <p className="font-display text-2xl text-ink-muted">~11 hrs</p>
-                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">Manual</p>
-                  </div>
-                  <span className="text-ink/20 text-sm">|</span>
-                  <div className="text-center">
-                    <p className="font-display text-2xl text-ink">£{result.totalCost}</p>
-                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">Total cost</p>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <p className="text-ink-muted text-xs leading-relaxed">
-              {result.mode === 'manual'
-                ? 'Every quote chased by phone, every wait unpaid — and the fridge warmed anyway. The agent does this before the kettle boils.'
-                : result.decisions.includes('rerouted')
-                  ? 'Good governance — you rejected the overspend and the agent found a cheaper option.'
-                  : result.decisions.includes('approved')
-                    ? 'You approved an over-budget spend. Rejecting would have triggered a reroute.'
-                    : 'Clean shift. All events resolved within budget.'}
+            <p className="text-2xl text-ink leading-none tracking-tight">
+              {'★'.repeat(result.stars)}{'☆'.repeat(3 - result.stars)}
+              <span className="text-sm text-ink-muted ml-2 font-medium align-middle">
+                {result.stars === 3 ? 'Clean shift' : result.stars === 2 ? 'One overspend' : 'Rough morning'}
+              </span>
             </p>
 
-            {result.mode !== 'manual' && (
-              <p className="text-ink-muted/80 text-[10px]">
-                By phone, this same shift is ~11 hrs and ~£2,810 all-in — pricier quotes, spoiled stock, lost covers. Prove it to yourself:
-              </p>
-            )}
-
-            {/* Chit / stamp motifs */}
-            <div className="flex flex-wrap gap-1.5 justify-center">
-              <span className="bg-paper-raised border border-ink/10 rounded-full text-[11px] text-ink px-2.5 py-1 font-medium">
-                Budget: £500
-              </span>
-              <span className="bg-paper-raised border border-ink/10 rounded-full text-[11px] text-ink px-2.5 py-1 font-medium">
-                District: N1
-              </span>
+            <div className="flex items-center justify-between gap-2">
               {result.mode === 'manual' ? (
-                <span className="stamp text-escalate text-[11px] px-2.5 py-1">
-                  You, on the phone
-                </span>
+                <>
+                  <div className="chit chit-sm px-3 pt-4 pb-1.5 flex-1 text-center" style={{ '--tilt': '-0.5deg' } as React.CSSProperties}>
+                    <p className="font-display text-lg text-ink">{result.calls}</p>
+                    <p className="font-machine text-[9px] uppercase tracking-wider text-ink-muted">calls</p>
+                  </div>
+                  <div className="chit chit-sm px-3 pt-4 pb-1.5 flex-1 text-center" style={{ '--tilt': '0.5deg' } as React.CSSProperties}>
+                    <p className="font-display text-lg text-ink">~11 hrs</p>
+                    <p className="font-machine text-[9px] uppercase tracking-wider text-ink-muted">shift</p>
+                  </div>
+                  <div className="chit chit-sm px-3 pt-4 pb-1.5 flex-1 text-center" style={{ '--tilt': '-0.5deg' } as React.CSSProperties}>
+                    <p className="font-display text-lg text-escalate">£{result.totalAllIn}</p>
+                    <p className="font-machine text-[9px] uppercase tracking-wider text-ink-muted">all-in</p>
+                  </div>
+                </>
               ) : (
-                <span className="stamp text-mandate text-[11px] px-2.5 py-1">
-                  Delegate mode
-                </span>
+                <>
+                  <div className="chit chit-sm px-3 pt-4 pb-1.5 flex-1 text-center" style={{ '--tilt': '-0.5deg' } as React.CSSProperties}>
+                    <p className="font-display text-lg text-mandate">{result.elapsed}s</p>
+                    <p className="font-machine text-[9px] uppercase tracking-wider text-ink-muted">shift</p>
+                  </div>
+                  <div className="chit chit-sm px-3 pt-4 pb-1.5 flex-1 text-center" style={{ '--tilt': '0.5deg' } as React.CSSProperties}>
+                    <p className="font-display text-lg text-ink">~11 hrs</p>
+                    <p className="font-machine text-[9px] uppercase tracking-wider text-ink-muted">manual</p>
+                  </div>
+                  <div className="chit chit-sm px-3 pt-4 pb-1.5 flex-1 text-center" style={{ '--tilt': '-0.5deg' } as React.CSSProperties}>
+                    <p className="font-display text-lg text-ink">£{result.totalCost}</p>
+                    <p className="font-machine text-[9px] uppercase tracking-wider text-ink-muted">cost</p>
+                  </div>
+                </>
               )}
             </div>
 
-            <div className="flex flex-col gap-2 pt-1">
+            <p className="text-sm text-ink-muted leading-relaxed">
+              {result.mode === 'manual'
+                ? 'Every quote chased by phone — and the fridge still warmed.'
+                : result.decisions.includes('rerouted')
+                  ? 'You rejected the overspend and the agent found a cheaper option.'
+                  : result.decisions.includes('approved')
+                    ? 'You approved an over-budget spend.'
+                    : 'All three events resolved within budget.'}
+            </p>
+
+            <div className="flex flex-wrap gap-2 pt-1">
               {result.mode === 'manual' ? (
-                <button type="button" onClick={() => handleReplay('yaler')} className="btn-primary text-sm py-2.5 w-full">
-                  Play with Yaler instead
+                <button type="button" onClick={() => handleReplay('yaler')} className="btn-primary text-sm py-2.5 flex-1">
+                  Play with Yaler
                 </button>
               ) : (
                 <>
-                  <a href="/missions/new" className="btn-primary text-sm py-2.5 w-full text-center">
-                    Try it with your real kitchen
+                  <a href="/missions/new" className="btn-primary text-sm py-2.5 flex-1 text-center">
+                    Try your kitchen
                   </a>
-                  <button type="button" onClick={() => handleReplay('manual')} className="btn-secondary text-sm py-2 w-full">
-                    Play the phone version — same shift, no agent
+                  <button type="button" onClick={() => handleReplay('manual')} className="btn-secondary text-sm py-2.5 flex-1">
+                    Phone version
                   </button>
                 </>
               )}
-              <div className="flex gap-2">
-                <a href="/rehearsal?autoplay" className="btn-secondary text-sm py-2 flex-1 text-center">
-                  Watch the flow
-                </a>
-                {result.mode === 'manual' && (
-                  <a href="/missions/new" className="btn-secondary text-sm py-2 flex-1 text-center">
-                    Start a real job
-                  </a>
+              <a href="/rehearsal?autoplay" className="btn-secondary text-sm py-2.5 flex-1 text-center">
+                Watch flow
+              </a>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="btn-secondary text-sm py-2.5 flex-1 flex items-center justify-center gap-1.5"
+              >
+                {copied ? (
+                  <><span className="text-mandate">✓</span> Copied</>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" strokeLinecap="round" strokeLinejoin="round" />
+                      <polyline points="16,6 12,2 8,6" strokeLinecap="round" strokeLinejoin="round" />
+                      <line x1="12" y1="2" x2="12" y2="15" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Share
+                  </>
                 )}
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="btn-secondary text-sm py-2 flex-1 flex items-center justify-center gap-1.5"
-                >
-                  {copied ? (
-                    <><span className="text-mandate">✓</span> Copied</>
-                  ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" strokeLinecap="round" strokeLinejoin="round" />
-                        <polyline points="16,6 12,2 8,6" strokeLinecap="round" strokeLinejoin="round" />
-                        <line x1="12" y1="2" x2="12" y2="15" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      Share score
-                    </>
-                  )}
-                </button>
-              </div>
+              </button>
             </div>
           </div>
         </div>

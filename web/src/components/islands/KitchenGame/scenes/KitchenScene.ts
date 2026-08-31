@@ -398,17 +398,21 @@ export class KitchenScene extends Phaser.Scene {
       rect.setDepth(3);
       this.targets.push(rect);
 
-      // Machine-font label below equipment
+      // Machine-font label below equipment, large enough to read on paper.
       this.add.text(x, y + 14, evt.key.toUpperCase(), {
-        fontSize: '10px', color: toHex(COLORS.ink),
+        fontSize: '12px', color: toHex(COLORS.ink),
+        backgroundColor: toRgba(COLORS.paperRaised, 0.9),
+        padding: { x: 3, y: 1 },
         fontFamily: FONTS.machine,
         resolution: 2,
       }).setOrigin(0.5).setDepth(3);
 
       // Alarm icon (hidden)
-      const icon = this.add.text(x - 2, y - 16, '!', {
-        fontSize: '16px', color: toHex(COLORS.escalate), fontStyle: 'bold',
+      const icon = this.add.text(x - 2, y - 18, '!', {
+        fontSize: '18px', color: toHex(COLORS.escalate), fontStyle: 'bold',
         fontFamily: FONTS.machine,
+        backgroundColor: toRgba(COLORS.paperRaised, 0.9),
+        padding: { x: 2, y: 0 },
       }).setVisible(false).setDepth(6);
       this.alarmIcons.push(icon);
     });
@@ -464,23 +468,23 @@ export class KitchenScene extends Phaser.Scene {
     }).setOrigin(0.5).setVisible(false).setDepth(15);
 
     this.shiftLabel = this.add.text(6, 4, '', {
-      fontSize: '11px', color: toHex(COLORS.inkMuted),
-      backgroundColor: toRgba(COLORS.paperRaised, 0.7),
+      fontSize: '12px', color: toHex(COLORS.ink),
+      backgroundColor: toRgba(COLORS.paperRaised, 0.85),
       fontFamily: FONTS.machine, resolution: 2,
     }).setDepth(15);
 
     // The till — live P&L for the shift.
     this.cashText = this.add.text(W - 6, 4, '', {
-      fontSize: '11px', fontStyle: 'bold', color: toHex(COLORS.mandate),
-      backgroundColor: toRgba(COLORS.paperRaised, 0.7), padding: { x: 5, y: 3 },
+      fontSize: '12px', fontStyle: 'bold', color: toHex(COLORS.mandate),
+      backgroundColor: toRgba(COLORS.paperRaised, 0.85), padding: { x: 5, y: 3 },
       fontFamily: FONTS.machine, resolution: 2,
     }).setOrigin(1, 0).setDepth(15);
 
     // Manual mode: compressed shift clock under the till.
     if (this.gameMode === 'manual') {
       this.clockText = this.add.text(W - 6, 24, '6:47am', {
-        fontSize: '9px', color: toHex(COLORS.inkMuted),
-        backgroundColor: toRgba(COLORS.paperRaised, 0.7), padding: { x: 5, y: 2 },
+        fontSize: '10px', color: toHex(COLORS.ink),
+        backgroundColor: toRgba(COLORS.paperRaised, 0.85), padding: { x: 5, y: 2 },
         fontFamily: FONTS.machine, resolution: 2,
       }).setOrigin(1, 0).setDepth(15);
     }
@@ -765,7 +769,7 @@ export class KitchenScene extends Phaser.Scene {
       return;
     }
 
-    const bg = this.add.rectangle(0, 0, 260, 128, COLORS.paperRaised, 0.98);
+    const bg = this.add.rectangle(0, 0, 280, 140, COLORS.paperRaised, 0.98);
     bg.setStrokeStyle(1, evt.type === 'escalation' ? C.escalate : C.mandate, 0.8);
 
     this.overlayContainer.removeAll(true);
@@ -774,13 +778,13 @@ export class KitchenScene extends Phaser.Scene {
 
     // Title
     const titleColor = toHex(evt.type === 'escalation' ? COLORS.escalate : COLORS.mandate);
-    const title = this.add.text(0, -52, 'YALER AGENT', {
-      fontSize: '11px', color: titleColor, fontStyle: 'bold',
+    const title = this.add.text(0, -56, 'YALER AGENT', {
+      fontSize: '14px', color: titleColor, fontStyle: 'bold',
       fontFamily: FONTS.display, resolution: 2,
     }).setOrigin(0.5);
     this.overlayContainer.add(title);
 
-    // Animate steps — short lines at 10px so everything stays inside the panel.
+    // Animate steps — larger 12px machine text so it stays readable on paper.
     evt.agentSteps.forEach((text, idx) => {
       this.time.delayedCall(idx * 700, () => {
         if (!this.overlayContainer.visible) return;
@@ -797,8 +801,8 @@ export class KitchenScene extends Phaser.Scene {
         const color = isError ? toHex(COLORS.escalate) : isSuccess ? toHex(COLORS.mandate) : toHex(COLORS.ink);
         const prefix = isError ? '✗' : isSuccess ? '✓' : '●';
 
-        const stepText = this.add.text(-118, -34 + idx * 14, `${prefix} ${text}`, {
-          fontSize: '10px', color, wordWrap: { width: 226 },
+        const stepText = this.add.text(-128, -36 + idx * 16, `${prefix} ${text}`, {
+          fontSize: '12px', color, wordWrap: { width: 246 },
           fontFamily: FONTS.machine, resolution: 2,
         });
         this.overlayContainer.add(stepText);
@@ -838,8 +842,8 @@ export class KitchenScene extends Phaser.Scene {
     this.overlayContainer.add(bg);
     this.overlayContainer.setVisible(true);
 
-    const title = this.add.text(0, -52, 'YOU, ON THE PHONE', {
-      fontSize: '11px', color: toHex(COLORS.escalate), fontStyle: 'bold',
+    const title = this.add.text(0, -56, 'YOU, ON THE PHONE', {
+      fontSize: '14px', color: toHex(COLORS.escalate), fontStyle: 'bold',
       fontFamily: FONTS.display, resolution: 2,
     }).setOrigin(0.5);
     this.overlayContainer.add(title);
@@ -855,8 +859,8 @@ export class KitchenScene extends Phaser.Scene {
         const isQuote = text.startsWith('Quote');
         const color = isQuote ? toHex(COLORS.escalate) : toHex(COLORS.ink);
 
-        this.overlayContainer.add(this.add.text(-118, -34 + idx * 14, text, {
-          fontSize: '10px', color, wordWrap: { width: 226 },
+        this.overlayContainer.add(this.add.text(-128, -36 + idx * 16, text, {
+          fontSize: '12px', color, wordWrap: { width: 246 },
           fontFamily: FONTS.machine, resolution: 2,
         }));
 
@@ -878,45 +882,45 @@ export class KitchenScene extends Phaser.Scene {
     this.phase = 'decision';
     const evt = EVENTS[this.eventIdx];
 
-    const bg = this.add.rectangle(0, 0, 270, 112, COLORS.paperRaised, 0.98);
+    const bg = this.add.rectangle(0, 0, 280, 124, COLORS.paperRaised, 0.98);
     bg.setStrokeStyle(1, C.escalate, 0.8);
     this.overlayContainer.removeAll(true);
     this.overlayContainer.add(bg);
     this.overlayContainer.setVisible(true);
 
-    const q = this.add.text(0, -42, 'OVER BUDGET', {
-      fontSize: '11px', color: toHex(COLORS.escalate), fontStyle: 'bold',
+    const q = this.add.text(0, -46, 'OVER BUDGET', {
+      fontSize: '14px', color: toHex(COLORS.escalate), fontStyle: 'bold',
       fontFamily: FONTS.display, resolution: 2,
     }).setOrigin(0.5);
     this.overlayContainer.add(q);
 
-    const desc = this.add.text(0, -26, `${evt.label}: £${evt.cost} (budget £${evt.budget})`, {
-      fontSize: '10px', color: toHex(COLORS.ink), wordWrap: { width: 240 },
+    const desc = this.add.text(0, -28, `${evt.label}: £${evt.cost} (budget £${evt.budget})`, {
+      fontSize: '12px', color: toHex(COLORS.ink),
       fontFamily: FONTS.machine, resolution: 2,
     }).setOrigin(0.5);
     this.overlayContainer.add(desc);
 
-    const prompt = this.add.text(0, -10, 'Approve the overspend or reject and reroute?', {
-      fontSize: '10px', color: toHex(COLORS.inkMuted), wordWrap: { width: 240 },
+    const prompt = this.add.text(0, -10, 'Approve or reroute?', {
+      fontSize: '11px', color: toHex(COLORS.inkMuted),
       fontFamily: FONTS.display, resolution: 2,
     }).setOrigin(0.5);
     this.overlayContainer.add(prompt);
 
     // Approve button — paper inset with ink border and escalate text.
-    const approveBg = this.add.rectangle(-62, 30, 110, 26, COLORS.paperInset, 0.98).setInteractive({ useHandCursor: true });
+    const approveBg = this.add.rectangle(-62, 34, 110, 28, COLORS.paperInset, 0.98).setInteractive({ useHandCursor: true });
     approveBg.setStrokeStyle(1, COLORS.escalate, 0.8);
-    const approveText = this.add.text(-62, 30, 'APPROVE £580', {
-      fontSize: '11px', color: toHex(COLORS.escalate), fontStyle: 'bold',
+    const approveText = this.add.text(-62, 34, 'APPROVE £580', {
+      fontSize: '12px', color: toHex(COLORS.escalate), fontStyle: 'bold',
       fontFamily: FONTS.display, resolution: 2,
     }).setOrigin(0.5);
     this.overlayContainer.add(approveBg);
     this.overlayContainer.add(approveText);
 
     // Reject button — paper inset with ink border and mandate text.
-    const rejectBg = this.add.rectangle(62, 30, 110, 26, COLORS.paperInset, 0.98).setInteractive({ useHandCursor: true });
+    const rejectBg = this.add.rectangle(62, 34, 110, 28, COLORS.paperInset, 0.98).setInteractive({ useHandCursor: true });
     rejectBg.setStrokeStyle(1, COLORS.mandate, 0.8);
-    const rejectText = this.add.text(62, 30, 'REROUTE', {
-      fontSize: '11px', color: toHex(COLORS.mandate), fontStyle: 'bold',
+    const rejectText = this.add.text(62, 34, 'REROUTE', {
+      fontSize: '12px', color: toHex(COLORS.mandate), fontStyle: 'bold',
       fontFamily: FONTS.display, resolution: 2,
     }).setOrigin(0.5);
     this.overlayContainer.add(rejectBg);
@@ -940,7 +944,7 @@ export class KitchenScene extends Phaser.Scene {
   private showReroute() {
     this.phase = 'agent';
 
-    const bg = this.add.rectangle(0, 0, 220, 70, COLORS.paperRaised, 0.98);
+    const bg = this.add.rectangle(0, 0, 240, 80, COLORS.paperRaised, 0.98);
     bg.setStrokeStyle(1, C.mandate, 0.8);
     this.overlayContainer.removeAll(true);
     this.overlayContainer.add(bg);
@@ -955,7 +959,7 @@ export class KitchenScene extends Phaser.Scene {
     steps.forEach((text, idx) => {
       this.time.delayedCall(idx * 800, () => {
         const color = text.includes('✓') ? toHex(COLORS.mandate) : text.includes('→') ? toHex(COLORS.ink) : toHex(COLORS.inkMuted);
-        const t = this.add.text(-100, -20 + idx * 14, text, { fontSize: '13px', color, fontFamily: FONTS.machine });
+        const t = this.add.text(-108, -22 + idx * 16, text, { fontSize: '14px', color, fontFamily: FONTS.machine, resolution: 2 });
         this.overlayContainer.add(t);
         if (text.includes('✓')) playDing();
       });
@@ -1073,43 +1077,43 @@ export class KitchenScene extends Phaser.Scene {
       els.push(this.add.text(x, y, text, { fontFamily: FONT, resolution: 2, ...style }).setOrigin(0.5).setDepth(26));
     };
 
-    add(W / 2, 30, 'SHIFT COMPLETE', { fontSize: '13px', color: toHex(COLORS.mandate), fontStyle: 'bold' });
-    add(W / 2, 44, 'Café Noor — Tuesday breakfast', { fontSize: '9px', color: toHex(COLORS.inkMuted) });
-    add(W / 2, 60, '★'.repeat(stars) + '☆'.repeat(3 - stars), { fontSize: '13px', color: toHex(COLORS.mandate) });
+    add(W / 2, 28, 'SHIFT COMPLETE', { fontSize: '16px', color: toHex(COLORS.mandate), fontStyle: 'bold' });
+    add(W / 2, 44, 'Café Noor — Tuesday breakfast', { fontSize: '10px', color: toHex(COLORS.inkMuted) });
+    add(W / 2, 62, '★'.repeat(stars) + '☆'.repeat(3 - stars), { fontSize: '16px', color: toHex(COLORS.mandate) });
 
     // The pitch: the same shift, with and without the agent.
     const lx = 150, rx = 330;
-    this.add.rectangle(W / 2, 108, 1, 76, COLORS.paperInset, 0.5).setDepth(26);
-    add(lx, 78, 'WITH YALER', { fontSize: '10px', color: toHex(COLORS.mandate), fontStyle: 'bold' });
-    add(rx, 78, 'WITHOUT YALER*', { fontSize: '10px', color: toHex(COLORS.escalate), fontStyle: 'bold' });
-    add(lx, 93, `${totalTime}s · 0 calls`, { fontSize: '9px', color: toHex(COLORS.ink) });
-    add(rx, 93, '~11 hrs · 43 calls', { fontSize: '9px', color: toHex(COLORS.ink) });
-    add(lx, 106, 'nothing spoiled', { fontSize: '9px', color: toHex(COLORS.ink) });
-    add(rx, 106, '£240 stock spoiled', { fontSize: '9px', color: toHex(COLORS.ink) });
-    add(lx, 119, 'full service kept', { fontSize: '9px', color: toHex(COLORS.ink) });
-    add(rx, 119, '£410 covers lost', { fontSize: '9px', color: toHex(COLORS.ink) });
+    this.add.rectangle(W / 2, 110, 1, 80, COLORS.paperInset, 0.5).setDepth(26);
+    add(lx, 80, 'WITH YALER', { fontSize: '11px', color: toHex(COLORS.mandate), fontStyle: 'bold' });
+    add(rx, 80, 'WITHOUT YALER*', { fontSize: '11px', color: toHex(COLORS.escalate), fontStyle: 'bold' });
+    add(lx, 96, `${totalTime}s · 0 calls`, { fontSize: '10px', color: toHex(COLORS.ink) });
+    add(rx, 96, '~11 hrs · 43 calls', { fontSize: '10px', color: toHex(COLORS.ink) });
+    add(lx, 109, 'nothing spoiled', { fontSize: '10px', color: toHex(COLORS.ink) });
+    add(rx, 109, '£240 stock spoiled', { fontSize: '10px', color: toHex(COLORS.ink) });
+    add(lx, 122, 'full service kept', { fontSize: '10px', color: toHex(COLORS.ink) });
+    add(rx, 122, '£410 covers lost', { fontSize: '10px', color: toHex(COLORS.ink) });
 
     // Totals race up — Yaler lands fast; the manual grind takes its time.
-    const withTotal = this.add.text(lx, 140, '£0', {
-      fontSize: '15px', color: toHex(COLORS.mandate), fontStyle: 'bold', fontFamily: FONT, resolution: 2,
+    const withTotal = this.add.text(lx, 144, '£0', {
+      fontSize: '18px', color: toHex(COLORS.mandate), fontStyle: 'bold', fontFamily: FONT, resolution: 2,
     }).setOrigin(0.5).setDepth(26);
-    const withoutTotal = this.add.text(rx, 140, '£0', {
-      fontSize: '15px', color: toHex(COLORS.escalate), fontStyle: 'bold', fontFamily: FONT, resolution: 2,
+    const withoutTotal = this.add.text(rx, 144, '£0', {
+      fontSize: '18px', color: toHex(COLORS.escalate), fontStyle: 'bold', fontFamily: FONT, resolution: 2,
     }).setOrigin(0.5).setDepth(26);
     this.countUpTo(withTotal, withYaler, 1800, 400);
     this.countUpTo(withoutTotal, withoutYaler, 3600, 800);
 
     // Governance note
     const note = rerouted
-      ? 'Good governance: you rejected the overspend and saved £120.'
+      ? 'Good call — you rejected the overspend and saved £120.'
       : approved
         ? 'You approved an overspend. Rerouting would have saved £120.'
-        : 'All events resolved within budget automatically.';
-    add(W / 2, 164, note, { fontSize: '9px', color: toHex(rerouted ? COLORS.mandate : COLORS.escalate), wordWrap: { width: 370 } });
+        : 'All events resolved within budget.';
+    add(W / 2, 170, note, { fontSize: '11px', color: toHex(rerouted ? COLORS.mandate : COLORS.escalate), wordWrap: { width: 370 } });
 
-    add(W / 2, 184, 'Quotes, budget checks and Gas Safe verification — before your first customer sat down.', { fontSize: '8px', color: toHex(COLORS.inkMuted), wordWrap: { width: 370 } });
-    add(W / 2, 202, '→ Try it with your real kitchen', { fontSize: '11px', color: toHex(COLORS.mandate), fontStyle: 'bold' });
-    add(W / 2, 218, '*modelled: same three breakdowns, handled by phone', { fontSize: '8px', color: toHex(COLORS.inkMuted) });
+    add(W / 2, 190, 'Quotes checked, budget guarded, Gas Safe verified.', { fontSize: '9px', color: toHex(COLORS.inkMuted), wordWrap: { width: 370 } });
+    add(W / 2, 208, '→ Try it with your real kitchen', { fontSize: '12px', color: toHex(COLORS.mandate), fontStyle: 'bold' });
+    add(W / 2, 224, '*modelled: same three breakdowns, handled by phone', { fontSize: '9px', color: toHex(COLORS.inkMuted) });
 
     // Animate in — skipped under reduced motion; the summary renders in place.
     if (!this.reducedMotion) {
@@ -1151,35 +1155,35 @@ export class KitchenScene extends Phaser.Scene {
       els.push(this.add.text(x, y, text, { fontFamily: FONT, resolution: 2, ...style }).setOrigin(0.5).setDepth(26));
     };
 
-    add(W / 2, 30, 'PHONE SHIFT COMPLETE', { fontSize: '13px', color: toHex(COLORS.escalate), fontStyle: 'bold' });
-    add(W / 2, 44, 'Café Noor — the long way round', { fontSize: '9px', color: toHex(COLORS.inkMuted) });
-    add(W / 2, 60, '☆☆☆', { fontSize: '13px', color: toHex(COLORS.inkMuted) });
+    add(W / 2, 28, 'PHONE SHIFT COMPLETE', { fontSize: '16px', color: toHex(COLORS.escalate), fontStyle: 'bold' });
+    add(W / 2, 44, 'Café Noor — the long way round', { fontSize: '10px', color: toHex(COLORS.inkMuted) });
+    add(W / 2, 62, '☆☆☆', { fontSize: '16px', color: toHex(COLORS.inkMuted) });
 
     // Your morning by phone, vs the morning you skipped.
     const lx = 150, rx = 330;
-    this.add.rectangle(W / 2, 108, 1, 76, COLORS.paperInset, 0.5).setDepth(26);
-    add(lx, 78, 'YOUR PHONE SHIFT', { fontSize: '10px', color: toHex(COLORS.escalate), fontStyle: 'bold' });
-    add(rx, 78, 'WITH YALER*', { fontSize: '10px', color: toHex(COLORS.mandate), fontStyle: 'bold' });
-    add(lx, 93, `${shiftHrs}h ${shiftMins}m of shift`, { fontSize: '9px', color: toHex(COLORS.ink) });
-    add(rx, 93, 'a 96-second shift', { fontSize: '9px', color: toHex(COLORS.ink) });
-    add(lx, 106, `${this.callsMade} calls chased`, { fontSize: '9px', color: toHex(COLORS.ink) });
-    add(rx, 106, '0 calls', { fontSize: '9px', color: toHex(COLORS.ink) });
-    add(lx, 119, `£${Math.round(this.totalLosses)} spoiled & lost`, { fontSize: '9px', color: toHex(COLORS.ink) });
-    add(rx, 119, 'full service kept', { fontSize: '9px', color: toHex(COLORS.ink) });
+    this.add.rectangle(W / 2, 110, 1, 80, COLORS.paperInset, 0.5).setDepth(26);
+    add(lx, 80, 'YOUR PHONE SHIFT', { fontSize: '11px', color: toHex(COLORS.escalate), fontStyle: 'bold' });
+    add(rx, 80, 'WITH YALER*', { fontSize: '11px', color: toHex(COLORS.mandate), fontStyle: 'bold' });
+    add(lx, 96, `${shiftHrs}h ${shiftMins}m of shift`, { fontSize: '10px', color: toHex(COLORS.ink) });
+    add(rx, 96, 'a 96-second shift', { fontSize: '10px', color: toHex(COLORS.ink) });
+    add(lx, 109, `${this.callsMade} calls chased`, { fontSize: '10px', color: toHex(COLORS.ink) });
+    add(rx, 109, '0 calls', { fontSize: '10px', color: toHex(COLORS.ink) });
+    add(lx, 122, `£${Math.round(this.totalLosses)} spoiled & lost`, { fontSize: '10px', color: toHex(COLORS.ink) });
+    add(rx, 122, 'full service kept', { fontSize: '10px', color: toHex(COLORS.ink) });
 
-    const phoneTotal = this.add.text(lx, 140, '£0', {
-      fontSize: '15px', color: toHex(COLORS.escalate), fontStyle: 'bold', fontFamily: FONT, resolution: 2,
+    const phoneTotal = this.add.text(lx, 144, '£0', {
+      fontSize: '18px', color: toHex(COLORS.escalate), fontStyle: 'bold', fontFamily: FONT, resolution: 2,
     }).setOrigin(0.5).setDepth(26);
-    const agentTotal = this.add.text(rx, 140, '£0', {
-      fontSize: '15px', color: toHex(COLORS.mandate), fontStyle: 'bold', fontFamily: FONT, resolution: 2,
+    const agentTotal = this.add.text(rx, 144, '£0', {
+      fontSize: '18px', color: toHex(COLORS.mandate), fontStyle: 'bold', fontFamily: FONT, resolution: 2,
     }).setOrigin(0.5).setDepth(26);
     this.countUpTo(phoneTotal, allIn, 3200, 400);
     this.countUpTo(agentTotal, 1530, 1200, 800);
 
-    add(W / 2, 164, 'You spent the breakfast rush on hold.', { fontSize: '10px', color: toHex(COLORS.escalate), fontStyle: 'bold' });
-    add(W / 2, 184, 'Same kitchen. Same three breakdowns. One of these mornings had an agent.', { fontSize: '8px', color: toHex(COLORS.inkMuted), wordWrap: { width: 370 } });
-    add(W / 2, 202, '→ Hand it to the agent', { fontSize: '11px', color: toHex(COLORS.mandate), fontStyle: 'bold' });
-    add(W / 2, 218, '*the first shift — repairs £1,530, all-in with walking pace', { fontSize: '8px', color: toHex(COLORS.inkMuted) });
+    add(W / 2, 170, 'You spent the breakfast rush on hold.', { fontSize: '11px', color: toHex(COLORS.escalate), fontStyle: 'bold' });
+    add(W / 2, 190, 'Same kitchen, same breakdowns — one of them had an agent.', { fontSize: '9px', color: toHex(COLORS.inkMuted), wordWrap: { width: 370 } });
+    add(W / 2, 208, '→ Hand it to the agent', { fontSize: '12px', color: toHex(COLORS.mandate), fontStyle: 'bold' });
+    add(W / 2, 224, '*the first shift — repairs £1,530, all-in with walking pace', { fontSize: '9px', color: toHex(COLORS.inkMuted) });
 
     if (!this.reducedMotion) {
       bg.setAlpha(0).setPosition(160, 130);
