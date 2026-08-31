@@ -66,24 +66,34 @@ export default function TimeCompare() {
   }, [started]);
 
   const done = minutes === AFTER_MIN;
+  const h = Math.floor(minutes / 60);
+  const mm = String(minutes % 60).padStart(2, '0');
 
   return (
-    <div ref={ref} className="paper-card rounded-2xl p-5 sm:p-6">
-      <div className="flex items-end justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-[10px] uppercase tracking-wider text-ink-muted">Time to an engineer booked</p>
-          <p className="font-display text-4xl sm:text-5xl text-mandate tabular-nums leading-none">
-            ~{minutes} <span className="text-xl sm:text-2xl">min</span>
-          </p>
-        </div>
-        <div className="text-right space-y-1 shrink-0">
-          <p className="text-[10px] uppercase tracking-wider text-ink-muted">The old way</p>
-          <p className="font-display text-xl sm:text-2xl text-ink-muted/70 line-through decoration-escalate/60 leading-none">
+    <div ref={ref} className="paper-card rounded-2xl p-5 sm:p-6 relative overflow-hidden">
+      {/* Machine-voice header row, like a kitchen clock board */}
+      <div className="flex items-center justify-between gap-3 font-machine text-[10px] uppercase tracking-[0.14em] text-ink-muted">
+        <span>Time to an engineer booked</span>
+        <span className="text-escalate">every min down ≈ £13</span>
+      </div>
+
+      {/* The service clock — big thermal digits counting to the booking */}
+      <div className="mt-3 flex items-end justify-between gap-4">
+        <p className="clock-digits text-6xl sm:text-7xl text-mandate" aria-hidden>
+          {h}
+          <span className="clock-colon">:</span>
+          {mm}
+        </p>
+        <div className="text-right space-y-1 shrink-0 pb-1">
+          <p className="font-machine text-[10px] uppercase tracking-wider text-ink-muted">The old way</p>
+          <p className="font-machine text-lg text-ink-muted/70 line-through decoration-escalate/60 leading-none">
             3–4 hrs
           </p>
+          <p className="hand-note" aria-hidden>↑ the phone-call afternoon</p>
         </div>
       </div>
-      {/* Progress bar — the same number as a shape, for glanceability */}
+
+      {/* Clock sweep — the same number as a shape, for glanceability */}
       <div className="mt-4 h-1.5 rounded-full bg-paper-inset overflow-hidden" aria-hidden>
         <div
           className={`h-full rounded-full bg-mandate ${done ? '' : 'transition-none'}`}

@@ -1,14 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 /**
- * StepsCarousel — the 3-step explainer as a progressive-disclosure pattern.
+ * StepsCarousel — the 3-step explainer as chits on the kitchen ticket rail.
  *
- * Mobile: horizontal CSS scroll-snap carousel — one card in focus, a peek of
- * the next inviting a swipe (the Revolut/Bumble onboarding pattern).
- * Desktop: the original 3-column grid.
- *
- * Each card shows number + title + one short line; the full explanation is
- * tap-to-expand, so a collapsed card costs one viewport line, not three.
+ * Each step hangs from a brushed-metal rail as a punched paper chit with a
+ * slight tilt, like a ticket just spiked. Mobile: horizontal scroll-snap
+ * (chits slide along the rail). Desktop: 3-column grid under one rail.
+ * Tap a chit to expand the fuller explanation.
  */
 
 const STEPS = [
@@ -29,6 +27,9 @@ const STEPS = [
   },
 ];
 
+// Slight alternating tilt so chits read as hand-spiked, not rendered.
+const TILTS = ['-1.4deg', '1deg', '-0.8deg'];
+
 function StepCard({
   step,
   index,
@@ -42,22 +43,28 @@ function StepCard({
 }) {
   return (
     <div
-      className={`paper-card rounded-xl p-5 space-y-2 shrink-0 w-[82%] sm:w-auto transition-colors ${
-        expanded ? 'border-mandate/30' : ''
+      className={`chit shrink-0 w-[82%] sm:w-auto pt-6 pb-4 px-4 space-y-2 ${
+        expanded ? 'border-mandate/40' : ''
       }`}
+      style={{ '--tilt': TILTS[index % TILTS.length] } as React.CSSProperties}
     >
-      <span className="flex items-center justify-center w-8 h-8 rounded-full bg-mandate/10 text-mandate text-xs font-bold">
-        {index + 1}
-      </span>
+      <div className="flex items-baseline justify-between">
+        <span className="font-machine text-sm font-bold text-mandate">
+          {String(index + 1).padStart(2, '0')}
+        </span>
+        <span className="font-machine text-[9px] uppercase tracking-[0.16em] text-ink-muted">
+          spike
+        </span>
+      </div>
       <p className="text-ink font-medium">{step.title}</p>
       <p className="text-sm text-ink-muted leading-relaxed">{step.short}</p>
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        className="text-[11px] text-mandate hover:text-ink transition-colors"
+        className="font-machine text-[11px] text-mandate hover:text-ink transition-colors"
       >
-        {expanded ? 'Less' : 'How it works'}
+        {expanded ? '— less' : '+ how it works'}
       </button>
       <div
         className="grid transition-[grid-template-rows,opacity] duration-200"
@@ -68,7 +75,7 @@ function StepCard({
         }}
       >
         <div className="overflow-hidden">
-          <p className="text-xs text-ink-muted leading-relaxed pt-1 border-t border-ink/5">{step.body}</p>
+          <p className="text-xs text-ink-muted leading-relaxed pt-2 mt-1 chit-tear">{step.body}</p>
         </div>
       </div>
     </div>
@@ -80,7 +87,7 @@ export default function StepsCarousel() {
   const [expanded, setExpanded] = useState<number | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
 
-  // Track which card is centred for the dot indicators (mobile only).
+  // Track which chit is centred for the dot indicators (mobile only).
   useEffect(() => {
     const row = rowRef.current;
     if (!row) return;
@@ -105,21 +112,23 @@ export default function StepsCarousel() {
 
   return (
     <div className="space-y-3">
-      <div
-        ref={rowRef}
-        className="snap-row hide-scrollbar flex gap-3 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:overflow-visible"
-        role="list"
-        aria-label="How it works — three steps"
-      >
-        {STEPS.map((step, i) => (
-          <StepCard
-            key={step.title}
-            step={step}
-            index={i}
-            expanded={expanded === i}
-            onToggle={() => setExpanded((cur) => (cur === i ? null : i))}
-          />
-        ))}
+      <div className="ticket-rail">
+        <div
+          ref={rowRef}
+          className="snap-row hide-scrollbar flex gap-4 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:overflow-visible"
+          role="list"
+          aria-label="How it works — three steps on the rail"
+        >
+          {STEPS.map((step, i) => (
+            <StepCard
+              key={step.title}
+              step={step}
+              index={i}
+              expanded={expanded === i}
+              onToggle={() => setExpanded((cur) => (cur === i ? null : i))}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Position dots — mobile only, the grid shows everything on desktop */}

@@ -159,7 +159,7 @@
 }
 
 .paper-grain {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
 }
 
 .backdrop-ruled-lines {
@@ -625,4 +625,183 @@
     display: inline-flex;
     align-items: center;
   }
+}
+
+
+/* ─── The ticket rail ────────────────────────────────────
+   The kitchen's spike rail of order chits. Each step of a job
+   hangs from the rail as a punched paper chit with a slight
+   tilt, like a ticket just spiked. Pure CSS. */
+
+.ticket-rail {
+  position: relative;
+}
+
+/* The rail bar — a thin brushed-metal spike that passes through each
+   chit's punch hole so the tickets read as hung on the rail. */
+.ticket-rail::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(
+    180deg,
+    rgb(var(--ink-rgb) / 0.34),
+    rgb(var(--ink-rgb) / 0.16)
+  );
+}
+
+.chit {
+  position: relative;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 2px 2px 8px 8px;
+  box-shadow: 0 1px 0 var(--highlight-inset) inset, 0 10px 24px -16px rgb(var(--shadow-rgb) / 0.3);
+  transform: rotate(var(--tilt, 0deg));
+  transform-origin: top center;
+  transition: transform 250ms var(--ease), box-shadow 250ms var(--ease), border-color 250ms var(--ease);
+}
+
+/* The punch hole the spike goes through. */
+.chit::before {
+  content: '';
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px rgb(var(--ink-rgb) / 0.2);
+}
+
+.chit:hover,
+.chit:focus-within {
+  transform: rotate(0deg) translateY(-3px);
+  border-color: rgb(var(--mandate-rgb) / 0.35);
+  box-shadow: 0 1px 0 var(--highlight-inset-strong) inset, 0 16px 30px -16px rgb(var(--shadow-rgb) / 0.32);
+}
+
+/* Torn / tear-off perforation across a chit. */
+.chit-tear {
+  border-top: 1px dashed rgb(var(--ink-rgb) / 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chit { transition: none; transform: none; }
+}
+
+
+/* ─── The service clock ──────────────────────────────────
+   Big thermal digits in the machine voice, with a blinking
+   colon like a kitchen clock. Tabular so digits don't jump. */
+
+.clock-digits {
+  font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 0.9;
+  /* faint ink bleed so the digits read as printed, not rendered */
+  text-shadow: 0 0 1px rgb(var(--ink-rgb) / 0.4);
+}
+
+@keyframes colon-blink {
+  0%, 54% { opacity: 1; }
+  55%, 100% { opacity: 0.15; }
+}
+
+.clock-colon {
+  animation: colon-blink 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clock-colon { animation: none; }
+}
+
+
+/* ─── Rubber stamps — state as an inked impression ───────
+   Statuses are not badges, they're stamps: a 2px inked border
+   in the machine voice with a second, blurred ink pass and a
+   thud-in. Colour comes from `currentColor`, so tone is set by
+   a text-* class at the call site. */
+
+@keyframes stamp-in {
+  0% { opacity: 0; transform: scale(1.8) rotate(-8deg); filter: blur(2px); }
+  70% { opacity: 1; transform: scale(0.96) rotate(-2deg); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1) rotate(-2deg); }
+}
+
+.stamp {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  transform: rotate(-2deg);
+  animation: stamp-in 500ms var(--ease) both;
+}
+
+/* Second, slightly offset ink pass — a real stamp impression. */
+.stamp::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.3;
+  filter: blur(0.5px);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp { animation: none; }
+}
+
+
+/* ─── Small chits — compact tickets for the stage rail ─── */
+
+.chit-sm::before {
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  top: 5px;
+}
+
+/* A rail whose bar sits at the small chit's punch-hole centre. */
+.ticket-rail-sm::before {
+  top: 8px;
+}
+
+
+/* ─── Handwritten margin notes — the human voice ─────────
+   A sharpie annotation over the machine output: Caveat,
+   slightly tilted, muted ink. Use sparingly — two or three
+   per page at most, or the charm becomes clutter. */
+
+.hand-note {
+  font-family: "Caveat", cursive;
+  font-size: 1.05rem;
+  line-height: 1.1;
+  color: rgb(var(--ink-muted-rgb) / 0.95);
+  transform: rotate(-2deg);
+  display: inline-block;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.hand-note--warn {
+  color: rgb(var(--escalate-rgb) / 0.9);
 }

@@ -368,12 +368,15 @@ export default function MissionTimeline({
   const activeStageIdx = getStageIndex(mission?.status);
   const isWorking = mission?.status !== 'COMPLETED' && mission?.status !== 'DRAFT';
   const showWork = isWorking && !hideWork;
-  const mandateSummary = mission ? [
-    mission.mandate.budget.maxAmount > 0 ? `£${mission.mandate.budget.maxAmount} max` : null,
-    mission.mandate.serviceArea.postalDistrict || null,
-    mission.mandate.latestCompletionAt ? `by ${new Date(mission.mandate.latestCompletionAt).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' })}` : null,
-    mission.mandate.requiredEvidence.length > 0 ? 'photo required' : null,
-  ].filter(Boolean).join(' · ') : '';
+  const mandateSummary = mission ? (() => {
+    const when = mission.mandate.latestCompletionAt ? new Date(mission.mandate.latestCompletionAt) : null;
+    return [
+      mission.mandate.budget.maxAmount > 0 ? `£${mission.mandate.budget.maxAmount} max` : null,
+      mission.mandate.serviceArea.postalDistrict || null,
+      when && !Number.isNaN(when.getTime()) ? `by ${when.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' })}` : null,
+      mission.mandate.requiredEvidence.length > 0 ? 'photo required' : null,
+    ].filter(Boolean).join(' · ');
+  })() : '';
 
   // Derive which sponsor APIs are active/completed from the mission status.
   const statusSponsors: Record<string, { active?: SponsorId; done?: SponsorId[] }> = {
@@ -482,23 +485,29 @@ export default function MissionTimeline({
             <DiagnosticBriefCard brief={mission.diagnosticBrief} missionId={mission.id} onUpdated={setMission} />
           )}
 
-          {/* Progress bar */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-ink-muted pb-1">
-              {stages.map((st, idx) => {
-                const isPassed = idx <= activeStageIdx;
-                const isCurrent = idx === activeStageIdx;
-                return (
-                  <div key={st.label} className="flex items-center gap-1.5 shrink-0 px-0.5 sm:px-1">
-                    <span className={`w-1.5 h-1.5 rounded-full ${
-                      isCurrent ? 'bg-mandate' : isPassed ? 'bg-mandate/50' : 'bg-ink/15'
-                    }`} />
-                    <span className={`hidden sm:inline ${isCurrent ? 'text-ink font-medium' : isPassed ? 'text-ink-muted' : 'text-ink/30'}`}>
-                      {st.label}
-                    </span>
-                  </div>
-                );
-              })}
+          {/* Progress — the job as chits moving along the rail */}
+          <div className="space-y-3">
+            <div className="ticket-rail ticket-rail-sm overflow-x-auto hide-scrollbar">
+              <div className="flex gap-2 min-w-max pb-1">
+                {stages.map((st, idx) => {
+                  const isPassed = idx < activeStageIdx;
+                  const isCurrent = idx === activeStageIdx;
+                  return (
+                    <div
+                      key={st.label}
+                      className={`chit chit-sm shrink-0 px-3 pt-4 pb-1.5 ${isCurrent ? 'border-mandate/40' : ''}`}
+                      style={{ '--tilt': idx % 2 === 0 ? '-1deg' : '0.8deg' } as React.CSSProperties}
+                      aria-current={isCurrent ? 'step' : undefined}
+                    >
+                      <span className={`font-machine text-[9px] uppercase tracking-[0.12em] whitespace-nowrap ${
+                        isCurrent ? 'text-mandate font-bold' : isPassed ? 'text-ink' : 'text-ink/30'
+                      }`}>
+                        {isPassed ? '✓ ' : ''}{st.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             {/* Current stage label on mobile */}
             <p className="text-xs text-ink font-medium sm:hidden">{stages[activeStageIdx]?.label}</p>

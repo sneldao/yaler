@@ -32,6 +32,12 @@ export default {
         display: ['"Source Serif 4"', 'Georgia', 'Times New Roman', 'serif'],
         sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        // The agent's machine voice — a thermal/terminal face for all data
+        // (numerals, statuses, timestamps). The human voice stays serif.
+        machine: ['"Space Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        // The kitchen's handwriting — sharpie margin notes over the machine
+        // output. Used sparingly, never for body copy.
+        hand: ['"Caveat"', 'cursive'],
       },
       boxShadow: {
         // Theme-aware: --highlight-inset / --shadow-rgb flip in .dark (the
