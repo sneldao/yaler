@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -390,13 +389,11 @@ Do you want this job? If yes, generate a quote in character.`,
 
 	respText, err := c.generateContent(ctx, SystemPromptSupplierQuote, prompt)
 	if err != nil {
-		log.Printf("[Gemini] SupplierQuote error for %s: %v", supplier.ID, err)
 		return c.fallbackSupplierQuote(supplier), nil
 	}
 
 	var res SupplierQuoteResult
 	if err := json.Unmarshal([]byte(respText), &res); err != nil {
-		log.Printf("[Gemini] SupplierQuote JSON parse error for %s: %v (raw: %s)", supplier.ID, err, respText[:min(200, len(respText))])
 		return c.fallbackSupplierQuote(supplier), nil
 	}
 	if res.Currency == "" {
